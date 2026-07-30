@@ -3,856 +3,534 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<meta name="theme-color" content="#0b0d12" />
-<title>Miniphone — Flip Case Mini Screen</title>
+<meta name="theme-color" content="#000000" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>Miniphone — mini screen</title>
 <style>
 /* ============================================================
-   Miniphone — a phone case whose back carries a mini screen.
-   Flip the case over and you get a second, tiny phone:
-     · Back camera   · Messenger   · Miniphone Settings
-   Single file, no network, state persisted in localStorage.
+   Miniphone.
+   The whole display is black except one rounded square in the
+   top-left corner — the mini screen. Its geometry is taken from
+   the reference photo: a 598x598 square at (20,23) on a 1170px
+   wide display, i.e. 51.1% of the screen width, inset 1.7%/2.0%.
+   Everything outside that square stays pure black.
    ============================================================ */
 
 :root{
-  --stage-bg-1:#12151d;
-  --stage-bg-2:#05060a;
-  --case:#1b1f2a;
-  --case-2:#0e1119;
-  --metal:#3a4152;
-  --mini-w:258px;
-  --mini-h:336px;
   --tint:#4f8cff;
   --ok:#32d74b;
   --warn:#ff453a;
-  --radius-mini:26px;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-/* Several elements below set display:flex/grid, which would otherwise beat the
-   UA rule for [hidden]. Everything in this file toggles visibility with it. */
-[hidden]{ display:none !important; }
-html,body{height:100%;}
-body{
-  margin:0;
-  font-family:var(--font);
-  color:#fff;
-  background:
-    radial-gradient(90rem 60rem at 50% -10%, #1d2333 0%, transparent 60%),
-    linear-gradient(160deg, var(--stage-bg-1), var(--stage-bg-2));
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:18px;
-  padding:24px 12px 32px;
-  overflow-x:hidden;
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+[hidden]{ display:none !important; }   /* beats the display:flex/grid rules below */
+
+html,body{
+  margin:0; height:100%; background:#000; overflow:hidden;
+  font-family:var(--font); color:#fff;
+  -webkit-user-select:none; user-select:none;
+  overscroll-behavior:none;
 }
 
-/* ---------- stage / flip rig ---------- */
-.stage{
-  perspective:2000px;
-  perspective-origin:50% 45%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.device{
-  position:relative;
-  width:330px;
-  height:678px;
-  transform-style:preserve-3d;
-  transition:transform 1s cubic-bezier(.22,.9,.24,1);
-  will-change:transform;
-}
-.device.flipped{ transform:rotateY(180deg); }
-
-.face{
-  position:absolute;
-  inset:0;
-  border-radius:46px;
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
+/* The phone display itself. On a phone this is the whole viewport;
+   on a desktop it becomes a 390-wide stand-in so the square keeps
+   its real proportions while you preview. */
+#phone{
+  position:fixed; inset:0;
+  background:#000;
   overflow:hidden;
-  box-shadow:
-    0 40px 80px -30px rgba(0,0,0,.85),
-    0 0 0 2px rgba(255,255,255,.06),
-    0 0 0 9px #14171f,
-    0 0 0 10px rgba(255,255,255,.05);
 }
-.face--back{ transform:rotateY(180deg); }
-/* A hidden backface is still hit-testable, so the face turned away from the
-   viewer must stop swallowing clicks meant for the one facing it. */
-.face--back{ pointer-events:none; }
-.device.flipped .face--front{ pointer-events:none; }
-.device.flipped .face--back{ pointer-events:auto; }
-
-/* ============================================================
-   FRONT — the ordinary phone home screen
-   ============================================================ */
-.front-wall{
-  position:absolute; inset:0;
-  background:
-    radial-gradient(60% 40% at 22% 18%, rgba(255,255,255,.20), transparent 70%),
-    radial-gradient(75% 45% at 60% 40%, rgba(226,178,166,.85), transparent 72%),
-    radial-gradient(80% 50% at 40% 92%, rgba(96,124,178,.95), transparent 70%),
-    linear-gradient(170deg,#8e9aa8 0%, #c9b2ab 45%, #6d80a6 100%);
-  filter:saturate(1.05);
-}
-.front-wall::after{
-  content:""; position:absolute; inset:-40px;
-  backdrop-filter:blur(28px);
-  -webkit-backdrop-filter:blur(28px);
-}
-.front{ position:relative; height:100%; display:flex; flex-direction:column; }
-
-.statusbar{
-  position:relative; z-index:2;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:16px 26px 0;
-  font-size:14px; font-weight:600; letter-spacing:.2px;
-  text-shadow:0 1px 2px rgba(0,0,0,.25);
-}
-.statusbar .right{ display:flex; align-items:center; gap:6px; }
-.bars{ display:flex; align-items:flex-end; gap:2px; height:11px; }
-.bars i{ width:3px; border-radius:1px; background:currentColor; opacity:.45; }
-.bars i:nth-child(1){height:4px;opacity:1}
-.bars i:nth-child(2){height:6px;opacity:1}
-.bars i:nth-child(3){height:8px}
-.bars i:nth-child(4){height:11px}
-.batt{
-  display:inline-flex; align-items:center; justify-content:center;
-  width:26px; height:13px; border-radius:4px;
-  background:#f7d64a; color:#111; font-size:9px; font-weight:800;
-  position:relative;
-}
-.batt::after{ content:""; position:absolute; right:-4px; width:2px; height:5px; border-radius:0 2px 2px 0; background:rgba(255,255,255,.6); }
-
-.apps{
-  position:relative; z-index:2;
-  padding:26px 20px 0;
-  display:grid; grid-template-columns:repeat(4,1fr);
-  gap:20px 8px;
-}
-.app{ position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; }
-.app .glyph{
-  width:56px; height:56px; border-radius:15px;
-  display:grid; place-items:center;
-  font-size:24px; font-weight:800; color:#fff;
-  box-shadow:0 6px 14px rgba(0,0,0,.28);
-  background:#fff;
-}
-.app .label{
-  font-size:11px; font-weight:500; max-width:66px; text-align:center;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  text-shadow:0 1px 3px rgba(0,0,0,.45);
-}
-.app .badge{
-  position:absolute; transform:translate(20px,-8px);
-  background:var(--warn); color:#fff; font-size:10px; font-weight:700;
-  min-width:19px; height:19px; padding:0 5px; border-radius:10px;
-  display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.4);
-}
-.spacer{ flex:1; }
-.searchpill{
-  align-self:center; z-index:2;
-  display:flex; align-items:center; gap:6px;
-  padding:6px 14px; border-radius:999px;
-  background:rgba(255,255,255,.18); backdrop-filter:blur(12px);
-  font-size:13px; margin-bottom:14px;
-}
-.dock{
-  position:relative; z-index:2;
-  margin:0 12px 10px; padding:12px;
-  border-radius:32px;
-  background:rgba(255,255,255,.16);
-  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-  display:flex; justify-content:center;
-}
-.homebar{ width:120px; height:5px; border-radius:3px; background:rgba(255,255,255,.85); margin:0 auto 8px; }
-
-.flip-hint{
-  position:absolute; z-index:3; left:0; right:0; bottom:158px;
-  display:flex; justify-content:center;
-}
-.flip-btn{
-  border:0; cursor:pointer; font-family:var(--font);
-  display:inline-flex; align-items:center; gap:8px;
-  padding:10px 18px; border-radius:999px;
-  background:rgba(12,14,20,.62); color:#fff;
-  font-size:13px; font-weight:600; letter-spacing:.2px;
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  box-shadow:0 8px 22px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.14);
-  transition:transform .15s ease, background .15s ease;
-}
-.flip-btn:active{ transform:scale(.96); }
-
-/* ============================================================
-   BACK — the case, camera bump and the mini screen
-   ============================================================ */
-.case{
-  position:absolute; inset:0;
-  background:
-    radial-gradient(120% 80% at 20% 0%, #2a3040 0%, transparent 55%),
-    linear-gradient(155deg, var(--case) 0%, var(--case-2) 55%, #070910 100%);
-}
-.case::before{ /* soft-touch texture */
-  content:""; position:absolute; inset:0; opacity:.35;
-  background-image:
-    repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(-45deg, rgba(0,0,0,.06) 0 1px, transparent 1px 3px);
-}
-.case::after{ /* gloss sweep */
-  content:""; position:absolute; inset:0;
-  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.09) 45%, transparent 58%);
-  pointer-events:none;
+.preview-note{ display:none; }
+@media (min-width:620px){
+  body{ display:grid; place-items:center; background:#08090b; }
+  #phone{
+    position:relative; inset:auto;
+    width:390px; height:844px;
+    border-radius:46px;
+    box-shadow:0 0 0 1px #1c1f26, 0 30px 70px -30px #000;
+  }
+  .preview-note{
+    display:block; position:fixed; bottom:18px; left:0; right:0;
+    text-align:center; font-size:12px; color:#4a5160;
+  }
 }
 
-.camera-bump{
-  position:absolute; top:22px; left:22px;
-  width:122px; height:122px; border-radius:30px;
-  background:linear-gradient(150deg,#2c3242,#171b24);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.09),
-    0 8px 18px rgba(0,0,0,.5);
-  padding:12px;
-  display:grid; grid-template-columns:1fr 1fr; gap:8px;
-}
-.lens{
-  border-radius:50%;
-  background:radial-gradient(circle at 34% 30%, #6e7b96 0%, #202632 38%, #05070c 72%);
-  box-shadow:inset 0 0 0 3px #232838, 0 2px 6px rgba(0,0,0,.6);
-  position:relative;
-}
-.lens::after{
-  content:""; position:absolute; inset:24%;
-  border-radius:50%;
-  background:radial-gradient(circle at 35% 30%, rgba(160,200,255,.85), rgba(20,40,80,.6) 45%, #000 78%);
-}
-.lens.small{ transform:scale(.82); }
-.flash{
-  position:absolute; right:14px; bottom:14px; width:14px; height:14px; border-radius:50%;
-  background:radial-gradient(circle at 40% 35%, #fff6cc, #d8b45a 60%, #6b5820);
-  box-shadow:0 0 8px rgba(255,220,140,.35);
-}
-.case-brand{
-  position:absolute; bottom:26px; left:0; right:0; text-align:center;
-  font-size:11px; letter-spacing:3px; font-weight:700;
-  color:rgba(255,255,255,.22);
-}
-.case-back-btn{
-  position:absolute; top:22px; right:22px;
-  border:0; cursor:pointer; font-family:var(--font);
-  padding:8px 13px; border-radius:999px;
-  background:rgba(255,255,255,.08); color:rgba(255,255,255,.8);
-  font-size:11px; font-weight:600;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);
-}
-.case-back-btn:active{ transform:scale(.95); }
-
-/* ---------- the mini screen itself ---------- */
-.mini-frame{
+/* ---------- the mini screen ---------- */
+#frame{
   position:absolute;
-  left:50%; transform:translateX(-50%);
-  top:190px;
-  width:calc(var(--mini-w) + 16px);
-  height:calc(var(--mini-h) + 16px);
-  padding:8px;
-  border-radius:calc(var(--radius-mini) + 8px);
-  background:linear-gradient(160deg,#4a5265,#171b24 60%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.12),
-    0 10px 30px rgba(0,0,0,.55);
-}
-.mini-screen{
-  position:relative;
-  width:var(--mini-w); height:var(--mini-h);
-  border-radius:var(--radius-mini);
   overflow:hidden;
   background:#000;
-  isolation:isolate;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
-  font-size:12px;
+  /* left / top / width / height / border-radius are set from JS so the
+     square always lands where the photo says it does */
 }
-.mini-screen.off .layer{ opacity:0; }
-.mini-screen::after{ /* glass reflection */
-  content:""; position:absolute; inset:0; pointer-events:none; z-index:60;
-  background:linear-gradient(125deg, rgba(255,255,255,.10) 0%, transparent 38%);
-}
-.mini-dot{ /* tiny selfie sensor */
-  position:absolute; z-index:55; top:9px; left:50%; transform:translateX(-50%);
-  width:7px; height:7px; border-radius:50%;
-  background:radial-gradient(circle at 35% 30%, #2b3446, #05070b 70%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+#screen{
+  position:absolute; top:0; left:0;
+  width:200px; height:200px;          /* fixed design canvas, scaled to fit */
+  transform-origin:0 0;
+  overflow:hidden;
+  font-size:10px; line-height:1.3;
 }
 
-/* wallpapers for the mini screen */
-.wp-aurora{ background:linear-gradient(160deg,#0b1b3a,#1f4a7a 45%,#0d2a2a 100%); }
-.wp-sunset{ background:linear-gradient(165deg,#2a1030,#7a2b4e 48%,#d1673a 100%); }
-.wp-mint{   background:linear-gradient(160deg,#062018,#0f5d4a 50%,#7fd6a8 115%); }
-.wp-carbon{ background:linear-gradient(160deg,#14161c,#25293a 60%,#0a0b10 100%); }
-.wp-rose{   background:linear-gradient(160deg,#2b1020,#8c3a5a 55%,#e0a2a2 115%); }
+/* wallpapers */
+.wp-aurora{ background:linear-gradient(150deg,#08152e,#1b4472 48%,#0b2726 100%); }
+.wp-sunset{ background:linear-gradient(150deg,#260e2c,#7a2b4e 50%,#cf6238 100%); }
+.wp-mint{   background:linear-gradient(150deg,#04170f,#0f5d4a 52%,#63c795 110%); }
+.wp-black{  background:#000; }
+.wp-rose{   background:linear-gradient(150deg,#250d1c,#8c3a5a 55%,#dc9c9c 115%); }
 
+/* The square is very round (35% corners), so every layer keeps its content
+   inside the largest rectangle that clears the corner arcs. Backgrounds still
+   run full-bleed to the clipped edge. */
 .layer{
   position:absolute; inset:0; z-index:10;
   display:flex; flex-direction:column;
-  transition:opacity .18s ease, transform .22s cubic-bezier(.2,.85,.25,1);
+  padding:19px 21px 17px;
+  transition:opacity .16s ease, transform .2s cubic-bezier(.2,.85,.25,1);
 }
-.layer[hidden]{ display:none; }
-.layer.enter{ opacity:0; transform:scale(.9); }
+#viewCamera{ padding:0; }   /* the viewfinder is full-bleed; its overlays are padded */
+.layer.enter{ opacity:0; transform:scale(.92); }
 
-/* mini status bar */
-.mini-status{
+/* status bar */
+.status{
   flex:0 0 auto;
   display:flex; align-items:center; justify-content:space-between;
-  padding:7px 12px 3px;
-  font-size:10px; font-weight:600; color:rgba(255,255,255,.92);
-  text-shadow:0 1px 2px rgba(0,0,0,.35);
+  font-size:8.5px; font-weight:600;
+  color:rgba(255,255,255,.9); letter-spacing:.2px;
 }
-.mini-status .r{ display:flex; align-items:center; gap:4px; }
-.mini-batt{
-  width:20px; height:10px; border-radius:3px; position:relative;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);
-  padding:1.5px;
-}
-.mini-batt span{ display:block; height:100%; border-radius:1.5px; background:#fff; }
-.mini-batt.low span{ background:var(--warn); }
+.status .r{ display:flex; align-items:center; gap:3px; }
+.bars{ display:flex; align-items:flex-end; gap:1.5px; height:7px; }
+.bars i{ width:2px; border-radius:1px; background:currentColor; opacity:.4; }
+.bars i:nth-child(1){height:2.5px;opacity:1}
+.bars i:nth-child(2){height:4px;opacity:1}
+.bars i:nth-child(3){height:5.5px}
+.bars i:nth-child(4){height:7px}
+.batt{ width:16px; height:8px; border-radius:2.5px; padding:1px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.55); }
+.batt span{ display:block; height:100%; border-radius:1px; background:#fff; }
+.batt.low span{ background:var(--warn); }
 
-/* home */
-.mini-home{ padding:0 14px 10px; gap:0; }
-.mini-clock{
-  text-align:center; padding:12px 0 4px;
-  font-size:40px; font-weight:250; letter-spacing:-1px;
+/* ---------- home ---------- */
+.clock{
+  text-align:center; margin-top:8px;
+  font-size:36px; font-weight:200; letter-spacing:-1.5px; line-height:1;
   font-variant-numeric:tabular-nums;
-  text-shadow:0 2px 10px rgba(0,0,0,.35);
+  text-shadow:0 2px 8px rgba(0,0,0,.35);
 }
-.mini-date{ text-align:center; font-size:11px; opacity:.8; margin-bottom:2px; }
-.mini-note{
-  margin:10px 2px 0; padding:8px 10px; border-radius:12px;
-  background:rgba(255,255,255,.14); backdrop-filter:blur(10px);
-  font-size:10.5px; line-height:1.35; display:flex; gap:8px; align-items:center;
+.date{ text-align:center; font-size:8.5px; opacity:.75; margin-top:3px; }
+.note{
+  margin:6px 2px 0; padding:4px 6px; border-radius:8px;
+  background:rgba(255,255,255,.15);
+  display:flex; align-items:center; gap:5px;
+  font-size:8px; cursor:pointer;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
 }
-.mini-note .dot{ width:8px; height:8px; border-radius:50%; background:var(--tint); flex:0 0 auto; }
-.mini-apps{
-  margin-top:auto; padding-bottom:6px;
-  display:grid; grid-template-columns:repeat(3,1fr); gap:10px 6px;
+.note .dot{ width:5px; height:5px; border-radius:50%; background:var(--tint); flex:0 0 auto; }
+.note .txt{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.apps{
+  margin-top:auto; padding-bottom:2px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:4px;
 }
-.mini-app{
-  background:none; border:0; padding:0; cursor:pointer; font-family:var(--font);
-  display:flex; flex-direction:column; align-items:center; gap:5px; color:#fff;
-  position:relative;
+.app{
+  background:none; border:0; padding:0; cursor:pointer; color:#fff; font-family:var(--font);
+  display:flex; flex-direction:column; align-items:center; gap:3px; position:relative;
 }
-.mini-app .ic{
-  width:46px; height:46px; border-radius:13px;
-  display:grid; place-items:center;
-  box-shadow:0 4px 12px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.14);
+.app .ic{
+  width:40px; height:40px; border-radius:11px; display:grid; place-items:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.14);
   transition:transform .12s ease;
 }
-.mini-app:active .ic{ transform:scale(.92); }
-.mini-app .nm{ font-size:9.5px; font-weight:500; opacity:.95; text-shadow:0 1px 3px rgba(0,0,0,.5); }
-.mini-app .bdg{
-  position:absolute; top:-4px; right:14px;
-  min-width:16px; height:16px; padding:0 4px; border-radius:8px;
-  background:var(--warn); font-size:9px; font-weight:700; color:#fff;
-  display:grid; place-items:center; box-shadow:0 1px 4px rgba(0,0,0,.45);
+.app:active .ic{ transform:scale(.9); }
+.app .nm{ font-size:7.5px; font-weight:500; opacity:.95; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+.app .bdg{
+  position:absolute; top:-3px; right:8px;
+  min-width:13px; height:13px; padding:0 3px; border-radius:7px;
+  background:var(--warn); font-size:7.5px; font-weight:700;
+  display:grid; place-items:center; box-shadow:0 1px 3px rgba(0,0,0,.5);
 }
-.ic-cam{ background:linear-gradient(160deg,#5b6474,#20242e); }
-.ic-msg{ background:linear-gradient(160deg,#38b6ff,#0a6fe8); }
-.ic-set{ background:linear-gradient(160deg,#9aa3b2,#4b5261); }
-.mini-dots{ display:flex; gap:5px; justify-content:center; padding-bottom:6px; }
-.mini-dots i{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.35); }
-.mini-dots i.on{ background:#fff; }
+.ic-cam{ background:linear-gradient(155deg,#5b6474,#1d212a); }
+.ic-msg{ background:linear-gradient(155deg,#38b6ff,#0a6fe8); }
+.ic-set{ background:linear-gradient(155deg,#9aa3b2,#474d5a); }
 
-/* generic app chrome inside the mini screen */
-.app-view{ background:#0a0c11; }
-.app-bar{
-  flex:0 0 auto;
-  display:flex; align-items:center; gap:8px;
-  padding:8px 10px; font-size:12px; font-weight:600;
-  background:rgba(20,23,31,.9);
-  box-shadow:0 1px 0 rgba(255,255,255,.07);
+/* ---------- shared app chrome ---------- */
+.app-view{ background:#07090d; }
+.bar{
+  flex:0 0 auto; display:flex; align-items:center; gap:4px;
+  padding:0 0 5px; font-size:9px; font-weight:600;
+  border-bottom:1px solid rgba(255,255,255,.09);
 }
-.app-bar .title{ flex:1; text-align:center; }
-.iconbtn{
-  border:0; cursor:pointer; font-family:var(--font);
-  background:rgba(255,255,255,.1); color:#fff;
-  width:26px; height:26px; border-radius:9px;
-  display:grid; place-items:center; font-size:13px; line-height:1;
+.bar .title{ flex:1; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ib{
+  border:0; cursor:pointer; font-family:var(--font); flex:0 0 auto;
+  background:rgba(255,255,255,.12); color:#fff;
+  width:20px; height:20px; border-radius:7px;
+  display:grid; place-items:center; font-size:10px; line-height:1; padding:0;
 }
-.iconbtn:active{ transform:scale(.92); }
-.iconbtn.wide{ width:auto; padding:0 10px; font-size:11px; font-weight:600; }
-.app-body{ flex:1; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
-.app-body::-webkit-scrollbar{ width:0; }
+.ib:active{ transform:scale(.9); }
+.ib.w{ width:auto; padding:0 7px; font-size:8px; font-weight:600; }
+.body{ flex:1; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+.body::-webkit-scrollbar{ width:0; height:0; }
 
-/* home indicator inside mini screen */
-.mini-homebar{
-  flex:0 0 auto; padding:5px 0 7px; display:flex; justify-content:center;
-  background:transparent;
-}
-.mini-homebar button{
-  width:78px; height:4px; border-radius:2px; border:0; padding:0;
-  background:rgba(255,255,255,.55); cursor:pointer;
-}
-
-/* ---------- camera app ---------- */
-.cam-stage{ position:relative; flex:1; background:#000; overflow:hidden; }
-.cam-stage video{ width:100%; height:100%; object-fit:cover; display:block; background:#000; }
-.cam-stage video.mirror{ transform:scaleX(-1); }
-.cam-grid{
-  position:absolute; inset:0; pointer-events:none;
+/* ---------- camera ---------- */
+.cam{ position:relative; flex:1; background:#000; overflow:hidden; }
+.cam video{ width:100%; height:100%; object-fit:cover; display:block; background:#000; }
+.cam video.mirror{ transform:scaleX(-1); }
+.cam .grid{
+  position:absolute; inset:0; pointer-events:none; opacity:.45;
   background-image:
-    linear-gradient(to right, rgba(255,255,255,.28) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,.28) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255,255,255,.35) .5px, transparent .5px),
+    linear-gradient(to bottom, rgba(255,255,255,.35) .5px, transparent .5px);
   background-size:33.33% 33.33%;
-  opacity:.5;
 }
-.cam-msg{
-  position:absolute; inset:0; display:grid; place-items:center; text-align:center;
-  padding:18px; font-size:10.5px; line-height:1.5; color:rgba(255,255,255,.85);
-  background:repeating-linear-gradient(135deg,#0d1017 0 10px,#0a0c12 10px 20px);
+.cam .top{
+  position:absolute; top:0; left:0; right:0; z-index:3;
+  display:flex; align-items:center; gap:4px; padding:16px 22px 10px;
+  background:linear-gradient(to bottom, rgba(0,0,0,.6), transparent);
 }
-.cam-msg b{ display:block; font-size:12px; margin-bottom:6px; }
-.cam-msg button{ margin-top:10px; }
-.cam-flashfx{
-  position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none;
-  transition:opacity .28s ease;
-}
-.cam-flashfx.fire{ opacity:.9; transition:none; }
-.cam-hud{
-  position:absolute; top:8px; left:8px; right:8px;
-  display:flex; justify-content:space-between; align-items:center;
-  font-size:9.5px; letter-spacing:.4px;
-}
-.chip{
-  background:rgba(0,0,0,.5); padding:3px 7px; border-radius:999px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
-}
-.cam-controls{
-  flex:0 0 auto; padding:8px 14px 4px;
-  display:flex; align-items:center; justify-content:space-between;
-  background:#0a0c11;
+.cam .top .title{ flex:1; text-align:center; font-size:8.5px; font-weight:600; }
+.cam .ctl{
+  position:absolute; bottom:0; left:0; right:0; z-index:3;
+  display:flex; align-items:center; justify-content:space-between; padding:10px 24px 16px;
+  background:linear-gradient(to top, rgba(0,0,0,.65), transparent);
 }
 .shutter{
-  width:46px; height:46px; border-radius:50%; border:0; cursor:pointer; padding:0;
-  background:#fff; box-shadow:0 0 0 3px #0a0c11, 0 0 0 5px rgba(255,255,255,.85);
-  transition:transform .1s ease;
+  width:36px; height:36px; border-radius:50%; border:0; padding:0; cursor:pointer;
+  background:#fff; box-shadow:0 0 0 2px rgba(0,0,0,.5), 0 0 0 4px rgba(255,255,255,.9);
 }
 .shutter:active{ transform:scale(.9); }
 .thumb{
-  width:34px; height:34px; border-radius:9px; border:0; padding:0; cursor:pointer;
-  background:rgba(255,255,255,.12) center/cover no-repeat;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);
-  font-size:14px; color:rgba(255,255,255,.6);
+  width:24px; height:24px; border-radius:7px; border:0; padding:0; cursor:pointer;
+  background:rgba(255,255,255,.14) center/cover no-repeat;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);
+  font-size:10px; color:rgba(255,255,255,.7);
 }
-.gallery{ padding:8px; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-.gallery img{ width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:8px; display:block; cursor:pointer; }
-.gallery .empty{ grid-column:1/-1; text-align:center; padding:40px 12px; font-size:11px; opacity:.6; }
-.viewer{ padding:8px; display:flex; flex-direction:column; gap:8px; align-items:center; }
-.viewer img{ width:100%; border-radius:12px; }
-.viewer .row{ display:flex; gap:8px; }
+.chip{
+  position:absolute; z-index:3; top:34px; right:22px;
+  background:rgba(0,0,0,.5); padding:1.5px 5px; border-radius:999px;
+  font-size:7px; letter-spacing:.3px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+}
+.camoff{
+  position:absolute; inset:0; z-index:2; display:grid; place-items:center; text-align:center;
+  padding:44px 26px; font-size:8px; line-height:1.5; color:rgba(255,255,255,.85);
+  background:repeating-linear-gradient(135deg,#0c0f15 0 8px,#090b10 8px 16px);
+}
+.camoff b{ display:block; font-size:9.5px; margin-bottom:4px; }
+.flashfx{ position:absolute; inset:0; z-index:4; background:#fff; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.flashfx.fire{ opacity:.92; transition:none; }
+
+.gallery{ padding:5px 0 0; display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+.gallery img{ width:100%; aspect-ratio:1; object-fit:cover; border-radius:5px; display:block; cursor:pointer; }
+.gallery .empty{ grid-column:1/-1; text-align:center; padding:34px 8px; font-size:8.5px; opacity:.55; line-height:1.6; }
+.viewer{ padding:6px 0 0; display:flex; flex-direction:column; gap:5px; align-items:center; }
+.viewer img{ width:100%; border-radius:8px; }
+.viewer .row{ display:flex; gap:4px; }
 
 /* ---------- messenger ---------- */
-.chat-list{ padding:4px 0; }
-.chat-row{
-  width:100%; border:0; background:none; cursor:pointer; font-family:var(--font);
-  display:flex; gap:9px; align-items:center; padding:8px 10px; text-align:left; color:#fff;
+.chat{
+  width:100%; border:0; background:none; cursor:pointer; font-family:var(--font); color:#fff;
+  display:flex; gap:6px; align-items:center; padding:5px 2px; text-align:left; border-radius:6px;
 }
-.chat-row:active{ background:rgba(255,255,255,.06); }
-.avatar{
-  width:34px; height:34px; border-radius:50%; flex:0 0 auto;
-  display:grid; place-items:center; font-size:12px; font-weight:700; color:#fff;
+.chat:active{ background:rgba(255,255,255,.07); }
+.av{
+  width:24px; height:24px; border-radius:50%; flex:0 0 auto;
+  display:grid; place-items:center; font-size:9px; font-weight:700;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
 }
-.chat-meta{ flex:1; min-width:0; }
-.chat-meta .n{ font-size:11.5px; font-weight:600; display:flex; justify-content:space-between; gap:6px; }
-.chat-meta .n span{ font-size:9.5px; font-weight:500; opacity:.55; flex:0 0 auto; }
-.chat-meta .p{ font-size:10px; opacity:.6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.chat-meta .p.unread{ opacity:1; font-weight:600; }
-.pill-badge{
-  min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:var(--tint);
-  font-size:9px; font-weight:700; display:grid; place-items:center; flex:0 0 auto;
+.meta{ flex:1; min-width:0; }
+.meta .n{ display:flex; justify-content:space-between; gap:4px; font-size:9px; font-weight:600; }
+.meta .n span{ font-size:7.5px; font-weight:500; opacity:.5; flex:0 0 auto; }
+.meta .p{ font-size:8px; opacity:.55; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.meta .p.unread{ opacity:1; font-weight:600; }
+.cnt{
+  min-width:13px; height:13px; padding:0 4px; border-radius:7px; background:var(--tint);
+  font-size:7.5px; font-weight:700; display:grid; place-items:center; flex:0 0 auto;
 }
-.thread{ padding:8px 9px 4px; display:flex; flex-direction:column; gap:5px; }
+.thread{ padding:5px 0 2px; display:flex; flex-direction:column; gap:3px; }
 .bub{
-  max-width:82%; padding:6px 9px; border-radius:14px;
-  font-size:11px; line-height:1.35; word-break:break-word;
-  animation:pop .18s ease;
+  max-width:84%; padding:4px 6px; border-radius:10px;
+  font-size:8.5px; line-height:1.35; word-break:break-word; animation:pop .16s ease;
 }
-@keyframes pop{ from{ opacity:0; transform:translateY(6px) scale(.97);} }
-.bub.them{ align-self:flex-start; background:#242a36; border-bottom-left-radius:5px; }
-.bub.me{ align-self:flex-end; background:linear-gradient(160deg,#3a8dff,#1667e0); border-bottom-right-radius:5px; }
-.bub .t{ display:block; font-size:8.5px; opacity:.55; margin-top:3px; text-align:right; }
-.typing{ align-self:flex-start; background:#242a36; padding:8px 10px; border-radius:14px; border-bottom-left-radius:5px; display:flex; gap:3px; }
-.typing i{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.7); animation:blink 1.1s infinite; }
+@keyframes pop{ from{ opacity:0; transform:translateY(4px) scale(.97);} }
+.bub.them{ align-self:flex-start; background:#212734; border-bottom-left-radius:3px; }
+.bub.me{ align-self:flex-end; background:linear-gradient(160deg,#3a8dff,#1667e0); border-bottom-right-radius:3px; }
+.bub .t{ display:block; font-size:6.5px; opacity:.55; margin-top:2px; text-align:right; }
+.typing{ align-self:flex-start; background:#212734; padding:5px 7px; border-radius:10px; border-bottom-left-radius:3px; display:flex; gap:2.5px; }
+.typing i{ width:3.5px; height:3.5px; border-radius:50%; background:rgba(255,255,255,.75); animation:blink 1.1s infinite; }
 .typing i:nth-child(2){ animation-delay:.18s; } .typing i:nth-child(3){ animation-delay:.36s; }
-@keyframes blink{ 0%,60%,100%{opacity:.25; transform:translateY(0)} 30%{opacity:1; transform:translateY(-2px)} }
-.composer{
-  flex:0 0 auto; padding:6px 8px; display:flex; gap:6px; align-items:center;
-  background:rgba(20,23,31,.95); box-shadow:0 -1px 0 rgba(255,255,255,.07);
-}
-.composer input{
-  flex:1; min-width:0; border:0; outline:0; font-family:var(--font);
-  background:rgba(255,255,255,.1); color:#fff;
-  padding:7px 10px; border-radius:999px; font-size:11px;
-}
-.composer input::placeholder{ color:rgba(255,255,255,.45); }
-.send{
-  width:28px; height:28px; border-radius:50%; border:0; cursor:pointer;
-  background:var(--tint); color:#fff; font-size:13px; display:grid; place-items:center;
-}
-.send:disabled{ opacity:.35; }
-.quick{ display:flex; gap:5px; padding:0 8px 6px; overflow-x:auto; }
+@keyframes blink{ 0%,60%,100%{opacity:.25;transform:translateY(0)} 30%{opacity:1;transform:translateY(-1.5px)} }
+.quick{ flex:0 0 auto; display:flex; gap:3px; padding:0 0 4px; overflow-x:auto; }
 .quick::-webkit-scrollbar{ height:0; }
 .quick button{
   flex:0 0 auto; border:0; cursor:pointer; font-family:var(--font);
-  background:rgba(255,255,255,.1); color:#fff;
-  padding:5px 9px; border-radius:999px; font-size:10px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  background:rgba(255,255,255,.12); color:#fff; padding:3px 6px; border-radius:999px; font-size:7.5px;
 }
+.composer{
+  flex:0 0 auto; display:flex; gap:4px; align-items:center; padding:5px 0 0;
+  border-top:1px solid rgba(255,255,255,.09);
+}
+.composer input{
+  flex:1; min-width:0; border:0; outline:0; font-family:var(--font);
+  background:rgba(255,255,255,.12); color:#fff;
+  padding:4px 7px; border-radius:999px; font-size:8.5px;
+  -webkit-user-select:text; user-select:text;
+}
+.composer input::placeholder{ color:rgba(255,255,255,.45); }
+.send{
+  width:20px; height:20px; border-radius:50%; border:0; cursor:pointer; flex:0 0 auto;
+  background:var(--tint); color:#fff; font-size:10px; display:grid; place-items:center; padding:0;
+}
+.send:disabled{ opacity:.35; }
 
 /* ---------- settings ---------- */
-.set-group{ margin:10px 9px 0; border-radius:12px; overflow:hidden; background:#171b23; }
-.set-title{ font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; opacity:.5; margin:12px 14px 5px; }
-.set-row{
-  display:flex; align-items:center; gap:9px; padding:9px 11px;
-  font-size:11px; border-top:1px solid rgba(255,255,255,.06);
+.grp{ margin:5px 0 0; border-radius:8px; overflow:hidden; background:#141821; }
+.grp-t{ font-size:7px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; opacity:.45; margin:7px 3px 3px; }
+.row{
+  display:flex; align-items:center; gap:6px; padding:5px 7px; font-size:8.5px;
+  border-top:1px solid rgba(255,255,255,.06);
 }
-.set-group .set-row:first-child{ border-top:0; }
-.set-row .lbl{ flex:1; }
-.set-row .val{ opacity:.55; font-size:10.5px; }
-.set-row.tap{ cursor:pointer; }
-.set-row.tap:active{ background:rgba(255,255,255,.05); }
-.set-row .sub{ display:block; font-size:9px; opacity:.5; margin-top:2px; line-height:1.3; }
-.switch{
-  width:38px; height:22px; border-radius:999px; border:0; padding:2px; cursor:pointer;
-  background:rgba(255,255,255,.18); transition:background .18s ease; flex:0 0 auto;
+.grp .row:first-child{ border-top:0; }
+.row .lbl{ flex:1; }
+.row .sub{ display:block; font-size:6.5px; opacity:.5; margin-top:1px; line-height:1.3; }
+.row .val{ opacity:.55; font-size:8px; }
+.row.tap{ cursor:pointer; }
+.row.tap:active{ background:rgba(255,255,255,.06); }
+.sw{
+  width:28px; height:16px; border-radius:999px; border:0; padding:1.5px; cursor:pointer; flex:0 0 auto;
+  background:rgba(255,255,255,.2); transition:background .18s ease;
 }
-.switch b{ display:block; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .18s cubic-bezier(.3,1.4,.5,1); }
-.switch.on{ background:var(--ok); }
-.switch.on b{ transform:translateX(16px); }
-.set-row input[type=range]{ flex:1; accent-color:var(--tint); }
-.set-row input[type=text]{
+.sw b{ display:block; width:13px; height:13px; border-radius:50%; background:#fff; transition:transform .18s cubic-bezier(.3,1.4,.5,1); }
+.sw.on{ background:var(--ok); }
+.sw.on b{ transform:translateX(12px); }
+.row input[type=range]{ flex:1; min-width:0; height:12px; accent-color:var(--tint); }
+.row input[type=text]{
   flex:1; min-width:0; border:0; outline:0; font-family:var(--font);
-  background:rgba(255,255,255,.09); color:#fff; padding:6px 9px; border-radius:8px; font-size:11px;
+  background:rgba(255,255,255,.1); color:#fff; padding:3px 6px; border-radius:5px; font-size:8px;
+  -webkit-user-select:text; user-select:text;
 }
-.wp-picker{ display:flex; gap:8px; padding:10px 11px; flex-wrap:wrap; }
-.wp-picker button{
-  width:38px; height:38px; border-radius:10px; border:0; cursor:pointer;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
-}
-.wp-picker button.sel{ box-shadow:0 0 0 2px var(--tint), inset 0 0 0 1px rgba(255,255,255,.2); }
+.wps{ display:flex; gap:5px; padding:6px 7px; flex-wrap:wrap; }
+.wps button{ width:24px; height:24px; border-radius:7px; border:0; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(255,255,255,.2); }
+.wps button.sel{ box-shadow:0 0 0 1.5px var(--tint), inset 0 0 0 1px rgba(255,255,255,.2); }
 .danger{ color:var(--warn); font-weight:600; }
-.about-hero{ text-align:center; padding:16px 12px 4px; }
-.about-hero .m{ font-size:14px; font-weight:600; }
-.about-hero .s{ font-size:10px; opacity:.55; margin-top:3px; }
-.setfoot{ text-align:center; font-size:9px; opacity:.35; padding:14px 10px 16px; line-height:1.5; }
+.hero{ text-align:center; padding:9px 8px 3px; }
+.hero .m{ font-size:11px; font-weight:600; }
+.hero .s{ font-size:7.5px; opacity:.5; margin-top:2px; }
+.foot{ text-align:center; font-size:6.5px; opacity:.35; padding:8px 8px 10px; line-height:1.5; }
 
-/* toast inside mini screen */
+/* toast */
 .toast{
-  position:absolute; z-index:70; left:12px; right:12px; bottom:34px;
-  background:rgba(20,23,31,.94); color:#fff;
-  padding:7px 10px; border-radius:10px; font-size:10.5px; text-align:center;
-  box-shadow:0 6px 18px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.12);
-  opacity:0; transform:translateY(8px); transition:opacity .2s ease, transform .2s ease;
+  position:absolute; z-index:70; left:24px; right:24px; bottom:16px;
+  background:rgba(16,19,25,.95); padding:4px 7px; border-radius:7px;
+  font-size:8px; text-align:center; box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  opacity:0; transform:translateY(5px); transition:opacity .18s ease, transform .18s ease;
   pointer-events:none;
 }
 .toast.show{ opacity:1; transform:translateY(0); }
 
-/* ---------- page furniture ---------- */
-.hint{
-  font-size:12.5px; color:rgba(255,255,255,.5); text-align:center;
-  max-width:420px; line-height:1.6;
-}
-.hint kbd{
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px;
-  background:rgba(255,255,255,.08); border-radius:5px; padding:1px 5px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
-}
-@media (max-height:820px){
-  .device{ transform:scale(.86); }
-  .device.flipped{ transform:rotateY(180deg) scale(.86); }
-  .stage{ height:600px; }
-}
-@media (max-height:700px){
-  .device{ transform:scale(.74); }
-  .device.flipped{ transform:rotateY(180deg) scale(.74); }
-  .stage{ height:520px; }
-}
-@media (prefers-reduced-motion:reduce){
-  .device{ transition:none; }
-  *{ animation-duration:.01ms !important; }
-}
+@media (prefers-reduced-motion:reduce){ *{ animation-duration:.01ms !important; transition:none !important; } }
 </style>
 </head>
 <body>
 
-<div class="stage">
-  <div class="device" id="device">
+<div id="phone">
+  <div id="frame">
+    <div id="screen" class="wp-aurora">
 
-    <!-- ======================= FRONT: normal phone ======================= -->
-    <section class="face face--front" aria-label="Phone front">
-      <div class="front-wall"></div>
-      <div class="front">
-        <div class="statusbar">
-          <span id="frontTime">9:41</span>
-          <span class="right">
+      <!-- ---------------- HOME ---------------- -->
+      <div class="layer" id="viewHome">
+        <div class="status">
+          <span id="stTime">9:41</span>
+          <span class="r">
             <span class="bars"><i></i><i></i><i></i><i></i></span>
-            <span>4G</span>
-            <span class="batt">3⚡</span>
+            <span class="batt" id="stBatt"><span style="width:80%"></span></span>
           </span>
         </div>
 
+        <div class="clock" id="clock">9:41</div>
+        <div class="date" id="date">Fri 24</div>
+        <div class="note" id="note" hidden><span class="dot"></span><span class="txt" id="noteTxt"></span></div>
+
         <div class="apps">
-          <div class="app"><div class="glyph" style="background:linear-gradient(160deg,#fff,#eef3fb);color:#1d7bf5">A</div><div class="label">Connect</div></div>
-          <div class="app"><div class="glyph" style="background:#0b2a6b;font-size:13px">Book</div><div class="label">Bookings</div></div>
-          <div class="app"><div class="glyph" style="background:linear-gradient(160deg,#ffd84d,#f2b705);color:#3a2c00">M</div><div class="label">Meet</div></div>
-          <div class="app"><div class="glyph" style="background:linear-gradient(160deg,#5ec46a,#2f9d46)">☎</div><div class="label">Numbers</div></div>
-          <div class="app"><div class="glyph" style="background:linear-gradient(160deg,#3fb6ff,#0a6fe8)">💬</div><div class="label">Messenger</div></div>
-          <div class="app"><div class="glyph" style="background:#fff;color:#e0342c;font-size:15px;font-weight:800;flex-direction:column;line-height:1">24</div><div class="label">Calendar</div></div>
-          <div class="app"><div class="glyph" style="background:linear-gradient(160deg,#d9dde3,#a9b0ba);color:#20242c">◎</div><div class="label">Camera</div></div>
-          <div class="app"><div class="glyph" style="background:linear-gradient(160deg,#f2f4f7,#d5dae1);color:#2a2f38">◍</div><div class="label">Compass</div></div>
-          <div class="app"><div class="glyph" style="background:#fff;color:#111">🐈</div><div class="label">Cat Trans.</div></div>
-          <div class="app"><div class="glyph" style="background:#fff;color:#e62117">▶</div><div class="badge">13</div><div class="label">Video</div></div>
-        </div>
+          <button class="app" data-open="camera">
+            <span class="ic ic-cam">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1-1.6A1 1 0 0 1 9 4h6a1 1 0 0 1 .8.4l1 1.6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>
+                <circle cx="12" cy="12.5" r="3.4"/>
+              </svg>
+            </span>
+            <span class="nm">Camera</span>
+          </button>
 
-        <div class="spacer"></div>
+          <button class="app" data-open="messenger">
+            <span class="ic ic-msg">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="#fff">
+                <path d="M12 3C6.9 3 3 6.7 3 11.2c0 2.5 1.2 4.7 3.2 6.2V21l3-1.6c.9.2 1.8.4 2.8.4 5.1 0 9-3.7 9-8.6S17.1 3 12 3zm.9 11-2.4-2.5L6.1 14l4.9-5.2 2.4 2.5L17.8 9z"/>
+              </svg>
+            </span>
+            <span class="nm">Messenger</span>
+            <span class="bdg" id="badge" hidden>0</span>
+          </button>
 
-        <div class="flip-hint">
-          <button class="flip-btn" id="flipToMini">↻ Flip the case — mini screen</button>
-        </div>
-
-        <div class="searchpill">🔍 Search</div>
-        <div class="dock">
-          <div class="app"><div class="glyph" style="background:linear-gradient(160deg,#5ec46a,#2f9d46)">📞</div><div class="badge">43</div></div>
-        </div>
-        <div class="homebar"></div>
-      </div>
-    </section>
-
-    <!-- ======================= BACK: case + mini screen ======================= -->
-    <section class="face face--back" aria-label="Case back with mini screen">
-      <div class="case"></div>
-
-      <div class="camera-bump">
-        <div class="lens"></div>
-        <div class="lens small"></div>
-        <div class="lens small"></div>
-        <div class="lens"></div>
-        <div class="flash"></div>
-      </div>
-
-      <button class="case-back-btn" id="flipToFront">↺ Front</button>
-
-      <div class="mini-frame">
-        <div class="mini-screen wp-aurora" id="miniScreen">
-          <div class="mini-dot"></div>
-
-          <!-- ---------- HOME ---------- -->
-          <div class="layer mini-home" id="viewHome">
-            <div class="mini-status">
-              <span id="msTimeHome">9:41</span>
-              <span class="r">
-                <span class="bars" style="height:8px"><i style="height:3px"></i><i style="height:5px"></i><i style="height:6px"></i><i style="height:8px"></i></span>
-                <span class="mini-batt" id="msBattHome"><span style="width:80%"></span></span>
-              </span>
-            </div>
-            <div class="mini-clock" id="miniClock">9:41</div>
-            <div class="mini-date" id="miniDate">Friday 24</div>
-            <div class="mini-note" id="miniNote" hidden><span class="dot"></span><span id="miniNoteText"></span></div>
-
-            <div class="mini-apps">
-              <button class="mini-app" data-open="camera">
-                <span class="ic ic-cam">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1-1.6A1 1 0 0 1 9 4h6a1 1 0 0 1 .8.4l1 1.6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>
-                    <circle cx="12" cy="12.5" r="3.4"/>
-                  </svg>
-                </span>
-                <span class="nm">Camera</span>
-              </button>
-
-              <button class="mini-app" data-open="messenger">
-                <span class="ic ic-msg">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
-                    <path d="M12 3C6.9 3 3 6.7 3 11.2c0 2.5 1.2 4.7 3.2 6.2V21l3-1.6c.9.2 1.8.4 2.8.4 5.1 0 9-3.7 9-8.6S17.1 3 12 3zm.9 11-2.4-2.5L6.1 14l4.9-5.2 2.4 2.5L17.8 9z"/>
-                  </svg>
-                </span>
-                <span class="nm">Messenger</span>
-                <span class="bdg" id="msgBadge" hidden>0</span>
-              </button>
-
-              <button class="mini-app" data-open="settings">
-                <span class="ic ic-set">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3.2"/>
-                    <path d="M19.4 14.5a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z"/>
-                  </svg>
-                </span>
-                <span class="nm">Settings</span>
-              </button>
-            </div>
-
-            <div class="mini-dots"><i class="on"></i><i></i></div>
-          </div>
-
-          <!-- ---------- CAMERA ---------- -->
-          <div class="layer app-view" id="viewCamera" hidden>
-            <div class="app-bar">
-              <button class="iconbtn" data-home title="Home">‹</button>
-              <span class="title" id="camTitle">Back camera</span>
-              <button class="iconbtn" id="camSwap" title="Switch camera">⇄</button>
-            </div>
-
-            <div class="cam-stage" id="camStage">
-              <video id="camVideo" playsinline autoplay muted></video>
-              <div class="cam-grid" id="camGrid" hidden></div>
-              <div class="cam-hud">
-                <span class="chip" id="camLensChip">REAR</span>
-                <span class="chip" id="camCountChip">0 shots</span>
-              </div>
-              <div class="cam-flashfx" id="camFlashFx"></div>
-              <div class="cam-msg" id="camMsg" hidden>
-                <div>
-                  <b id="camMsgTitle">Camera off</b>
-                  <span id="camMsgText">Tap start and allow camera access to use the rear lens.</span>
-                  <div><button class="iconbtn wide" id="camStart" style="margin-top:10px">Start camera</button></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="cam-controls">
-              <button class="thumb" id="camThumb" title="Gallery">▦</button>
-              <button class="shutter" id="camShutter" title="Take photo"></button>
-              <button class="iconbtn" id="camTorch" title="Flash">⚡</button>
-            </div>
-            <div class="mini-homebar"><button data-home aria-label="Home"></button></div>
-          </div>
-
-          <!-- ---------- GALLERY ---------- -->
-          <div class="layer app-view" id="viewGallery" hidden>
-            <div class="app-bar">
-              <button class="iconbtn" data-back="camera">‹</button>
-              <span class="title">Shots</span>
-              <button class="iconbtn wide" id="galClear">Clear</button>
-            </div>
-            <div class="app-body"><div class="gallery" id="galGrid"></div></div>
-            <div class="mini-homebar"><button data-home aria-label="Home"></button></div>
-          </div>
-
-          <!-- ---------- PHOTO VIEWER ---------- -->
-          <div class="layer app-view" id="viewPhoto" hidden>
-            <div class="app-bar">
-              <button class="iconbtn" data-back="gallery">‹</button>
-              <span class="title" id="photoTitle">Photo</span>
-              <button class="iconbtn" id="photoDelete" title="Delete">🗑</button>
-            </div>
-            <div class="app-body">
-              <div class="viewer">
-                <img id="photoImg" alt="Captured photo" />
-                <div class="row">
-                  <button class="iconbtn wide" id="photoSave">Download</button>
-                  <button class="iconbtn wide" id="photoSend">Send in Messenger</button>
-                </div>
-              </div>
-            </div>
-            <div class="mini-homebar"><button data-home aria-label="Home"></button></div>
-          </div>
-
-          <!-- ---------- MESSENGER: chat list ---------- -->
-          <div class="layer app-view" id="viewMessenger" hidden>
-            <div class="app-bar">
-              <button class="iconbtn" data-home>‹</button>
-              <span class="title">Messenger</span>
-              <button class="iconbtn" id="msgReadAll" title="Mark all read">✓</button>
-            </div>
-            <div class="app-body"><div class="chat-list" id="chatList"></div></div>
-            <div class="mini-homebar"><button data-home aria-label="Home"></button></div>
-          </div>
-
-          <!-- ---------- MESSENGER: thread ---------- -->
-          <div class="layer app-view" id="viewThread" hidden>
-            <div class="app-bar">
-              <button class="iconbtn" data-back="messenger">‹</button>
-              <span class="title" id="threadName">Chat</span>
-              <span class="avatar" id="threadAvatar" style="width:24px;height:24px;font-size:10px">?</span>
-            </div>
-            <div class="app-body" id="threadBody"><div class="thread" id="threadMsgs"></div></div>
-            <div class="quick" id="quickReplies"></div>
-            <form class="composer" id="composer" autocomplete="off">
-              <input id="msgInput" placeholder="Message" maxlength="240" />
-              <button class="send" id="msgSend" type="submit" disabled>↑</button>
-            </form>
-          </div>
-
-          <!-- ---------- SETTINGS ---------- -->
-          <div class="layer app-view" id="viewSettings" hidden>
-            <div class="app-bar">
-              <button class="iconbtn" data-home>‹</button>
-              <span class="title">Miniphone Settings</span>
-              <span style="width:26px"></span>
-            </div>
-            <div class="app-body" id="settingsBody"></div>
-            <div class="mini-homebar"><button data-home aria-label="Home"></button></div>
-          </div>
-
-          <div class="toast" id="toast"></div>
+          <button class="app" data-open="settings">
+            <span class="ic ic-set">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3.2"/>
+                <path d="M19.4 14.5a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z"/>
+              </svg>
+            </span>
+            <span class="nm">Settings</span>
+          </button>
         </div>
       </div>
 
-      <div class="case-brand">MINIPHONE</div>
-    </section>
+      <!-- ---------------- CAMERA ---------------- -->
+      <div class="layer app-view" id="viewCamera" hidden>
+        <div class="cam" id="camStage">
+          <video id="video" playsinline autoplay muted></video>
+          <div class="grid" id="camGrid" hidden></div>
+
+          <div class="top">
+            <button class="ib" data-home title="Home">‹</button>
+            <span class="title" id="camTitle">Back camera</span>
+            <button class="ib" id="camSwap" title="Switch lens">⇄</button>
+          </div>
+          <span class="chip" id="camChip">REAR</span>
+
+          <div class="camoff" id="camOff" hidden>
+            <div>
+              <b id="camOffTitle">Camera off</b>
+              <span id="camOffText">Tap start and allow camera access to use the rear lens.</span>
+              <div style="margin-top:7px"><button class="ib w" id="camStart">Start camera</button></div>
+            </div>
+          </div>
+
+          <div class="flashfx" id="flashfx"></div>
+
+          <div class="ctl">
+            <button class="thumb" id="camThumb" title="Shots">▦</button>
+            <button class="shutter" id="shutter" title="Take photo"></button>
+            <button class="ib" id="camTorch" title="Flash">⚡</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- SHOTS ---------------- -->
+      <div class="layer app-view" id="viewGallery" hidden>
+        <div class="bar">
+          <button class="ib" data-back="camera">‹</button>
+          <span class="title">Shots</span>
+          <button class="ib w" id="galClear">Clear</button>
+        </div>
+        <div class="body"><div class="gallery" id="galGrid"></div></div>
+      </div>
+
+      <!-- ---------------- PHOTO ---------------- -->
+      <div class="layer app-view" id="viewPhoto" hidden>
+        <div class="bar">
+          <button class="ib" data-back="gallery">‹</button>
+          <span class="title" id="photoTitle">Photo</span>
+          <button class="ib" id="photoDelete" title="Delete">🗑</button>
+        </div>
+        <div class="body">
+          <div class="viewer">
+            <img id="photoImg" alt="Captured photo" />
+            <div class="row" style="border:0;padding:0">
+              <button class="ib w" id="photoSave">Save</button>
+              <button class="ib w" id="photoSend">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- MESSENGER ---------------- -->
+      <div class="layer app-view" id="viewMessenger" hidden>
+        <div class="bar">
+          <button class="ib" data-home>‹</button>
+          <span class="title">Messenger</span>
+          <button class="ib" id="readAll" title="Mark all read">✓</button>
+        </div>
+        <div class="body"><div id="chatList"></div></div>
+      </div>
+
+      <div class="layer app-view" id="viewThread" hidden>
+        <div class="bar">
+          <button class="ib" data-back="messenger">‹</button>
+          <span class="title" id="threadName">Chat</span>
+          <span class="av" id="threadAv" style="width:16px;height:16px;font-size:7px">?</span>
+        </div>
+        <div class="body" id="threadBody"><div class="thread" id="threadMsgs"></div></div>
+        <div class="quick" id="quick"></div>
+        <form class="composer" id="composer" autocomplete="off">
+          <input id="msgInput" placeholder="Message" maxlength="240" />
+          <button class="send" id="msgSend" type="submit" disabled>↑</button>
+        </form>
+      </div>
+
+      <!-- ---------------- SETTINGS ---------------- -->
+      <div class="layer app-view" id="viewSettings" hidden>
+        <div class="bar">
+          <button class="ib" data-home>‹</button>
+          <span class="title">Miniphone Settings</span>
+          <span style="width:20px"></span>
+        </div>
+        <div class="body" id="settingsBody"></div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
   </div>
 </div>
 
-<p class="hint">
-  Click the button (or press <kbd>F</kbd>) to flip the case. The mini screen on the back runs
-  the rear camera, its own messenger and Miniphone Settings. <kbd>Esc</kbd> goes back / home.
-</p>
+<p class="preview-note">Desktop preview — the mini screen sits where the black square is on the phone. Open on the phone for the real thing.</p>
 
 <script>
 (() => {
   "use strict";
 
+  const $  = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
   /* ============================================================
-     State
+     Geometry — measured off the reference photo.
+     598x598 square at (20,23) on a 1170px-wide display.
+     All values are fractions of the display width, so the square
+     keeps its place and shape on any screen size.
      ============================================================ */
-  const STORE_KEY = "miniphone.v1";
+  const GEOM_DEFAULT = { x: 20/1170, y: 23/1170, size: 598/1170, radius: 0.35 };
+  const DESIGN = 200;                       // the mini UI is drawn on a 200x200 canvas
+
+  const STORE_KEY = "miniphone.v2";
   const WALLPAPERS = [
-    { id:"wp-aurora", name:"Aurora", css:"linear-gradient(160deg,#0b1b3a,#1f4a7a 45%,#0d2a2a 100%)" },
-    { id:"wp-sunset", name:"Sunset", css:"linear-gradient(165deg,#2a1030,#7a2b4e 48%,#d1673a 100%)" },
-    { id:"wp-mint",   name:"Mint",   css:"linear-gradient(160deg,#062018,#0f5d4a 50%,#7fd6a8 115%)" },
-    { id:"wp-carbon", name:"Carbon", css:"linear-gradient(160deg,#14161c,#25293a 60%,#0a0b10 100%)" },
-    { id:"wp-rose",   name:"Rose",   css:"linear-gradient(160deg,#2b1020,#8c3a5a 55%,#e0a2a2 115%)" }
+    { id:"wp-aurora", name:"Aurora", css:"linear-gradient(150deg,#08152e,#1b4472 48%,#0b2726 100%)" },
+    { id:"wp-sunset", name:"Sunset", css:"linear-gradient(150deg,#260e2c,#7a2b4e 50%,#cf6238 100%)" },
+    { id:"wp-mint",   name:"Mint",   css:"linear-gradient(150deg,#04170f,#0f5d4a 52%,#63c795 110%)" },
+    { id:"wp-rose",   name:"Rose",   css:"linear-gradient(150deg,#250d1c,#8c3a5a 55%,#dc9c9c 115%)" },
+    { id:"wp-black",  name:"Black",  css:"#000" }
   ];
 
   const defaultState = () => ({
     settings: {
-      deviceName: "Miniphone",
-      use24h: true,
-      wallpaper: "wp-aurora",
-      brightness: 100,
-      gridLines: false,
-      mirrorFront: true,
-      shutterFlash: true,
-      autoReply: true,
-      haptics: true,
-      alwaysOn: true
+      deviceName:"Miniphone", use24h:true, wallpaper:"wp-aurora", brightness:100,
+      gridLines:false, mirrorFront:true, shutterFlash:true,
+      autoReply:true, haptics:true, keepAwake:true
     },
-    photos: [],           // { id, data, ts }
+    geom: Object.assign({}, GEOM_DEFAULT),
+    photos: [],
     chats: [
-      { id:"c1", name:"Alva",  color:"#ff6b6b", messages:[
-          { from:"them", text:"is that a screen on the BACK of your phone", ts:Date.now()-1000*60*54 },
-          { from:"me",   text:"flip the case and it wakes up 😎", ts:Date.now()-1000*60*52 },
-          { from:"them", text:"okay that's actually cool. send a photo with the rear lens", ts:Date.now()-1000*60*51 }
-        ], unread:1 },
-      { id:"c2", name:"Team",  color:"#4f8cff", messages:[
-          { from:"them", text:"standup moved to 10:15", ts:Date.now()-1000*60*60*4 }
-        ], unread:1 },
+      { id:"c1", name:"Alva", color:"#ff6b6b", messages:[
+        { from:"them", text:"is that a screen on the BACK of your phone", ts:Date.now()-1000*60*54 },
+        { from:"me",   text:"flip the case and it wakes up 😎", ts:Date.now()-1000*60*52 },
+        { from:"them", text:"send a photo with the rear lens", ts:Date.now()-1000*60*51 }
+      ], unread:1 },
+      { id:"c2", name:"Team", color:"#4f8cff", messages:[
+        { from:"them", text:"standup moved to 10:15", ts:Date.now()-1000*60*60*4 }
+      ], unread:1 },
       { id:"c3", name:"Mamma", color:"#ffb02e", messages:[
-          { from:"them", text:"Ring mig när du kan ❤️", ts:Date.now()-1000*60*60*26 },
-          { from:"me",   text:"Ringer ikväll!", ts:Date.now()-1000*60*60*25 }
-        ], unread:0 }
+        { from:"them", text:"Ring mig när du kan ❤️", ts:Date.now()-1000*60*60*26 },
+        { from:"me",   text:"Ringer ikväll!", ts:Date.now()-1000*60*60*25 }
+      ], unread:0 }
     ]
   });
 
@@ -862,61 +540,53 @@ body{
     try{
       const raw = localStorage.getItem(STORE_KEY);
       if(!raw) return defaultState();
-      const parsed = JSON.parse(raw);
-      const base = defaultState();
+      const p = JSON.parse(raw), base = defaultState();
       return {
-        settings: Object.assign(base.settings, parsed.settings || {}),
-        photos: Array.isArray(parsed.photos) ? parsed.photos : [],
-        chats: Array.isArray(parsed.chats) && parsed.chats.length ? parsed.chats : base.chats
+        settings: Object.assign(base.settings, p.settings || {}),
+        geom:     Object.assign(base.geom, p.geom || {}),
+        photos:   Array.isArray(p.photos) ? p.photos : [],
+        chats:    Array.isArray(p.chats) && p.chats.length ? p.chats : base.chats
       };
     }catch(e){ return defaultState(); }
   }
   function save(){
     try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch(e){
-      // Quota — photos are the only heavy thing, so drop the oldest and retry once.
-      state.photos = state.photos.slice(0, 4);
+      state.photos = state.photos.slice(0, 4);          // photos are the only heavy part
       try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(_){ toast("Storage full"); }
     }
   }
 
-  const $  = (sel, root=document) => root.querySelector(sel);
-  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  /* ---------- place and scale the mini screen ---------- */
+  const phone = $("#phone"), frame = $("#frame"), screen = $("#screen");
 
-  /* ============================================================
-     Flip rig
-     ============================================================ */
-  const device = $("#device");
-  const miniScreen = $("#miniScreen");
-
-  function flip(toBack){
-    device.classList.toggle("flipped", toBack);
-    buzz(12);
-    if(toBack){
-      wake();
-    }else{
-      stopCamera();           // privacy: the lens goes dark when the case faces away
-    }
+  function applyGeom(){
+    const W = phone.clientWidth;
+    const g = state.geom;
+    const side = Math.round(g.size * W);
+    frame.style.left   = Math.round(g.x * W) + "px";
+    frame.style.top    = Math.round(g.y * W) + "px";
+    frame.style.width  = side + "px";
+    frame.style.height = side + "px";
+    frame.style.borderRadius = Math.round(side * g.radius) + "px";
+    screen.style.transform = "scale(" + (side / DESIGN) + ")";
   }
-  $("#flipToMini").addEventListener("click", () => flip(true));
-  $("#flipToFront").addEventListener("click", () => flip(false));
+  window.addEventListener("resize", applyGeom);
+  window.addEventListener("orientationchange", () => setTimeout(applyGeom, 120));
 
-  function wake(){
-    miniScreen.classList.remove("off");
-    renderHome();
+  function applyLook(){
+    screen.className = state.settings.wallpaper;
+    $$(".layer", screen).forEach(l => l.style.filter = `brightness(${Math.max(35, state.settings.brightness)}%)`);
+    $("#camGrid").hidden = !state.settings.gridLines;
+    applyGeom();
   }
 
   /* ============================================================
-     Navigation between mini-screen views
+     Navigation
      ============================================================ */
   const VIEWS = {
-    home:      "#viewHome",
-    camera:    "#viewCamera",
-    gallery:   "#viewGallery",
-    photo:     "#viewPhoto",
-    messenger: "#viewMessenger",
-    thread:    "#viewThread",
-    settings:  "#viewSettings"
+    home:"#viewHome", camera:"#viewCamera", gallery:"#viewGallery",
+    photo:"#viewPhoto", messenger:"#viewMessenger", thread:"#viewThread", settings:"#viewSettings"
   };
   let current = "home";
 
@@ -924,82 +594,63 @@ body{
     if(!VIEWS[name]) return;
     const prev = current;
     current = name;
-
-    Object.entries(VIEWS).forEach(([key, sel]) => {
-      const el = $(sel);
-      el.hidden = key !== name;
-    });
+    Object.entries(VIEWS).forEach(([k, sel]) => { $(sel).hidden = k !== name; });
 
     const el = $(VIEWS[name]);
     el.classList.add("enter");
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("enter")));
 
-    if(prev === "camera" && name !== "camera" && name !== "gallery" && name !== "photo") stopCamera();
-
+    if(prev === "camera" && !["camera","gallery","photo"].includes(name)) stopCamera();
     if(name === "home")      renderHome();
-    if(name === "messenger") renderChatList();
+    if(name === "messenger") renderChats();
     if(name === "gallery")   renderGallery();
     if(name === "settings")  renderSettings();
-    if(name === "camera")    updateCamChrome();
-    buzz(8);
+    if(name === "camera")    updateCam();
+    buzz(6);
   }
 
   document.addEventListener("click", (e) => {
-    const home = e.target.closest("[data-home]");
-    if(home){ show("home"); return; }
-    const back = e.target.closest("[data-back]");
-    if(back){ show(back.dataset.back); return; }
-    const open = e.target.closest("[data-open]");
-    if(open){ show(open.dataset.open); return; }
+    const h = e.target.closest("[data-home]");   if(h){ show("home"); return; }
+    const b = e.target.closest("[data-back]");   if(b){ show(b.dataset.back); return; }
+    const o = e.target.closest("[data-open]");   if(o){ show(o.dataset.open); return; }
   });
 
   document.addEventListener("keydown", (e) => {
-    if(e.key === "f" || e.key === "F"){
-      if(document.activeElement && document.activeElement.tagName === "INPUT") return;
-      flip(!device.classList.contains("flipped"));
-    }
-    if(e.key === "Escape"){
-      if(current === "thread") show("messenger");
-      else if(current === "photo") show("gallery");
-      else if(current === "gallery") show("camera");
-      else if(current !== "home") show("home");
-      else flip(false);
-    }
+    if(e.key !== "Escape") return;
+    if(current === "thread") show("messenger");
+    else if(current === "photo") show("gallery");
+    else if(current === "gallery") show("camera");
+    else show("home");
   });
 
   /* ============================================================
-     Clock, battery, small helpers
+     Clock / battery / helpers
      ============================================================ */
   function fmtTime(d = new Date()){
     const h24 = d.getHours(), m = String(d.getMinutes()).padStart(2,"0");
     if(state.settings.use24h) return `${String(h24).padStart(2,"0")}:${m}`;
-    const h = h24 % 12 || 12;
-    return `${h}:${m} ${h24 < 12 ? "AM" : "PM"}`;
+    return `${h24 % 12 || 12}:${m}`;
   }
   function fmtStamp(ts){
     const d = new Date(ts), now = new Date();
-    const sameDay = d.toDateString() === now.toDateString();
-    if(sameDay) return fmtTime(d);
-    const days = Math.round((now - d) / 86400000);
-    if(days <= 1) return "Yesterday";
+    if(d.toDateString() === now.toDateString()) return fmtTime(d);
+    if(Math.round((now - d) / 86400000) <= 1) return "Yest";
     return d.toLocaleDateString(undefined, { day:"numeric", month:"short" });
   }
-  function buzz(ms){
-    if(state.settings.haptics && navigator.vibrate) { try{ navigator.vibrate(ms); }catch(e){} }
-  }
+  function buzz(ms){ if(state.settings.haptics && navigator.vibrate){ try{ navigator.vibrate(ms); }catch(e){} } }
+
   let toastTimer;
   function toast(text){
     const t = $("#toast");
-    t.textContent = text;
-    t.classList.add("show");
+    t.textContent = text; t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 1700);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
   }
 
-  let batteryLevel = 0.8, batteryCharging = false;
+  let batteryLevel = 0.8, charging = false;
   if(navigator.getBattery){
     navigator.getBattery().then(b => {
-      const sync = () => { batteryLevel = b.level; batteryCharging = b.charging; tick(); };
+      const sync = () => { batteryLevel = b.level; charging = b.charging; tick(); };
       b.addEventListener("levelchange", sync);
       b.addEventListener("chargingchange", sync);
       sync();
@@ -1008,74 +659,57 @@ body{
 
   function tick(){
     const t = fmtTime();
-    $("#frontTime").textContent = t;
-    $("#msTimeHome").textContent = t;
-    $("#miniClock").textContent = t;
-    $("#miniDate").textContent = new Date().toLocaleDateString(undefined, { weekday:"long", day:"numeric", month:"short" });
-
+    $("#stTime").textContent = t;
+    $("#clock").textContent = t;
+    $("#date").textContent = new Date().toLocaleDateString(undefined, { weekday:"short", day:"numeric", month:"short" });
     const pct = Math.round(batteryLevel * 100);
-    $$("#msBattHome span").forEach(s => {
-      s.style.width = Math.max(6, pct) + "%";
-      s.parentElement.classList.toggle("low", pct <= 20 && !batteryCharging);
-      s.parentElement.title = pct + "%" + (batteryCharging ? " charging" : "");
-    });
+    const bar = $("#stBatt");
+    bar.firstElementChild.style.width = Math.max(6, pct) + "%";
+    bar.classList.toggle("low", pct <= 20 && !charging);
+    bar.title = pct + "%" + (charging ? " charging" : "");
   }
   setInterval(tick, 1000);
 
   /* ============================================================
-     Mini home
+     Home
      ============================================================ */
-  function unreadTotal(){ return state.chats.reduce((n,c) => n + (c.unread||0), 0); }
+  const unreadTotal = () => state.chats.reduce((n,c) => n + (c.unread||0), 0);
 
   function renderHome(){
     const n = unreadTotal();
-    const badge = $("#msgBadge");
+    const badge = $("#badge");
     badge.hidden = n === 0;
-    badge.textContent = n > 99 ? "99+" : n;
+    badge.textContent = n > 9 ? "9+" : n;
 
-    const note = $("#miniNote");
+    const note = $("#note");
     if(n > 0){
       const chat = state.chats.find(c => c.unread > 0);
       const last = chat.messages[chat.messages.length - 1];
       note.hidden = false;
-      $("#miniNoteText").textContent = `${chat.name}: ${last ? last.text : "New message"}`;
-      note.onclick = () => { openThread(chat.id); };
-      note.style.cursor = "pointer";
+      $("#noteTxt").textContent = `${chat.name}: ${last ? last.text : "New message"}`;
+      note.onclick = () => openThread(chat.id);
     }else{
-      note.hidden = true;
-      note.onclick = null;
+      note.hidden = true; note.onclick = null;
     }
-    tick();
-  }
-
-  function applySettingsToScreen(){
-    const s = state.settings;
-    miniScreen.className = "mini-screen " + s.wallpaper;
-    $$(".layer", miniScreen).forEach(l => {
-      l.style.filter = `brightness(${Math.max(35, s.brightness)}%)`;
-    });
-    $("#camGrid").hidden = !s.gridLines;
     tick();
   }
 
   /* ============================================================
      Back camera
      ============================================================ */
-  const video = $("#camVideo");
-  let stream = null;
-  let facing = "environment";     // the rear lens is the default on the case back
-  let torchOn = false;
+  const video = $("#video");
+  let stream = null, facing = "environment", torchOn = false;
 
-  function camMessage(title, text, showBtn = true){
-    $("#camMsgTitle").textContent = title;
-    $("#camMsgText").textContent = text;
-    $("#camStart").style.display = showBtn ? "" : "none";
-    $("#camMsg").hidden = false;
+  function camOff(title, text, btn = true){
+    $("#camOffTitle").textContent = title;
+    $("#camOffText").textContent = text;
+    $("#camStart").style.display = btn ? "" : "none";
+    $("#camOff").hidden = false;
   }
 
   async function startCamera(){
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      camMessage("No camera API", "This browser does not expose getUserMedia, so the viewfinder can't run here.", false);
+      camOff("No camera API", "This browser can't open a camera here. Serve the page over https:// and try again.", false);
       return;
     }
     stopCamera();
@@ -1087,112 +721,89 @@ body{
          { video:true, audio:false }];
 
     let lastErr = null;
-    for(const constraints of attempts){
-      try{
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        break;
-      }catch(err){ lastErr = err; }
+    for(const c of attempts){
+      try{ stream = await navigator.mediaDevices.getUserMedia(c); break; }
+      catch(err){ lastErr = err; }
     }
-
     if(!stream){
-      const name = lastErr && lastErr.name;
-      if(name === "NotAllowedError")      camMessage("Access denied", "Allow camera permission for this page, then tap start again.");
-      else if(name === "NotFoundError")   camMessage("No camera found", "This device reports no video input.");
-      else if(name === "NotReadableError")camMessage("Camera busy", "Another app is using the camera. Close it and try again.");
-      else                                camMessage("Camera unavailable", (lastErr && lastErr.message) || "Could not open a video stream.");
+      const n = lastErr && lastErr.name;
+      if(n === "NotAllowedError")       camOff("Access denied", "Allow camera permission for this page, then tap start again.");
+      else if(n === "NotFoundError")    camOff("No camera", "This device reports no video input.");
+      else if(n === "NotReadableError") camOff("Camera busy", "Another app is using the camera.");
+      else                              camOff("Unavailable", (lastErr && lastErr.message) || "Could not open a video stream.");
       return;
     }
-
-    $("#camMsg").hidden = true;
+    $("#camOff").hidden = true;
     video.srcObject = stream;
     video.classList.toggle("mirror", facing === "user" && state.settings.mirrorFront);
     try{ await video.play(); }catch(e){}
-    updateCamChrome();
+    updateCam();
   }
 
   function stopCamera(){
     torchOn = false;
-    if(stream){
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-    }
+    if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
     video.srcObject = null;
   }
 
-  function updateCamChrome(){
+  function updateCam(){
     const rear = facing === "environment";
     $("#camTitle").textContent = rear ? "Back camera" : "Front camera";
-    $("#camLensChip").textContent = rear ? "REAR" : "FRONT";
-    $("#camCountChip").textContent = state.photos.length + (state.photos.length === 1 ? " shot" : " shots");
+    $("#camChip").textContent = rear ? "REAR" : "FRONT";
     $("#camGrid").hidden = !state.settings.gridLines;
-    const last = state.photos[0];
-    const thumb = $("#camThumb");
+    const last = state.photos[0], thumb = $("#camThumb");
     thumb.style.backgroundImage = last ? `url(${last.data})` : "none";
     thumb.textContent = last ? "" : "▦";
-    if(!stream && $("#camMsg").hidden) camMessage("Camera off", "Tap start and allow camera access to use the rear lens.");
+    if(!stream && $("#camOff").hidden) camOff("Camera off", "Tap start and allow camera access to use the rear lens.");
   }
 
   $("#camStart").addEventListener("click", startCamera);
   $("#camSwap").addEventListener("click", () => {
     facing = facing === "environment" ? "user" : "environment";
-    updateCamChrome();
-    startCamera();
+    updateCam(); startCamera();
   });
 
   $("#camTorch").addEventListener("click", async () => {
-    if(!stream) { toast("Start the camera first"); return; }
+    if(!stream){ toast("Start the camera first"); return; }
     const track = stream.getVideoTracks()[0];
     const caps = track.getCapabilities ? track.getCapabilities() : {};
     if(!caps.torch){ toast("No flash on this lens"); return; }
     torchOn = !torchOn;
-    try{
-      await track.applyConstraints({ advanced:[{ torch: torchOn }] });
-      toast(torchOn ? "Flash on" : "Flash off");
-    }catch(e){ toast("Flash unavailable"); }
+    try{ await track.applyConstraints({ advanced:[{ torch: torchOn }] }); toast(torchOn ? "Flash on" : "Flash off"); }
+    catch(e){ toast("Flash unavailable"); }
   });
 
-  $("#camShutter").addEventListener("click", capture);
+  $("#shutter").addEventListener("click", capture);
 
   function capture(){
     if(!stream || !video.videoWidth){ toast("Camera is not running"); startCamera(); return; }
-
     if(state.settings.shutterFlash){
-      const fx = $("#camFlashFx");
+      const fx = $("#flashfx");
       fx.classList.add("fire");
-      requestAnimationFrame(() => { fx.classList.remove("fire"); });
+      requestAnimationFrame(() => fx.classList.remove("fire"));
     }
-    buzz(18);
+    buzz(16);
 
-    // Crop the live frame to the mini screen's 3:4 shape, then downscale hard —
-    // localStorage is small, so photos are stored at thumbnail-ish resolution.
-    const OUT_W = 480, OUT_H = 640;
+    // The mini screen is square, so shots are square too. Kept small on purpose:
+    // localStorage is the only place they live.
+    const OUT = 512;
     const canvas = document.createElement("canvas");
-    canvas.width = OUT_W; canvas.height = OUT_H;
+    canvas.width = canvas.height = OUT;
     const ctx = canvas.getContext("2d");
-
     const vw = video.videoWidth, vh = video.videoHeight;
-    const targetRatio = OUT_W / OUT_H;
-    let sw = vw, sh = vw / targetRatio;
-    if(sh > vh){ sh = vh; sw = vh * targetRatio; }
-    const sx = (vw - sw) / 2, sy = (vh - sh) / 2;
+    const side = Math.min(vw, vh);
+    const sx = (vw - side) / 2, sy = (vh - side) / 2;
+    if(facing === "user" && state.settings.mirrorFront){ ctx.translate(OUT, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(video, sx, sy, side, side, 0, 0, OUT, OUT);
 
-    if(facing === "user" && state.settings.mirrorFront){
-      ctx.translate(OUT_W, 0);
-      ctx.scale(-1, 1);
-    }
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
-
-    const data = canvas.toDataURL("image/jpeg", 0.72);
-    state.photos.unshift({ id: "p" + Date.now(), data, ts: Date.now(), lens: facing });
-    if(state.photos.length > 12) state.photos.length = 12;   // keep well inside quota
-    save();
-    updateCamChrome();
-    toast("Saved to Shots");
+    state.photos.unshift({ id:"p"+Date.now(), data: canvas.toDataURL("image/jpeg", 0.72), ts:Date.now(), lens:facing });
+    if(state.photos.length > 12) state.photos.length = 12;
+    save(); updateCam(); toast("Saved to Shots");
   }
 
   $("#camThumb").addEventListener("click", () => show("gallery"));
 
-  /* ---------- gallery ---------- */
+  /* ---------- shots ---------- */
   function renderGallery(){
     const grid = $("#galGrid");
     grid.innerHTML = "";
@@ -1210,10 +821,8 @@ body{
   }
 
   $("#galClear").addEventListener("click", () => {
-    if(!state.photos.length) return;
-    if(!confirm("Delete all shots from the mini screen?")) return;
-    state.photos = [];
-    save(); renderGallery(); updateCamChrome(); toast("Shots cleared");
+    if(!state.photos.length || !confirm("Delete all shots?")) return;
+    state.photos = []; save(); renderGallery(); updateCam(); toast("Shots cleared");
   });
 
   let openPhotoId = null;
@@ -1225,12 +834,10 @@ body{
     $("#photoTitle").textContent = new Date(p.ts).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
     show("photo");
   }
-
   $("#photoDelete").addEventListener("click", () => {
     state.photos = state.photos.filter(p => p.id !== openPhotoId);
-    save(); updateCamChrome(); show("gallery"); toast("Deleted");
+    save(); updateCam(); show("gallery"); toast("Deleted");
   });
-
   $("#photoSave").addEventListener("click", () => {
     const p = state.photos.find(x => x.id === openPhotoId);
     if(!p) return;
@@ -1239,68 +846,54 @@ body{
     a.download = "miniphone-" + new Date(p.ts).toISOString().replace(/[:.]/g,"-") + ".jpg";
     a.click();
   });
-
   $("#photoSend").addEventListener("click", () => {
     const p = state.photos.find(x => x.id === openPhotoId);
     if(!p) return;
     const chat = state.chats[0];
     chat.messages.push({ from:"me", text:"📷 Photo from the mini screen", ts:Date.now() });
-    save();
-    openThread(chat.id);
-    toast("Sent to " + chat.name);
-    maybeAutoReply(chat.id);
+    save(); openThread(chat.id); toast("Sent to " + chat.name); autoReply(chat.id);
   });
 
   /* ============================================================
      Messenger
      ============================================================ */
-  const REPLIES = [
-    "haha okay 😄", "on it", "send a photo!", "that mini screen is wild",
-    "yes please", "give me 5 min", "sounds good 👌", "what?? show me",
-    "typing from the big screen tho 😅", "nice one", "ok ok ok", "🔥🔥"
-  ];
-  const QUICKS = ["👍", "On my way", "haha", "Later!", "📷 sending a shot"];
+  const REPLIES = ["haha okay 😄","on it","send a photo!","that mini screen is wild","yes please",
+                   "give me 5 min","sounds good 👌","what?? show me","nice one","ok ok ok","🔥🔥"];
+  const QUICKS = ["👍","On my way","haha","Later!","📷"];
 
-  function renderChatList(){
-    const list = $("#chatList");
-    list.innerHTML = "";
-    state.chats
-      .slice()
-      .sort((a,b) => lastTs(b) - lastTs(a))
-      .forEach(c => {
-        const last = c.messages[c.messages.length - 1];
-        const row = document.createElement("button");
-        row.className = "chat-row";
-        row.innerHTML = `
-          <span class="avatar" style="background:${c.color}">${escapeHtml(initials(c.name))}</span>
-          <span class="chat-meta">
-            <span class="n">${escapeHtml(c.name)}<span>${last ? fmtStamp(last.ts) : ""}</span></span>
-            <span class="p ${c.unread ? "unread" : ""}">${last ? (last.from === "me" ? "You: " : "") + escapeHtml(last.text) : "No messages"}</span>
-          </span>
-          ${c.unread ? `<span class="pill-badge">${c.unread}</span>` : ""}`;
-        row.addEventListener("click", () => openThread(c.id));
-        list.appendChild(row);
-      });
-  }
   const lastTs = c => c.messages.length ? c.messages[c.messages.length-1].ts : 0;
   const initials = n => n.trim().split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
-  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+  const esc = s => String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+
+  function renderChats(){
+    const list = $("#chatList");
+    list.innerHTML = "";
+    state.chats.slice().sort((a,b) => lastTs(b) - lastTs(a)).forEach(c => {
+      const last = c.messages[c.messages.length-1];
+      const row = document.createElement("button");
+      row.className = "chat";
+      row.innerHTML = `
+        <span class="av" style="background:${c.color}">${esc(initials(c.name))}</span>
+        <span class="meta">
+          <span class="n">${esc(c.name)}<span>${last ? fmtStamp(last.ts) : ""}</span></span>
+          <span class="p ${c.unread ? "unread" : ""}">${last ? (last.from === "me" ? "You: " : "") + esc(last.text) : "No messages"}</span>
+        </span>
+        ${c.unread ? `<span class="cnt">${c.unread}</span>` : ""}`;
+      row.addEventListener("click", () => openThread(c.id));
+      list.appendChild(row);
+    });
+  }
 
   let activeChat = null;
   function openThread(id){
     const chat = state.chats.find(c => c.id === id);
     if(!chat) return;
-    activeChat = id;
-    chat.unread = 0;
-    save();
+    activeChat = id; chat.unread = 0; save();
     $("#threadName").textContent = chat.name;
-    const av = $("#threadAvatar");
+    const av = $("#threadAv");
     av.textContent = initials(chat.name);
     av.style.background = chat.color;
-    renderThread();
-    renderQuicks();
-    show("thread");
-    setTimeout(() => $("#msgInput").focus({ preventScroll:true }), 220);
+    renderThread(); renderQuicks(); show("thread");
   }
 
   function renderThread(){
@@ -1311,7 +904,7 @@ body{
     chat.messages.forEach(m => {
       const b = document.createElement("div");
       b.className = "bub " + (m.from === "me" ? "me" : "them");
-      b.innerHTML = escapeHtml(m.text) + `<span class="t">${fmtStamp(m.ts)}</span>`;
+      b.innerHTML = esc(m.text) + `<span class="t">${fmtStamp(m.ts)}</span>`;
       box.appendChild(b);
     });
     scrollThread();
@@ -1320,14 +913,12 @@ body{
     const body = $("#threadBody");
     requestAnimationFrame(() => { body.scrollTop = body.scrollHeight; });
   }
-
   function renderQuicks(){
-    const wrap = $("#quickReplies");
+    const wrap = $("#quick");
     wrap.innerHTML = "";
     QUICKS.forEach(q => {
       const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = q;
+      b.type = "button"; b.textContent = q;
       b.addEventListener("click", () => sendMessage(q));
       wrap.appendChild(b);
     });
@@ -1338,8 +929,7 @@ body{
   $("#composer").addEventListener("submit", (e) => {
     e.preventDefault();
     const text = input.value.trim();
-    if(!text) return;
-    sendMessage(text);
+    if(text) sendMessage(text);
   });
 
   function sendMessage(text){
@@ -1347,33 +937,23 @@ body{
     if(!chat) return;
     chat.messages.push({ from:"me", text, ts:Date.now() });
     save();
-    input.value = "";
-    $("#msgSend").disabled = true;
-    renderThread();
-    buzz(10);
-    maybeAutoReply(chat.id);
+    input.value = ""; $("#msgSend").disabled = true;
+    renderThread(); buzz(8); autoReply(chat.id);
   }
 
   const replyTimers = new Map();
-  function maybeAutoReply(chatId){
-    if(!state.settings.autoReply) return;
-    if(replyTimers.has(chatId)) return;
+  function autoReply(chatId){
+    if(!state.settings.autoReply || replyTimers.has(chatId)) return;
 
-    const showTyping = () => {
-      if(current === "thread" && activeChat === chatId){
-        const box = $("#threadMsgs");
-        if(!$(".typing", box)){
-          const t = document.createElement("div");
-          t.className = "typing";
-          t.innerHTML = "<i></i><i></i><i></i>";
-          box.appendChild(t);
-          scrollThread();
-        }
+    const typingTimer = setTimeout(() => {
+      if(current === "thread" && activeChat === chatId && !$(".typing", $("#threadMsgs"))){
+        const t = document.createElement("div");
+        t.className = "typing"; t.innerHTML = "<i></i><i></i><i></i>";
+        $("#threadMsgs").appendChild(t); scrollThread();
       }
-    };
-    const typingTimer = setTimeout(showTyping, 500);
+    }, 450);
 
-    const timer = setTimeout(() => {
+    replyTimers.set(chatId, setTimeout(() => {
       clearTimeout(typingTimer);
       replyTimers.delete(chatId);
       const chat = state.chats.find(c => c.id === chatId);
@@ -1381,206 +961,205 @@ body{
       chat.messages.push({ from:"them", text: REPLIES[Math.floor(Math.random()*REPLIES.length)], ts:Date.now() });
       if(!(current === "thread" && activeChat === chatId)) chat.unread = (chat.unread||0) + 1;
       save();
-      if(current === "thread" && activeChat === chatId){ renderThread(); buzz(14); }
-      else if(current === "messenger") renderChatList();
+      if(current === "thread" && activeChat === chatId){ renderThread(); buzz(12); }
+      else if(current === "messenger") renderChats();
       else if(current === "home") renderHome();
-    }, 1400 + Math.random()*1600);
-
-    replyTimers.set(chatId, timer);
+    }, 1300 + Math.random()*1500));
   }
 
-  $("#msgReadAll").addEventListener("click", () => {
+  $("#readAll").addEventListener("click", () => {
     state.chats.forEach(c => c.unread = 0);
-    save(); renderChatList(); toast("All marked read");
+    save(); renderChats(); toast("All marked read");
   });
 
   /* ============================================================
      Miniphone Settings
      ============================================================ */
   function renderSettings(){
-    const s = state.settings;
-    const body = $("#settingsBody");
+    const s = state.settings, body = $("#settingsBody");
     body.innerHTML = "";
 
     const group = (title) => {
-      if(title){
-        const h = document.createElement("div");
-        h.className = "set-title"; h.textContent = title;
-        body.appendChild(h);
-      }
-      const g = document.createElement("div");
-      g.className = "set-group";
-      body.appendChild(g);
-      return g;
+      if(title){ const h = document.createElement("div"); h.className = "grp-t"; h.textContent = title; body.appendChild(h); }
+      const g = document.createElement("div"); g.className = "grp"; body.appendChild(g); return g;
     };
     const row = (g, label, sub) => {
-      const r = document.createElement("div");
-      r.className = "set-row";
-      const l = document.createElement("span");
-      l.className = "lbl";
-      l.innerHTML = escapeHtml(label) + (sub ? `<span class="sub">${escapeHtml(sub)}</span>` : "");
-      r.appendChild(l);
-      g.appendChild(r);
-      return r;
+      const r = document.createElement("div"); r.className = "row";
+      const l = document.createElement("span"); l.className = "lbl";
+      l.innerHTML = esc(label) + (sub ? `<span class="sub">${esc(sub)}</span>` : "");
+      r.appendChild(l); g.appendChild(r); return r;
     };
     const toggle = (g, label, key, sub, after) => {
       const r = row(g, label, sub);
       const b = document.createElement("button");
-      b.className = "switch" + (s[key] ? " on" : "");
-      b.innerHTML = "<b></b>";
-      b.setAttribute("role","switch");
-      b.setAttribute("aria-checked", String(!!s[key]));
+      b.className = "sw" + (s[key] ? " on" : ""); b.innerHTML = "<b></b>";
+      b.setAttribute("role","switch"); b.setAttribute("aria-checked", String(!!s[key]));
       b.addEventListener("click", () => {
         s[key] = !s[key];
         b.classList.toggle("on", s[key]);
         b.setAttribute("aria-checked", String(s[key]));
-        save(); applySettingsToScreen(); buzz(8);
-        if(after) after();
+        save(); applyLook(); buzz(6); if(after) after();
       });
       r.appendChild(b);
     };
+    const slider = (g, label, get, set, min, max, step, sub) => {
+      const r = row(g, label, sub);
+      const i = document.createElement("input");
+      i.type = "range"; i.min = min; i.max = max; i.step = step || 1; i.value = get();
+      i.addEventListener("input", () => { set(Number(i.value)); });
+      i.addEventListener("change", save);
+      r.appendChild(i);
+      return i;
+    };
 
-    /* --- device --- */
-    const gGeneral = group("Device");
-    const rName = row(gGeneral, "Name");
+    /* screen fit — the square must land exactly on the black cut-out,
+       and browser chrome shifts the viewport, so it is adjustable. */
+    const gFit = group("Screen fit");
+    const fitNote = row(gFit, "Position the square", "Nudge until it fills the black area exactly");
+    fitNote.querySelector(".lbl").style.opacity = ".75";
+    slider(gFit, "Left",   () => state.geom.x*1000,      v => { state.geom.x = v/1000; applyGeom(); }, 0, 300, 1);
+    slider(gFit, "Top",    () => state.geom.y*1000,      v => { state.geom.y = v/1000; applyGeom(); }, 0, 400, 1);
+    slider(gFit, "Size",   () => state.geom.size*1000,   v => { state.geom.size = v/1000; applyGeom(); }, 200, 950, 1);
+    slider(gFit, "Corner", () => state.geom.radius*100,  v => { state.geom.radius = v/100; applyGeom(); }, 0, 50, 1);
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    const rMode = row(gFit, "Display mode",
+      standalone ? "Fullscreen — the square lands exactly as measured"
+                 : "In browser — Add to Home Screen for an exact fit");
+    const modeVal = document.createElement("span");
+    modeVal.className = "val"; modeVal.textContent = standalone ? "Standalone" : "Browser";
+    rMode.appendChild(modeVal);
+
+    const rFit = row(gFit, "Reset to photo measurements");
+    rFit.classList.add("tap");
+    rFit.addEventListener("click", () => {
+      state.geom = Object.assign({}, GEOM_DEFAULT);
+      save(); applyGeom(); renderSettings(); toast("Fit reset");
+    });
+
+    /* device */
+    const gDev = group("Device");
+    const rName = row(gDev, "Name");
     const nameInput = document.createElement("input");
-    nameInput.type = "text"; nameInput.value = s.deviceName; nameInput.maxLength = 24;
+    nameInput.type = "text"; nameInput.value = s.deviceName; nameInput.maxLength = 20;
     nameInput.addEventListener("change", () => {
       s.deviceName = nameInput.value.trim() || "Miniphone";
-      save(); toast("Renamed to " + s.deviceName);
+      save(); toast("Renamed");
     });
     rName.appendChild(nameInput);
-    toggle(gGeneral, "24-hour clock", "use24h", null, tick);
-    toggle(gGeneral, "Always-on mini screen", "alwaysOn", "Keep the back display lit while flipped");
-    toggle(gGeneral, "Haptics", "haptics", "Buzz on taps and new messages");
+    toggle(gDev, "24-hour clock", "use24h", null, tick);
+    toggle(gDev, "Keep screen awake", "keepAwake", "Hold a wake lock while the mini screen is on", setupWakeLock);
+    toggle(gDev, "Haptics", "haptics", "Buzz on taps and new messages");
 
-    /* --- display --- */
-    const gDisplay = group("Display");
-    const rBright = row(gDisplay, "Brightness");
-    const range = document.createElement("input");
-    range.type = "range"; range.min = "40"; range.max = "100"; range.value = s.brightness;
-    range.addEventListener("input", () => {
-      s.brightness = Number(range.value);
-      applySettingsToScreen();
-    });
-    range.addEventListener("change", save);
-    rBright.appendChild(range);
-
-    const wpTitle = document.createElement("div");
-    wpTitle.className = "set-row"; wpTitle.innerHTML = '<span class="lbl">Wallpaper</span>';
-    gDisplay.appendChild(wpTitle);
-    const picker = document.createElement("div");
-    picker.className = "wp-picker";
+    /* display */
+    const gDis = group("Display");
+    slider(gDis, "Brightness", () => s.brightness, v => { s.brightness = v; applyLook(); }, 40, 100, 1);
+    const wpRow = document.createElement("div"); wpRow.className = "row";
+    wpRow.innerHTML = '<span class="lbl">Wallpaper</span>';
+    gDis.appendChild(wpRow);
+    const wps = document.createElement("div"); wps.className = "wps";
     WALLPAPERS.forEach(w => {
       const b = document.createElement("button");
-      b.style.background = w.css;
-      b.title = w.name;
+      b.style.background = w.css; b.title = w.name;
       b.className = s.wallpaper === w.id ? "sel" : "";
-      b.addEventListener("click", () => {
-        s.wallpaper = w.id;
-        save(); applySettingsToScreen(); renderSettings(); toast(w.name);
-      });
-      picker.appendChild(b);
+      b.addEventListener("click", () => { s.wallpaper = w.id; save(); applyLook(); renderSettings(); toast(w.name); });
+      wps.appendChild(b);
     });
-    gDisplay.appendChild(picker);
+    gDis.appendChild(wps);
 
-    /* --- camera --- */
+    /* camera */
     const gCam = group("Camera");
-    toggle(gCam, "Grid lines", "gridLines", "Rule-of-thirds overlay in the viewfinder");
-    toggle(gCam, "Mirror front lens", "mirrorFront", "Selfies look like the preview");
-    toggle(gCam, "Shutter flash", "shutterFlash", "White blink when a shot is taken");
+    toggle(gCam, "Grid lines", "gridLines", "Rule-of-thirds overlay");
+    toggle(gCam, "Mirror front lens", "mirrorFront");
+    toggle(gCam, "Shutter flash", "shutterFlash");
     const rShots = row(gCam, "Stored shots");
     const shotsVal = document.createElement("span");
-    shotsVal.className = "val";
-    shotsVal.textContent = `${state.photos.length} / 12`;
+    shotsVal.className = "val"; shotsVal.textContent = state.photos.length + " / 12";
     rShots.appendChild(shotsVal);
 
-    /* --- messenger --- */
+    /* messenger */
     const gMsg = group("Messenger");
-    toggle(gMsg, "Auto-replies", "autoReply", "Contacts answer back after a moment");
-    const rUnread = row(gMsg, "Unread");
-    const unreadVal = document.createElement("span");
-    unreadVal.className = "val"; unreadVal.textContent = unreadTotal();
-    rUnread.appendChild(unreadVal);
-    const rClear = row(gMsg, "Clear all conversations");
-    rClear.classList.add("tap");
-    rClear.querySelector(".lbl").classList.add("danger");
-    rClear.addEventListener("click", () => {
-      if(!confirm("Delete every message in Messenger?")) return;
+    toggle(gMsg, "Auto-replies", "autoReply", "Contacts answer back");
+    const rUn = row(gMsg, "Unread");
+    const unVal = document.createElement("span");
+    unVal.className = "val"; unVal.textContent = unreadTotal();
+    rUn.appendChild(unVal);
+    const rClr = row(gMsg, "Clear conversations");
+    rClr.classList.add("tap"); rClr.querySelector(".lbl").classList.add("danger");
+    rClr.addEventListener("click", () => {
+      if(!confirm("Delete every message?")) return;
       state.chats.forEach(c => { c.messages = []; c.unread = 0; });
-      save(); renderSettings(); toast("Conversations cleared");
+      save(); renderSettings(); toast("Cleared");
     });
 
-    /* --- about --- */
-    const gAbout = group("About");
+    /* about */
+    const gAb = group("About");
     const hero = document.createElement("div");
-    hero.className = "about-hero";
-    hero.innerHTML = `<div class="m">${escapeHtml(s.deviceName)}</div><div class="s">Mini screen · 258 × 336 · flip-case display</div>`;
-    gAbout.appendChild(hero);
-    const rVer = row(gAbout, "Software");
-    const ver = document.createElement("span"); ver.className = "val"; ver.textContent = "MiniOS 1.0";
-    rVer.appendChild(ver);
-    const rCam = row(gAbout, "Rear lens");
-    const camv = document.createElement("span"); camv.className = "val";
-    camv.textContent = stream ? "Live" : "Idle";
-    rCam.appendChild(camv);
-    const rStore = row(gAbout, "Storage used");
-    const st = document.createElement("span"); st.className = "val";
-    st.textContent = storageUsed();
-    rStore.appendChild(st);
+    hero.className = "hero";
+    const W = phone.clientWidth;
+    hero.innerHTML = `<div class="m">${esc(s.deviceName)}</div>
+      <div class="s">Mini screen · ${Math.round(state.geom.size*W)}×${Math.round(state.geom.size*W)} pt</div>`;
+    gAb.appendChild(hero);
+    const rSw = row(gAb, "Software");
+    const sw = document.createElement("span"); sw.className = "val"; sw.textContent = "MiniOS 1.1";
+    rSw.appendChild(sw);
+    const rLens = row(gAb, "Rear lens");
+    const lensVal = document.createElement("span"); lensVal.className = "val"; lensVal.textContent = stream ? "Live" : "Idle";
+    rLens.appendChild(lensVal);
+    const rSt = row(gAb, "Storage used");
+    const stVal = document.createElement("span"); stVal.className = "val"; stVal.textContent = storageUsed();
+    rSt.appendChild(stVal);
 
-    const gReset = group(null);
-    const rReset = row(gReset, "Reset Miniphone");
-    rReset.classList.add("tap");
-    rReset.querySelector(".lbl").classList.add("danger");
-    rReset.addEventListener("click", () => {
-      if(!confirm("Erase all settings, shots and messages?")) return;
+    const gRe = group(null);
+    const rRe = row(gRe, "Reset Miniphone");
+    rRe.classList.add("tap"); rRe.querySelector(".lbl").classList.add("danger");
+    rRe.addEventListener("click", () => {
+      if(!confirm("Erase settings, shots and messages?")) return;
       localStorage.removeItem(STORE_KEY);
       state = defaultState();
-      applySettingsToScreen();
-      renderSettings();
-      updateCamChrome();
-      toast("Miniphone reset");
+      applyLook(); renderSettings(); updateCam(); toast("Reset");
     });
 
     const foot = document.createElement("div");
-    foot.className = "setfoot";
-    foot.textContent = "Everything stays on this device. Photos never leave the browser.";
+    foot.className = "foot";
+    foot.textContent = "Everything stays on this device.";
     body.appendChild(foot);
   }
 
   function storageUsed(){
     try{
       const bytes = new Blob([localStorage.getItem(STORE_KEY) || ""]).size;
-      return bytes > 1024*1024
-        ? (bytes/1024/1024).toFixed(1) + " MB"
-        : Math.max(1, Math.round(bytes/1024)) + " KB";
+      return bytes > 1048576 ? (bytes/1048576).toFixed(1) + " MB" : Math.max(1, Math.round(bytes/1024)) + " KB";
     }catch(e){ return "—"; }
   }
 
   /* ============================================================
-     Flip-to-wake via the real device, when the sensor exists
+     Wake lock — a cover screen that sleeps is no cover screen
      ============================================================ */
-  if(window.DeviceOrientationEvent && "ontouchstart" in window){
-    let lastFlip = 0;
-    window.addEventListener("deviceorientation", (e) => {
-      if(e.beta === null) return;
-      const faceDown = Math.abs(e.beta) < 25 && Math.abs(e.gamma) < 25 && e.beta < 0;
-      const now = Date.now();
-      if(faceDown && !device.classList.contains("flipped") && now - lastFlip > 2500){
-        lastFlip = now;
-        flip(true);
+  let wakeLock = null;
+  async function setupWakeLock(){
+    if(!("wakeLock" in navigator)) return;
+    try{
+      if(state.settings.keepAwake && !wakeLock && document.visibilityState === "visible"){
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.addEventListener("release", () => { wakeLock = null; });
+      }else if(!state.settings.keepAwake && wakeLock){
+        await wakeLock.release(); wakeLock = null;
       }
-    }, { passive:true });
+    }catch(e){ /* denied or unsupported — nothing to do */ }
   }
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState === "visible") setupWakeLock();
+    else stopCamera();          // the lens never runs while the page is hidden
+  });
 
   /* ============================================================
      Boot
      ============================================================ */
-  applySettingsToScreen();
+  applyLook();
   renderHome();
-  updateCamChrome();
+  updateCam();
   tick();
+  setupWakeLock();
 })();
 </script>
 </body>
