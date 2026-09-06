@@ -50,6 +50,8 @@ const DOWNLOADS = [
     meta: 'x86-64 · chmod +x and run' },
   { os: 'linux', icon: 'LNX', title: 'Hazelnut Mini for Linux', file: 'HazelnutMini-linux-x64',
     meta: 'x86-64 · chmod +x and run' },
+  { os: 'linux', icon: 'AND', title: 'Hazelnut Mini for Android', file: 'HazelnutMini.apk',
+    meta: 'Android 5.0 and up · sideload — allow installs from your browser or files app' },
   { os: 'src', icon: 'SRC', title: 'Source', file: 'Hazelnut-source.zip',
     meta: 'Every platform · npm install && npm start' },
 ];
@@ -257,8 +259,9 @@ npm test           # 64 tests</pre>
     </div>
 
     <div class="note note--warn" style="margin-top:16px">
-      <h4>No .dmg, .msi or .apk here</h4>
-      <p>An installer package needs a Mac, NSIS and the Android SDK respectively. The repository ships a workflow that builds all three on the machines that can.</p>
+      <h4>The Android build is signed with a debug key</h4>
+      <p>It installs and runs, but Android will show the usual warning for an app from outside the Play Store, and a debug key cannot be used to publish. A release key belongs in the build workflow, not in a download page.</p>
+      <p style="margin-top:8px">There is no .dmg or .msi: an installer package needs a Mac and NSIS respectively. The apps above need neither — there is nothing to install.</p>
     </div>
   </div>
 </section>

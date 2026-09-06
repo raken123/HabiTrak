@@ -102,7 +102,14 @@ export function createWebBridge() {
       const { mimeType, base64 } = parseDataUrl(dataUrl);
       const name = `hazelnut-mini-${Date.now()}.${mimeType.includes('jpeg') ? 'jpg' : 'png'}`;
 
-      // On Android, hand the file to the platform so it lands in the gallery.
+      // The Android build writes the bytes itself: a WebView will not act on an
+      // <a download>, so the launcher's Java side is handed the base64 instead.
+      if (globalThis.HazelnutAndroid?.save) {
+        const written = globalThis.HazelnutAndroid.save(base64, name);
+        return { path: written || name };
+      }
+
+      // A Capacitor build, if one is ever made, has its own filesystem plugin.
       const filesystem = globalThis.Capacitor?.Plugins?.Filesystem;
       if (filesystem) {
         await filesystem.writeFile({ path: name, data: base64, directory: 'DOCUMENTS' });

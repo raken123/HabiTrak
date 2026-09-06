@@ -38,3 +38,7 @@ dist/
 
 # launcher payload is assembled at build time
 launcher/payload/
+android/assets/
+android/build/
+android/out/
+android/*.orig
