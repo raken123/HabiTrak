@@ -1,0 +1,293 @@
+// Build the download page.
+//
+// Sizes and checksums are read from the files in dist/ rather than typed, so
+// the page cannot drift from what it is offering. Screenshots and icons are
+// inlined as data URIs, so the page is one self-contained file that works from
+// a disk, a web server or an email attachment.
+//
+//   node scripts/build-landing.mjs
+
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SITE = path.join(ROOT, 'site');
+const DIST = path.join(ROOT, 'dist');
+
+const dataUri = (file, mime) =>
+  `data:${mime};base64,${fs.readFileSync(path.join(SITE, file)).toString('base64')}`;
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function fileInfo(name) {
+  const file = path.join(DIST, name);
+  if (!fs.existsSync(file)) return null;
+  const bytes = fs.statSync(file).size;
+  return {
+    name,
+    bytes,
+    size: `${(bytes / 1024 / 1024).toFixed(bytes > 10 * 1024 * 1024 ? 0 : 1)} MB`,
+    sha256: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
+  };
+}
+
+const DOWNLOADS = [
+  { os: 'win', icon: 'WIN', title: 'Hazelnut for Windows', file: 'Hazelnut-1.0.0-win-x64.zip',
+    meta: 'Windows 10 or 11, 64-bit · portable — unzip and run Hazelnut.exe' },
+  { os: 'win', icon: 'WIN', title: 'Hazelnut Mini for Windows', file: 'HazelnutMini-1.0.0-win-x64.zip',
+    meta: 'Windows 10 or 11, 64-bit · portable' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS', file: 'Hazelnut-1.0.0-mac-arm64.zip',
+    meta: 'Apple silicon · unzip and drag to Applications' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS', file: 'HazelnutMini-1.0.0-mac-arm64.zip',
+    meta: 'Apple silicon' },
+  { os: 'linux', icon: 'LNX', title: 'Hazelnut for Linux', file: 'hazelnut_1.0.0_amd64.deb',
+    meta: 'Debian, Ubuntu and derivatives · amd64' },
+  { os: 'linux', icon: 'LNX', title: 'Hazelnut Mini for Linux', file: 'hazelnut-mini_1.0.0_amd64.deb',
+    meta: 'Debian, Ubuntu and derivatives · amd64' },
+  { os: 'src', icon: 'SRC', title: 'Source', file: 'Hazelnut-source.zip',
+    meta: 'Every platform · npm install && npm start' },
+];
+
+const TOOLS = [
+  ['Draw', 'A brush, a colour and a size. It paints on the active layer, runs entirely on your machine, and works on every edition.', 'Free', true],
+  ['Magic Draw', 'Sketch roughly in 2D, describe it in a line, press Submit — and the realistic version of your drawing comes back as a new layer, over the sketch.', '5–20 credits', false],
+  ['Realtouch', 'Paint over what you want gone. Realtouch works out where the photograph was taken, looks the place up, and reasons about what the object is hiding before it fills the gap.', '20 credits', false],
+  ['GIF Animate', 'Describe the motion and get up to five seconds back, encoded into a looping GIF by an encoder built into the app.', '600 credits', false],
+  ['Expand', 'Pull the canvas out in any direction. The new margin is filled by mirroring the edge, so it reads as more picture rather than a border.', 'Never costs a credit', true],
+  ['AIScope', 'Magnify from 80× to 60,000×. The badge stops saying “optical” the moment there is no real detail left — it will not pretend. Learn studies the crop and writes down what the thing is.', 'Free · Learn 15', false],
+];
+
+const PLANS = [
+  { name: 'Hazelnut Free', price: 'Free', per: '', lead: false,
+    blurb: 'What is left when the model is taken away — which is most of the editor.',
+    points: ['Draw, Expand and the AIScope zoom', 'Layers, history, the whole workspace', 'No expiry, no account', 'Windows and Mac'] },
+  { name: 'Hazelnut', price: '$19.99', per: '/ month', lead: true,
+    blurb: 'The full app. Six tools, and a monthly allowance of credits.',
+    points: ['Every tool unlocked', '5,000 credits a month', 'About 250 removals, or 8 full-length GIFs', 'Windows and Mac'] },
+  { name: 'Hazelnut Mini', price: '$9.99', per: '/ month', lead: false,
+    blurb: 'The remover on its own, behind one chat bar. Exactly half the price.',
+    points: ['1,500 credits a month', 'About 75 removals', 'Say what should go, in words', 'Windows, Mac and Android'] },
+];
+
+const rows = DOWNLOADS.map((d) => ({ ...d, info: fileInfo(d.file) })).filter((d) => d.info);
+const missing = DOWNLOADS.filter((d) => !fileInfo(d.file)).map((d) => d.file);
+
+const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hazelnut — downloads</title>
+<meta name="description" content="Hazelnut is an advanced AI photo generator for Windows and Mac. Free for seven days, then it keeps working without the AI. Hazelnut Mini removes things from photos on Windows, Mac and Android, for half the price." />
+<link rel="icon" href="${dataUri('icon.png', 'image/png')}" />
+<style>
+${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top__in">
+    <a class="brand" href="#top"><img src="${dataUri('icon.png', 'image/png')}" alt="" /> Hazelnut</a>
+    <nav>
+      <a href="#tools">Tools</a>
+      <a href="#apps">The two apps</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#downloads">Downloads</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero">
+  <div class="wrap hero__in">
+    <p class="eyebrow">Windows · Mac · Android</p>
+    <h1>An advanced AI<br />photo generator.</h1>
+    <p class="lede">Six tools in a workspace built like a photo editor should be. Two of them never touch a model, so they keep working for ever — free.</p>
+    <div class="cta" id="cta">
+      <a class="btn btn--primary" href="#downloads" id="cta-primary">Download Hazelnut <small id="cta-os"></small></a>
+      <a class="btn" href="#film">Watch the 3-minute film</a>
+    </div>
+    <p class="trial-note"><b>Free for 7 days</b>, every tool unlocked, 1,200 credits, no card. Then it becomes Hazelnut Free rather than locking.</p>
+  </div>
+  <div class="wrap">
+    <div class="shot"><img src="${dataUri('s-editor.jpg', 'image/jpeg')}" alt="The Hazelnut editor with a photograph open, AIScope magnifying a detail at 240×." width="1800" /></div>
+  </div>
+</section>
+
+<section id="tools" class="alt">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">The toolbar</p>
+      <h2>Six tools. Two of them never touch a model.</h2>
+      <p>Every price is quoted before anything is spent, and credits are only taken once a result actually comes back. A generation that fails, is refused, or that you cancel costs you nothing.</p>
+    </div>
+    <div class="tools">
+      ${TOOLS.map(([name, line, cost, free]) => `<div class="tool">
+        <div class="tool__top"><h3>${esc(name)}</h3><span class="cost${free ? ' cost--free' : ''}">${esc(cost)}</span></div>
+        <p>${line}</p>
+      </div>`).join('\n      ')}
+    </div>
+  </div>
+</section>
+
+<section id="apps">
+  <div class="wrap apps">
+    <div>
+      <p class="eyebrow">Two apps</p>
+      <h2>The whole editor, or just the one thing.</h2>
+      <ul>
+        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all six tools. Windows and Mac.</li>
+        <li><b>Hazelnut Mini</b> is the remover on its own, behind a single chat bar. Attach a photo, say what should go, and the picture that comes back becomes the one you are working on. Windows, Mac and <b>Android</b>.</li>
+        <li><b>Hazelnut Free</b> is what the trial becomes. The same editor, minus anything that needs a model — the tools that run locally stay, for ever.</li>
+      </ul>
+      <div class="note" style="margin-top:26px">
+        <h4>You bring the key</h4>
+        <p>The AI tools call Google’s Gemini API with your own API key, entered in Settings. It is stored on your machine and is sent nowhere but Google. Draw, Expand and the AIScope zoom need no key at all.</p>
+      </div>
+    </div>
+    <div class="mini-shot"><img src="${dataUri('s-mini.jpg', 'image/jpeg')}" alt="Hazelnut Mini: a chat bar with a photo attached and the message “remove the litter bin by the path”." width="760" /></div>
+  </div>
+</section>
+
+<section id="film" class="alt">
+  <div class="wrap film">
+    <div class="head" style="justify-items:center;text-align:center;margin-bottom:0">
+      <p class="eyebrow">Three minutes</p>
+      <h2>See it work.</h2>
+    </div>
+    <video controls preload="none" poster="${dataUri('s-poster.jpg', 'image/jpeg')}" src="Hazelnut-ad-3min.mp4"></video>
+    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on.</p>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Pricing</p>
+      <h2>Seven days free. Then it does not lock.</h2>
+      <p>Mini is exactly half the price of Hazelnut — in the code as well as on this page, so the two can never drift apart.</p>
+    </div>
+    <div class="plans">
+      ${PLANS.map((p) => `<div class="plan${p.lead ? ' plan--lead' : ''}">
+        ${p.lead ? '<span class="tagpill">Most complete</span>' : ''}
+        <h3>${esc(p.name)}</h3>
+        <div class="price">${esc(p.price)}<span> ${esc(p.per)}</span></div>
+        <p style="color:var(--muted);font-size:15px">${esc(p.blurb)}</p>
+        <ul>${p.points.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+      </div>`).join('\n      ')}
+    </div>
+  </div>
+</section>
+
+<section id="downloads" class="alt">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Downloads</p>
+      <h2>Version 1.0.0</h2>
+      <p>The Windows and macOS builds are unsigned, so both systems will warn on first launch — the steps are below. Put this page in the same folder as the files and every link here works offline.</p>
+    </div>
+
+    <div class="dl">
+      ${rows.map((d) => `<div class="row" data-os="${d.os}">
+        <div class="row__os">${d.icon}</div>
+        <div>
+          <h3>${esc(d.title)}</h3>
+          <div class="meta">${esc(d.meta)}</div>
+        </div>
+        <div class="size">${esc(d.info.size)}</div>
+        <a class="btn" href="${encodeURI(d.file)}" download>Download</a>
+      </div>`).join('\n      ')}
+    </div>
+
+    <div class="dl sums" style="margin-top:28px">
+      <details>
+        <summary>Installing, and getting past the warnings</summary>
+        <div class="details-body">
+          <div>
+            <h4>Windows</h4>
+            <p style="color:var(--muted);font-size:15px;margin:6px 0 10px">Unzip anywhere, open the folder and run <code>Hazelnut.exe</code>. Keep the .exe with the files beside it. SmartScreen will warn because the build is not code signed — choose <b>More info</b>, then <b>Run anyway</b>.</p>
+          </div>
+          <div>
+            <h4>macOS</h4>
+            <p style="color:var(--muted);font-size:15px;margin:6px 0 10px">Unzip and drag the app into Applications. It is not notarised, so Gatekeeper refuses the first launch: right-click the app and choose <b>Open</b>, or run</p>
+            <pre>xattr -dr com.apple.quarantine "/Applications/Hazelnut.app"</pre>
+          </div>
+          <div>
+            <h4>Linux</h4>
+            <pre>sudo dpkg -i hazelnut_1.0.0_amd64.deb
+sudo apt-get -f install   # only if dpkg reports missing dependencies</pre>
+          </div>
+          <div>
+            <h4>From source</h4>
+            <pre>npm install
+npm start          # Hazelnut
+npm run start:mini # Hazelnut Mini
+npm test           # 64 tests</pre>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Checksums</summary>
+        <div class="details-body">
+          <p style="color:var(--muted);font-size:15px">Verify with <code>sha256sum -c</code> on Linux, or <code>shasum -a 256 -c</code> on macOS.</p>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>File</th><th>Size</th><th>SHA-256</th></tr></thead>
+              <tbody>
+                ${rows.map((d) => `<tr><td>${esc(d.file)}</td><td>${esc(d.info.size)}</td><td class="hash">${d.info.sha256}</td></tr>`).join('\n                ')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="note note--warn" style="margin-top:28px">
+      <h4>No .dmg, .exe installer or .apk here</h4>
+      <p>Those need a Mac, NSIS and the Android SDK respectively. The repository ships a GitHub Actions workflow that builds all four on the runners that can — push a <code>v*</code> tag and they are attached to a release.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Hazelnut 1.0.0 — an advanced AI photo generator.</span>
+    <span>Draw and Expand never leave your machine.</span>
+  </div>
+</footer>
+
+<script>
+  // Point the hero button at the build for whoever is reading, and mark that
+  // row, without pretending to know more than the user agent says.
+  (function () {
+    var ua = navigator.userAgent;
+    var os = /Windows/i.test(ua) ? 'win' : /Mac|iPhone|iPad/i.test(ua) ? 'mac' : /Linux|Android/i.test(ua) ? 'linux' : null;
+    if (!os) return;
+    var label = { win: 'for Windows', mac: 'for macOS', linux: 'for Linux' }[os];
+    document.getElementById('cta-os').textContent = label;
+    var row = document.querySelector('.row[data-os="' + os + '"]');
+    if (!row) return;
+    row.classList.add('is-you');
+    var link = row.querySelector('a.btn');
+    var cta = document.getElementById('cta-primary');
+    cta.setAttribute('href', link.getAttribute('href'));
+    cta.setAttribute('download', '');
+  })();
+</script>
+</body>
+</html>
+`;
+
+fs.mkdirSync(DIST, { recursive: true });
+const out = path.join(DIST, 'Hazelnut-downloads.html');
+fs.writeFileSync(out, html);
+
+console.log(`${path.relative(ROOT, out)} — ${(fs.statSync(out).size / 1024).toFixed(0)} KB, ${rows.length} downloads listed`);
+if (missing.length) console.log(`not built, so not listed: ${missing.join(', ')}`);
