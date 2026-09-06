@@ -1,0 +1,16 @@
+{
+  "appId": "com.hazelnut.mini",
+  "appName": "Hazelnut Mini",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": false
+    }
+  }
+}

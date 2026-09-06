@@ -1,0 +1,53 @@
+{
+  "name": "hazelnut-mini",
+  "productName": "Hazelnut Mini",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One chat bar that removes things. Windows, Mac and Android. Half the price of Hazelnut.",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "sync:core": "node scripts/sync-core.mjs",
+    "start": "npm run sync:core && electron .",
+    "dist": "npm run sync:core && electron-builder --win --mac",
+    "dist:win": "npm run sync:core && electron-builder --win",
+    "dist:mac": "npm run sync:core && electron-builder --mac",
+    "android:sync": "npm run sync:core && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build": "npm run android:sync && npx cap run android"
+  },
+  "dependencies": {
+    "@hazelnut/core": "*"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "optionalDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "build": {
+    "appId": "com.hazelnut.mini",
+    "productName": "Hazelnut Mini",
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": ["electron/**/*", "www/**/*", "!**/*.map"],
+    "asar": true,
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64", "arm64"] }],
+      "icon": "build/icon.png",
+      "artifactName": "HazelnutMini-${version}-${arch}.${ext}"
+    },
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Hazelnut Mini" },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "icon": "build/icon.png",
+      "category": "public.app-category.photography",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "artifactName": "HazelnutMini-${version}-${arch}.${ext}"
+    }
+  }
+}

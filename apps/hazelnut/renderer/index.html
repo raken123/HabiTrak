@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'" />
+  <title>Hazelnut</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/panels.css" />
+</head>
+<body>
+  <div id="app" class="app" data-tool="draw">
+
+    <!-- ── menu bar ─────────────────────────────────────────────────────── -->
+    <header class="menubar" id="menubar">
+      <div class="menubar__brand">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2.6c3.9 0 7.2 3 7.2 7 0 4.6-3.1 8.4-7.2 12.4C7.9 18 4.8 14.2 4.8 9.6c0-4 3.3-7 7.2-7Z" fill="currentColor" opacity=".9"/>
+          <path d="M12 6.2c2 0 3.6 1.5 3.6 3.5S14 13.2 12 13.2 8.4 11.7 8.4 9.7 10 6.2 12 6.2Z" fill="#1b1b1b"/>
+        </svg>
+        <span>Hazelnut</span>
+      </div>
+
+      <nav class="menubar__menus" id="app-menus">
+        <button class="menu" data-menu="file">File</button>
+        <button class="menu" data-menu="edit">Edit</button>
+        <button class="menu" data-menu="image">Image</button>
+        <button class="menu" data-menu="layer">Layer</button>
+        <button class="menu" data-menu="tools">Tools</button>
+        <button class="menu" data-menu="help">Help</button>
+      </nav>
+
+      <div class="menubar__right">
+        <button class="pill pill--edition" id="edition-pill" title="Your current edition">Free</button>
+        <button class="pill pill--credits" id="credits-pill" title="AI credits remaining">
+          <svg viewBox="0 0 16 16" class="pill__icon" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.4v7.2M5.6 6.6h4.8M5.6 9.4h4.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span id="credits-value">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── options bar (per-tool) ───────────────────────────────────────── -->
+    <div class="optionsbar" id="optionsbar"></div>
+
+    <!-- ── main body ────────────────────────────────────────────────────── -->
+    <div class="body">
+      <aside class="toolbar" id="toolbar" aria-label="Tools"></aside>
+
+      <main class="stage" id="stage">
+        <canvas id="viewport" class="viewport"></canvas>
+        <div class="stage__empty" id="stage-empty">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="10" width="36" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="20" r="3.4" fill="currentColor"/><path d="M8 33l10-9 7 6 6-5 9 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          <h2>Nothing open</h2>
+          <p>Open a photo, or start a blank canvas and draw on it.</p>
+          <div class="stage__empty-actions">
+            <button class="btn btn--primary" data-command="file:open">Open Image…</button>
+            <button class="btn" data-command="file:new">New Canvas</button>
+          </div>
+        </div>
+        <div class="stage__overlay" id="stage-overlay" hidden></div>
+      </main>
+
+      <aside class="panels" id="panels" aria-label="Panels">
+        <section class="panel" data-panel="layers">
+          <header class="panel__head">
+            <h3>Layers</h3>
+            <div class="panel__actions">
+              <button class="iconbtn" data-command="layer:new" title="New layer">+</button>
+              <button class="iconbtn" data-command="layer:duplicate" title="Duplicate layer">⧉</button>
+              <button class="iconbtn" data-command="layer:delete" title="Delete layer">🗑</button>
+            </div>
+          </header>
+          <div class="panel__body">
+            <label class="opacity-row">
+              <span>Opacity</span>
+              <input type="range" id="layer-opacity" min="0" max="100" value="100" />
+              <output id="layer-opacity-value">100%</output>
+            </label>
+            <ul class="layerlist" id="layerlist"></ul>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="scope" id="scope-panel" hidden>
+          <header class="panel__head"><h3>AIScope</h3></header>
+          <div class="panel__body">
+            <canvas id="scope-canvas" class="scope-canvas" width="252" height="252"></canvas>
+            <div class="scope-readout">
+              <span id="scope-zoom">80×</span>
+              <span id="scope-quality" class="scope-quality">optical</span>
+            </div>
+            <input type="range" id="scope-zoom-slider" min="80" max="60000" value="80" />
+            <button class="btn btn--primary btn--block" id="scope-learn">Learn this <span class="cost">15</span></button>
+            <div class="scope-card" id="scope-card"></div>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="history">
+          <header class="panel__head"><h3>History</h3></header>
+          <div class="panel__body">
+            <ul class="historylist" id="historylist"></ul>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="color">
+          <header class="panel__head"><h3>Colour</h3></header>
+          <div class="panel__body">
+            <div class="colorrow">
+              <input type="color" id="color-input" value="#e8622c" aria-label="Brush colour" />
+              <div class="swatches" id="swatches"></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- ── status bar ───────────────────────────────────────────────────── -->
+    <footer class="statusbar">
+      <button class="status__zoom" id="status-zoom">100%</button>
+      <span class="status__size" id="status-size">—</span>
+      <span class="status__sep"></span>
+      <span class="status__hint" id="status-hint">Draw — paint on the active layer.</span>
+      <span class="status__spacer"></span>
+      <span class="status__job" id="status-job" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="status-job-text">Working…</span>
+        <button class="linkbtn" id="status-job-cancel">Cancel</button>
+      </span>
+    </footer>
+  </div>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <div class="modal-root" id="modal-root"></div>
+  <div class="menu-root" id="menu-root"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

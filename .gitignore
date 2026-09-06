@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# secrets — never commit an API key
+.env
+.env.*
+!.env.example
+*.key
+secrets.json
+hazelnut.config.json
+
+# build output
+dist/
+release/
+out/
+build/Release/
+apps/*/dist/
+apps/*/release/
+
+# android (capacitor)
+apps/hazelnut-mini/android/
+apps/hazelnut-mini/ios/
+
+# local state written at runtime
+.hazelnut/
+*.log
+npm-debug.log*
+
+# os cruft
+.DS_Store
+Thumbs.db
