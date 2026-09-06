@@ -15,11 +15,17 @@ import { LocalStore } from './localstore.js';
 
 const KEY_STORAGE = 'hazelnut-mini-api-key';
 
+// Under the desktop launcher the page is served from loopback and Gemini is
+// reached through that same origin, so the browser never makes a cross-origin
+// request. On Android there is no launcher, and the call goes out directly.
+const VIA_LAUNCHER = location.origin.startsWith('http://127.0.0.1');
+const API_BASE = VIA_LAUNCHER ? '/api/v1beta' : undefined;
+
 export function createWebBridge() {
   const store = new LocalStore('hazelnut-mini-state', { ...LICENSE_DEFAULTS, ...CREDIT_DEFAULTS, product: 'mini' });
   const license = new License(store, { product: 'mini' });
   const credits = new Credits(store);
-  const client = new GeminiClient({ apiKey: readKey() });
+  const client = new GeminiClient({ apiKey: readKey(), ...(API_BASE ? { apiBase: API_BASE } : {}) });
   const engine = new Engine({ client, credits, license });
 
   function readKey() {
@@ -38,8 +44,19 @@ export function createWebBridge() {
     removalCost: 20,
   });
 
+  if (VIA_LAUNCHER) {
+    // Tell the launcher the window is still open; when these stop arriving it
+    // shuts down, so closing the window ends the process.
+    const beat = () => { fetch('/__alive', { method: 'POST', keepalive: true }).catch(() => {}); };
+    beat();
+    setInterval(beat, 2000);
+    window.addEventListener('pagehide', () => {
+      fetch('/__closing', { method: 'POST', keepalive: true }).catch(() => {});
+    });
+  }
+
   return {
-    kind: 'web',
+    kind: VIA_LAUNCHER ? 'standalone' : 'web',
 
     async getState() { return state(); },
 

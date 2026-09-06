@@ -34,18 +34,22 @@ function fileInfo(name) {
 }
 
 const DOWNLOADS = [
-  { os: 'win', icon: 'WIN', title: 'Hazelnut for Windows', file: 'Hazelnut-1.0.0-win-x64.zip',
-    meta: 'Windows 10 or 11, 64-bit · portable — unzip and run Hazelnut.exe' },
-  { os: 'win', icon: 'WIN', title: 'Hazelnut Mini for Windows', file: 'HazelnutMini-1.0.0-win-x64.zip',
-    meta: 'Windows 10 or 11, 64-bit · portable' },
-  { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS', file: 'Hazelnut-1.0.0-mac-arm64.zip',
+  { os: 'win', icon: 'WIN', title: 'Hazelnut for Windows', file: 'Hazelnut.exe',
+    meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
+  { os: 'win', icon: 'WIN', title: 'Hazelnut Mini for Windows', file: 'HazelnutMini.exe',
+    meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS', file: 'Hazelnut-macos.zip',
+    meta: 'Apple silicon · unzip and drag Hazelnut.app to Applications' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS', file: 'HazelnutMini-macos.zip',
     meta: 'Apple silicon · unzip and drag to Applications' },
-  { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS', file: 'HazelnutMini-1.0.0-mac-arm64.zip',
-    meta: 'Apple silicon' },
-  { os: 'linux', icon: 'LNX', title: 'Hazelnut for Linux', file: 'hazelnut_1.0.0_amd64.deb',
-    meta: 'Debian, Ubuntu and derivatives · amd64' },
-  { os: 'linux', icon: 'LNX', title: 'Hazelnut Mini for Linux', file: 'hazelnut-mini_1.0.0_amd64.deb',
-    meta: 'Debian, Ubuntu and derivatives · amd64' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS (Intel)', file: 'Hazelnut-macos-intel',
+    meta: 'Intel Macs · run from Terminal, or drop into an app bundle' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS (Intel)', file: 'HazelnutMini-macos-intel',
+    meta: 'Intel Macs' },
+  { os: 'linux', icon: 'LNX', title: 'Hazelnut for Linux', file: 'Hazelnut-linux-x64',
+    meta: 'x86-64 · chmod +x and run' },
+  { os: 'linux', icon: 'LNX', title: 'Hazelnut Mini for Linux', file: 'HazelnutMini-linux-x64',
+    meta: 'x86-64 · chmod +x and run' },
   { os: 'src', icon: 'SRC', title: 'Source', file: 'Hazelnut-source.zip',
     meta: 'Every platform · npm install && npm start' },
 ];
@@ -209,7 +213,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
         <div class="details-body">
           <div>
             <h4>Windows</h4>
-            <p style="color:var(--muted);font-size:15px;margin:6px 0 10px">Unzip anywhere, open the folder and run <code>Hazelnut.exe</code>. Keep the .exe with the files beside it. SmartScreen will warn because the build is not code signed — choose <b>More info</b>, then <b>Run anyway</b>.</p>
+            <p style="color:var(--muted);font-size:15px;margin:6px 0 10px">Double-click <code>Hazelnut.exe</code>. There is nothing to install and nothing to unpack. SmartScreen will warn because the build is not code signed — choose <b>More info</b>, then <b>Run anyway</b>.</p>
           </div>
           <div>
             <h4>macOS</h4>
@@ -218,8 +222,8 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
           </div>
           <div>
             <h4>Linux</h4>
-            <pre>sudo dpkg -i hazelnut_1.0.0_amd64.deb
-sudo apt-get -f install   # only if dpkg reports missing dependencies</pre>
+            <pre>chmod +x Hazelnut-linux-x64
+./Hazelnut-linux-x64</pre>
           </div>
           <div>
             <h4>From source</h4>
@@ -247,9 +251,14 @@ npm test           # 64 tests</pre>
       </details>
     </div>
 
-    <div class="note note--warn" style="margin-top:28px">
-      <h4>No .dmg, .exe installer or .apk here</h4>
-      <p>Those need a Mac, NSIS and the Android SDK respectively. The repository ships a GitHub Actions workflow that builds all four on the runners that can — push a <code>v*</code> tag and they are attached to a release.</p>
+    <div class="note" style="margin-top:28px">
+      <h4>Six megabytes, not a hundred and ten</h4>
+      <p>These builds carry the application and borrow the browser engine your computer already has, opening in a real app window rather than a browser tab. Windows always has one. On macOS and Linux, install Chrome, Edge, Brave or Chromium if you have none — without one the app falls back to opening in your default browser, which works but keeps the browser’s own toolbar.</p>
+    </div>
+
+    <div class="note note--warn" style="margin-top:16px">
+      <h4>No .dmg, .msi or .apk here</h4>
+      <p>An installer package needs a Mac, NSIS and the Android SDK respectively. The repository ships a workflow that builds all three on the machines that can.</p>
     </div>
   </div>
 </section>
