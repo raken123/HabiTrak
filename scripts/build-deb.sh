@@ -20,8 +20,8 @@ WORK="${WORK:-$ROOT/.build}"
 DIST="$ROOT/dist"
 
 case "$APP" in
-  hazelnut)      NAME="Hazelnut";      BIN="hazelnut";      SRC="$ROOT/apps/hazelnut";      PAYLOAD="electron renderer";;
-  hazelnut-mini) NAME="Hazelnut Mini"; BIN="hazelnut-mini"; SRC="$ROOT/apps/hazelnut-mini"; PAYLOAD="electron www";;
+  hazelnut)      NAME="Hazelnut";      BIN="hazelnut";      SRC="$ROOT/apps/hazelnut";      PAYLOAD="electron renderer build";;
+  hazelnut-mini) NAME="Hazelnut Mini"; BIN="hazelnut-mini"; SRC="$ROOT/apps/hazelnut-mini"; PAYLOAD="electron www build";;
   *) echo "unknown app: $APP (expected hazelnut or hazelnut-mini)" >&2; exit 1;;
 esac
 

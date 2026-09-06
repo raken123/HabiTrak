@@ -11,7 +11,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SIZE = 512;
+const SIZE = 512;                   // the design space every shape is drawn in
 const SS = 3;                       // supersampling factor, for clean edges
 
 const PALETTE = {
@@ -80,17 +80,18 @@ function nut(x, y, { scale = 1, dx = 0, dy = 0 } = {}) {
   return null;
 }
 
-function render({ bubble = false } = {}) {
-  const pixels = new Uint8Array(SIZE * SIZE * 4);
+function render({ bubble = false, size = SIZE } = {}) {
+  const pixels = new Uint8Array(size * size * 4);
+  const toDesign = SIZE / size;
 
-  for (let y = 0; y < SIZE; y += 1) {
-    for (let x = 0; x < SIZE; x += 1) {
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
       let r = 0, g = 0, b = 0, a = 0;
 
       for (let sy = 0; sy < SS; sy += 1) {
         for (let sx = 0; sx < SS; sx += 1) {
-          const px = x + (sx + 0.5) / SS;
-          const py = y + (sy + 0.5) / SS;
+          const px = (x + (sx + 0.5) / SS) * toDesign;
+          const py = (y + (sy + 0.5) / SS) * toDesign;
 
           let colour = null;
           let alpha = 0;
@@ -117,7 +118,7 @@ function render({ bubble = false } = {}) {
       }
 
       const samples = SS * SS;
-      const i = (y * SIZE + x) * 4;
+      const i = (y * size + x) * 4;
       const cover = a / (samples * 255);
       pixels[i] = cover ? Math.round(r / (samples * cover)) : 0;
       pixels[i + 1] = cover ? Math.round(g / (samples * cover)) : 0;
@@ -180,14 +181,54 @@ function encodePng(pixels, size) {
   ]);
 }
 
+/**
+ * A .icns is a magic word, a total length, then typed chunks. Every type used
+ * here takes a PNG payload directly, so the file is just our own PNGs with
+ * four-byte labels — no Apple tooling needed to assemble one.
+ */
+function encodeIcns(entries) {
+  const chunks = entries.map(({ type, png }) => {
+    const head = Buffer.alloc(8);
+    head.write(type, 0, 'ascii');
+    head.writeUInt32BE(png.length + 8, 4);
+    return Buffer.concat([head, png]);
+  });
+  const body = Buffer.concat(chunks);
+  const header = Buffer.alloc(8);
+  header.write('icns', 0, 'ascii');
+  header.writeUInt32BE(body.length + 8, 4);
+  return Buffer.concat([header, body]);
+}
+
+// type -> pixel size, covering the Finder's whole ladder from 16pt to 512@2x.
+const ICNS_SIZES = [
+  ['ic11', 32], ['ic12', 64], ['ic07', 128],
+  ['ic13', 256], ['ic08', 256], ['ic14', 512], ['ic09', 512], ['ic10', 1024],
+];
+
 const targets = [
   { file: path.join(HERE, '..', 'apps', 'hazelnut', 'build', 'icon.png'), bubble: false },
   { file: path.join(HERE, '..', 'apps', 'hazelnut-mini', 'build', 'icon.png'), bubble: true },
 ];
 
+const rel = (f) => path.relative(path.join(HERE, '..'), f);
+
 for (const target of targets) {
   fs.mkdirSync(path.dirname(target.file), { recursive: true });
+
   const png = encodePng(render({ bubble: target.bubble }), SIZE);
   fs.writeFileSync(target.file, png);
-  console.log(`wrote ${path.relative(path.join(HERE, '..'), target.file)} (${(png.length / 1024).toFixed(0)} KB)`);
+  console.log(`wrote ${rel(target.file)} (${(png.length / 1024).toFixed(0)} KB)`);
+
+  // macOS wants an .icns; render each size from the shapes rather than
+  // resampling one bitmap, so the small ones stay crisp.
+  const cache = new Map();
+  const entries = ICNS_SIZES.map(([type, size]) => {
+    if (!cache.has(size)) cache.set(size, encodePng(render({ bubble: target.bubble, size }), size));
+    return { type, png: cache.get(size) };
+  });
+  const icns = encodeIcns(entries);
+  const icnsFile = target.file.replace(/\.png$/, '.icns');
+  fs.writeFileSync(icnsFile, icns);
+  console.log(`wrote ${rel(icnsFile)} (${(icns.length / 1024).toFixed(0)} KB)`);
 }

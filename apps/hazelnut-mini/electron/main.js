@@ -57,6 +57,9 @@ function createWindow() {
     backgroundColor: '#1a1a1a',
     show: false,
     title: APP_NAME,
+    // Windows and Linux take the window and taskbar icon from here;
+    // macOS uses the .icns inside the bundle instead and ignores it.
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

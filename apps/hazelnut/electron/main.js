@@ -71,6 +71,9 @@ function createWindow() {
     backgroundColor: '#1e1e1e',
     show: false,
     title: APP_NAME,
+    // Windows and Linux take the window and taskbar icon from here;
+    // macOS uses the .icns inside the bundle instead and ignores it.
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     // The in-app menu bar is part of the editor chrome, so the native one is
     // hidden on Windows and tucked into the traffic-light strip on macOS.
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
