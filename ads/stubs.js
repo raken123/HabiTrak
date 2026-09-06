@@ -7,6 +7,7 @@
 // genuine progress UI and cuts away, rather than inventing a result.
 
 import { demoPhoto } from './demo-image.js';
+import { streetScene } from './street-scene.js';
 
 const TOOLS = {
   draw: { id: 'draw', name: 'Draw', shortcut: 'B', icon: 'brush', ai: false, cost: 0, group: 'paint', tagline: 'Draw what you want, in colour.', help: 'A plain brush. Pick a colour and a size and paint on the active layer. Nothing leaves your machine and nothing is charged.' },
@@ -111,12 +112,19 @@ export function installMiniStub() {
     startTrial: async () => state,
     activate: async () => ({ ok: true, state }),
     saveApiKey: async () => ({ configured: true }),
-    openImage: async () => ({ name: 'ridgeline.jpg', dataUrl: demoPhoto(1200, 750) }),
+    openImage: async () => ({
+      name: 'sofa-outside.jpg',
+      dataUrl: (new URLSearchParams(location.search).get('scene') === 'street'
+        ? streetScene({ width: 1000, height: 1250, sofa: true })
+        : (() => { const c = document.createElement('canvas'); const i = new Image(); i.src = demoPhoto(1200, 750); return c; })()
+      ).toDataURL?.('image/jpeg', 0.9) || demoPhoto(1200, 750),
+    }),
     saveImage: async () => ({ path: '~/Pictures/ridgeline.png' }),
     openExternal: async () => true,
     remove: (_opts, onProgress) => pending(onProgress, [
-      { after: 300, stage: 'reading', message: 'Reading your message…' },
-      { after: 1800, stage: 'removing', message: 'Removing the litter bin…' },
+      { after: 250, stage: 'reading', message: 'Reading your message…' },
+      { after: 2200, stage: 'examining', message: 'Looking up where this was taken…' },
+      { after: 5200, stage: 'rebuilding', message: 'Found 3 references. Rebuilding what was behind it…' },
     ]),
   };
 }

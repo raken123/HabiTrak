@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hazelnut Mini — short</title>
+<link rel="stylesheet" href="short.css" />
+</head>
+<body>
+  <div class="film" id="film">
+
+    <!-- the photograph, and what happens to it -->
+    <div class="plate" id="plate">
+      <canvas id="photo" width="1000" height="1250"></canvas>
+      <div class="ring" id="ring"></div>
+    </div>
+
+    <!-- the phone -->
+    <div class="phone" id="phone">
+      <div class="phone__shell">
+        <iframe id="mini" src="/mini/index.html?scene=street" width="420" height="900" title="Hazelnut Mini"></iframe>
+      </div>
+    </div>
+
+    <!-- copy -->
+    <div class="line line--top" id="line-top"><span id="line-top-text"></span></div>
+    <div class="line line--bottom" id="line-bottom"><span id="line-bottom-text"></span></div>
+
+    <div class="stamp" id="stamp"><span id="stamp-text">Cursed</span></div>
+
+    <div class="end" id="end">
+      <img class="end__mark" id="end-mark" src="/icons/hazelnut-mini/build/icon.png" alt="" />
+      <h1>Hazelnut <b>Mini</b></h1>
+      <p class="end__line">It looks the place up before it paints.</p>
+      <div class="end__price">$9.99<span> / month</span></div>
+      <div class="end__plat">Windows · Mac · Android</div>
+    </div>
+
+    <div class="vignette"></div>
+  </div>
+  <script type="module" src="short.js"></script>
+</body>
+</html>

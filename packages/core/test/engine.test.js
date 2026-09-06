@@ -144,6 +144,41 @@ test('Mini charges only when it actually removes something', async () => {
   assert.match(done.result.image, /^data:image\/png;base64,/);
 });
 
+test('Mini looks the place up before it rebuilds, exactly as Realtouch does', async () => {
+  const client = new FakeClient({
+    data: { removable: true, target: 'the sofa', reply: 'Removing the sofa.' },
+    text: 'PLACE: a terraced street\nBEHIND: cast-iron railings and brick',
+    sources: [{ title: 'The street', uri: 'https://example.org/a' }, { title: 'Same corner', uri: 'https://example.org/b' }],
+  });
+  const { engine } = build({ client });
+  const stages = [];
+  const out = await engine.miniRemove({ image: PIXEL, message: 'remove the sofa', onProgress: (p) => stages.push(p) });
+
+  assert.deepEqual(client.calls.map((c) => c.kind), ['analyze', 'analyze', 'image'],
+    'intent, then the grounded scene study, then the repaint');
+  assert.equal(client.calls[0].search, undefined, 'parsing the request does not need the web');
+  assert.equal(client.calls[1].search, true, 'the scene study does');
+  assert.deepEqual(stages.map((s) => s.stage), ['reading', 'examining', 'rebuilding']);
+  assert.match(stages[2].message, /Found 2 references/);
+  assert.equal(out.result.sources.length, 2);
+  assert.match(out.result.scene, /BEHIND/);
+  // The findings must actually reach the prompt that does the painting.
+  assert.match(client.calls[2].prompt, /BEHIND: cast-iron railings/);
+  assert.equal(out.charged, 20, 'still one removal, still 20 credits');
+});
+
+test('an anonymous scene still removes, and says so instead of naming a place', async () => {
+  const client = new FakeClient({
+    data: { removable: true, target: 'the sofa', reply: 'Removing the sofa.' },
+    text: 'PLACE: not identifiable\nBEHIND: plain rendered wall',
+    sources: [],
+  });
+  const { engine } = build({ client });
+  const stages = [];
+  await engine.miniRemove({ image: PIXEL, message: 'remove the sofa', onProgress: (p) => stages.push(p) });
+  assert.match(stages[2].message, /Rebuilding what was behind the sofa/);
+});
+
 test('a missing API key is reported before anything is charged', async () => {
   const { engine, credits } = build();
   engine.client.configured = false;

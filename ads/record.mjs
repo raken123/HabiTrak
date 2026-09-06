@@ -19,9 +19,10 @@ const FFMPEG = process.env.AD_FFMPEG || 'ffmpeg';
 const PORT = Number(process.env.AD_PORT || 8732);
 const CDP_PORT = Number(process.env.AD_CDP_PORT || 9444);
 
-const WIDTH = 1280;
-const HEIGHT = 720;
-const FPS = 24;
+const WIDTH = Number(process.env.AD_WIDTH || 1280);
+const HEIGHT = Number(process.env.AD_HEIGHT || 720);
+const FPS = Number(process.env.AD_FPS || 24);
+const SCENE = process.env.AD_SCENE || 'scene.html';
 const OUT = process.argv[2] || path.join(ROOT, 'dist', 'Hazelnut-ad.mp4');
 const MUSIC = process.env.AD_MUSIC || path.join(ROOT, '.build', 'bed.wav');
 
@@ -40,7 +41,7 @@ const chrome = spawn(CHROME, [
   '--force-device-scale-factor=1', '--disable-lcd-text',
   `--remote-debugging-port=${CDP_PORT}`,
   `--window-size=${WIDTH},${HEIGHT}`,
-  `http://127.0.0.1:${PORT}/scene.html`,
+  `http://127.0.0.1:${PORT}/${SCENE}`,
 ], { stdio: 'ignore' });
 
 async function debuggerUrl() {

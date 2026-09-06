@@ -20,6 +20,7 @@ import {
   AISCOPE_SCHEMA,
   miniIntentPrompt,
   MINI_INTENT_SCHEMA,
+  miniScenePrompt,
   miniRemovePrompt,
 } from './prompts.js';
 
@@ -226,9 +227,10 @@ export class Engine {
   // -------------------------------------------------------------------------
 
   /**
-   * Mini reuses Realtouch's removal, minus the masking UI: the user says what
-   * to remove in words. Intent parsing costs nothing; only a removal that
-   * actually runs is charged.
+   * Mini is Realtouch with the masking UI replaced by a sentence, so it does
+   * Realtouch's work: it reads the request, looks the place up, and only then
+   * rebuilds the gap. Parsing the request costs nothing — a message that turns
+   * out not to be a removal is answered and never charged.
    *
    * @param {{image:string, message:string, onProgress?:Function, signal?:AbortSignal}} opts
    */
@@ -254,9 +256,25 @@ export class Engine {
     }
 
     return this.credits.charge('realtouch', {}, async () => {
-      onProgress({ stage: 'removing', message: `Removing ${parsed.target}…` });
+      onProgress({ stage: 'examining', message: 'Looking up where this was taken…' });
+      const study = await this.client.analyze({
+        prompt: miniScenePrompt({ target: parsed.target }),
+        images: [asPart(image)],
+        search: true,
+        temperature: 0.2,
+        signal,
+      });
+
+      onProgress({
+        stage: 'rebuilding',
+        message: study.sources.length
+          ? `Found ${study.sources.length} reference${study.sources.length === 1 ? '' : 's'}. Rebuilding what was behind it…`
+          : `Rebuilding what was behind ${parsed.target}…`,
+        sources: study.sources,
+      });
+
       const result = await this.client.generateImage({
-        prompt: miniRemovePrompt({ target: parsed.target }),
+        prompt: miniRemovePrompt({ target: parsed.target, scene: study.text }),
         images: [asPart(image)],
         temperature: 0.4,
         signal,
@@ -266,6 +284,8 @@ export class Engine {
         target: parsed.target,
         reply: parsed.reply || `Removed ${parsed.target}.`,
         image: toDataUrl(result.base64, result.mimeType),
+        scene: study.text,
+        sources: study.sources,
       };
     });
   }

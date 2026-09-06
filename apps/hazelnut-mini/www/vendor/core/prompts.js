@@ -147,10 +147,39 @@ export const MINI_INTENT_SCHEMA = {
   required: ['removable', 'reply'],
 };
 
-export function miniRemovePrompt({ target }) {
+export function miniScenePrompt({ target }) {
+  return [
+    'You are the analysis stage of an object-removal tool.',
+    '',
+    `Something is about to be removed from this photograph: ${target}.`,
+    '',
+    'Work out, in this order:',
+    '1. WHERE this photograph was taken. If the setting is a recognisable place —',
+    '   a landmark, a named street, a specific building — search for it and say',
+    '   which place it is. If it is anonymous, say so rather than guessing.',
+    '2. WHAT IS PHYSICALLY BEHIND the thing being removed. This is the important',
+    '   part. Describe the surfaces it interrupts and how they continue: the wall,',
+    '   railings, pavement, brickwork, kerb, foliage or horizon that must resume,',
+    '   with their colour, texture, scale, perspective and lighting. If you',
+    '   identified the place, use what you found — a photograph of the same spot',
+    '   from another angle tells you what the object is hiding.',
+    '',
+    'Answer in two short labelled paragraphs: PLACE, BEHIND. Be concrete and',
+    'visual. No preamble.',
+  ].join('\n');
+}
+
+export function miniRemovePrompt({ target, scene = '' }) {
   return [
     `Remove ${target} from this photograph, completely.`,
     '',
+    ...(scene ? [
+      'A separate analysis of the scene found the following. Follow it:',
+      '---',
+      scene,
+      '---',
+      '',
+    ] : []),
     '- Rebuild whatever was behind it: continue the surfaces, edges and lines it',
     '  interrupted, matching their perspective, texture and lighting.',
     '- Remove its shadow, its reflection and any darkening where it met a surface.',

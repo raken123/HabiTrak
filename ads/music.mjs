@@ -11,6 +11,8 @@ import fs from 'node:fs';
 
 const RATE = 44100;
 const DURATION = Number(process.argv[3] || 180);
+const ARP_IN = Number(process.argv[4] ?? 15);
+const ARP_OUT = Number(process.argv[5] ?? DURATION - 17);
 const OUT = process.argv[2] || 'bed.wav';
 
 // A minor, a common and unfussy progression: i - VI - III - VII.
@@ -68,7 +70,7 @@ for (let i = 0; i < n; i += 1) {
 
   // Arpeggio joins once the product is on screen and steps out for the cards.
   let arp = 0;
-  const arpGain = clamp((t - 15) / 4, 0, 1) * (1 - clamp((t - 163) / 3, 0, 1));
+  const arpGain = clamp((t - ARP_IN) / 4, 0, 1) * (1 - clamp((t - ARP_OUT) / 3, 0, 1));
   if (arpGain > 0.001) {
     const step = Math.floor(t / 0.3125);
     const note = chord.notes[step % chord.notes.length];

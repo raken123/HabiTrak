@@ -1,0 +1,148 @@
+/* Portrait, 1080x1920. Same world as the long film — warm near-black, hazelnut
+   amber, Charter against the system sans — but louder, because it has nine
+   seconds to land a story.
+
+   Nothing transitions or animates in CSS: the recorder steps virtual time, so
+   every value that moves is set from JavaScript. */
+
+:root {
+  --ink:     #0d0c0b;
+  --bone:    #f6f1ea;
+  --muted:   #9b8d80;
+  --accent:  #e0894a;
+  --bad:     #d64545;
+  --display: "Bitstream Charter", Charter, Georgia, serif;
+  --ui: "Liberation Sans", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 1080px; height: 1920px;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--ui);
+}
+
+.film { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+
+/* ── the photograph ──────────────────────────────────────────────────────── */
+
+.plate {
+  position: absolute;
+  left: 50%; top: 540px;
+  width: 1000px; height: 1250px;
+  margin-left: -500px;
+  transform-origin: 50% 45%;
+  opacity: 0;
+}
+.plate canvas {
+  width: 100%; height: 100%; display: block;
+  border-radius: 10px;
+  box-shadow: 0 40px 90px rgba(0,0,0,.65);
+}
+
+/* The ring is drawn as a stroked ellipse, so it can be revealed by dash. */
+.ring {
+  position: absolute;
+  left: 40%; top: 58.5%;
+  width: 46%; height: 27%;
+  margin: -2% 0 0 -4%;
+  border: 7px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  transform: rotate(-3deg);
+}
+
+/* ── the phone ───────────────────────────────────────────────────────────── */
+
+.phone {
+  position: absolute;
+  left: 50%; top: 430px;
+  margin-left: -234px;
+  opacity: 0;
+}
+.phone__shell {
+  padding: 14px;
+  border-radius: 46px;
+  background: linear-gradient(160deg, #4a4038, #14110d);
+  box-shadow: 0 50px 110px rgba(0,0,0,.75), 0 0 0 1px rgba(224,137,74,.25);
+}
+.phone iframe { border: 0; display: block; border-radius: 34px; background: #1a1a1a; }
+
+/* ── copy ────────────────────────────────────────────────────────────────── */
+
+.line {
+  position: absolute;
+  z-index: 3;
+  left: 70px; right: 70px;
+  text-align: center;
+  opacity: 0;
+}
+.line--top { top: 150px; }
+.line--bottom { bottom: 190px; }
+.line span {
+  font-family: var(--display);
+  font-size: 76px;
+  line-height: 1.06;
+  display: inline-block;
+  text-wrap: balance;
+  text-shadow: 0 6px 34px rgba(0,0,0,.8);
+}
+.line--bottom span { font-size: 62px; color: var(--bone); }
+.line em { font-style: normal; color: var(--accent); }
+.line s { text-decoration: none; color: var(--bad); }
+
+/* The verdict on the old way, stamped across the frame. */
+.stamp {
+  position: absolute;
+  z-index: 3;
+  left: 0; right: 0; top: 1210px;
+  text-align: center;
+  opacity: 0;
+}
+.stamp span {
+  display: inline-block;
+  font-family: var(--display);
+  font-size: 130px;
+  letter-spacing: .02em;
+  color: var(--bad);
+  border: 9px solid var(--bad);
+  border-radius: 14px;
+  padding: 10px 42px 18px;
+  transform: rotate(-7deg);
+  text-transform: uppercase;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+
+/* ── end card ────────────────────────────────────────────────────────────── */
+
+.end {
+  position: absolute; inset: 0;
+  z-index: 4;
+  display: grid; place-content: center; justify-items: center;
+  gap: 0;
+  background: radial-gradient(70% 50% at 50% 42%, #241a12 0%, var(--ink) 72%);
+  opacity: 0;
+  text-align: center;
+}
+.end__mark { width: 210px; height: 210px; border-radius: 44px; margin-bottom: 44px; }
+.end h1 { font-family: var(--display); font-size: 108px; font-weight: 700; letter-spacing: -.01em; }
+.end h1 b { color: var(--accent); }
+.end__line { font-size: 36px; color: var(--muted); margin-top: 22px; }
+.end__price { font-family: var(--display); font-size: 92px; margin-top: 54px; }
+.end__price span { font-family: var(--ui); font-size: 30px; color: var(--muted); }
+.end__plat { font-size: 26px; letter-spacing: .26em; text-transform: uppercase; color: var(--muted); margin-top: 18px; }
+
+/* The picture fills the frame during the close-ups, so the copy needs ground
+   to sit on. The scrim is under the type, never over it. */
+.vignette {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(13,12,11,.94) 0%, rgba(13,12,11,.72) 14%, rgba(13,12,11,0) 26%),
+    linear-gradient(0deg, rgba(13,12,11,.92) 0%, rgba(13,12,11,.6) 11%, rgba(13,12,11,0) 22%),
+    radial-gradient(120% 90% at 50% 45%, rgba(0,0,0,0) 52%, rgba(0,0,0,.55) 100%);
+}
