@@ -134,6 +134,11 @@ function selectTool(id) {
   } else {
     bar.append(el('span', { class: 'field', text: 'Open an image or start a new canvas to use this tool.' }));
   }
+  // Tools draw their own overlays — Realtouch's mask, Expand's handles — and
+  // the viewport keeps the last frame it painted. Without this, switching away
+  // leaves the previous tool's overlay on screen until something else happens
+  // to trigger a redraw.
+  app.viewport?.render();
   hideTooltip();
 }
 

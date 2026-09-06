@@ -1,0 +1,168 @@
+/* The ad's own look. Warm near-black, hazelnut amber, a Charter display face
+   against Liberation Sans for the technical labels.
+
+   Nothing here uses a CSS transition or animation: the recorder steps virtual
+   time and screenshots, so every value that moves is set from JavaScript. */
+
+:root {
+  --ink:        #0d0c0b;
+  --bone:       #f4efe8;
+  --muted:      #97897c;
+  --accent:     #e0894a;
+  --accent-dim: #b4642f;
+  --good:       #7ec98a;
+  --display: "Bitstream Charter", "Charter", Georgia, serif;
+  --ui: "Liberation Sans", "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 1280px; height: 720px;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--ui);
+}
+
+.film { position: relative; width: 1280px; height: 720px; overflow: hidden; }
+
+/* ── footage ─────────────────────────────────────────────────────────────── */
+
+.stage { position: absolute; inset: 0; opacity: 0; }
+.stage iframe { border: 0; display: block; }
+
+.stage--device {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  justify-content: end;
+  padding-right: 132px;
+  gap: 20px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #241c16 0%, var(--ink) 62%);
+}
+.device {
+  border-radius: 26px;
+  padding: 10px;
+  background: linear-gradient(160deg, #40372f, #17140f);
+  box-shadow: 0 40px 90px rgba(0,0,0,.7), 0 0 0 1px rgba(224,137,74,.22);
+}
+.device iframe { border-radius: 18px; }
+.device-note {
+  font-size: 13px; letter-spacing: .26em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* A grade over the footage keeps the frame from looking like a screenshot. */
+.grade {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(120% 120% at 50% 45%, rgba(0,0,0,0) 46%, rgba(0,0,0,.55) 100%),
+    linear-gradient(0deg, rgba(224,137,74,.05), rgba(0,0,0,0) 40%);
+}
+
+/* ── lower third ─────────────────────────────────────────────────────────── */
+
+.third {
+  position: absolute;
+  left: 64px; bottom: 64px;
+  display: flex; gap: 20px;
+  opacity: 0;
+  max-width: 660px;
+}
+.third__rule { width: 3px; background: var(--accent); border-radius: 2px; flex: none; }
+.third__eyebrow {
+  font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 8px;
+}
+.third__name {
+  font-family: var(--display);
+  font-size: 52px; line-height: 1; font-weight: 700;
+  margin-bottom: 10px;
+  text-wrap: balance;
+}
+.third__line { font-size: 19px; line-height: 1.45; color: #d8cec4; max-width: 560px; }
+.third__chip {
+  display: inline-block; margin-top: 14px;
+  padding: 5px 13px; border-radius: 999px;
+  border: 1px solid var(--accent); color: var(--accent);
+  font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+}
+.third__chip.is-free { border-color: var(--good); color: var(--good); }
+
+/* ── full-frame cards ────────────────────────────────────────────────────── */
+
+.card {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background:
+    radial-gradient(90% 70% at 50% 42%, #221a13 0%, var(--ink) 70%);
+  opacity: 0;
+  text-align: center;
+}
+.card__inner { display: grid; justify-items: center; gap: 0; padding: 0 80px; }
+
+.mark {
+  width: 124px; height: 124px;
+  margin-bottom: 24px;
+  display: block;
+  border-radius: 26px;
+  box-shadow: 0 22px 50px rgba(0,0,0,.55);
+}
+
+.card__title {
+  font-family: var(--display);
+  font-size: 88px; font-weight: 700; line-height: .95;
+  letter-spacing: -.015em;
+}
+.card__sub {
+  font-size: 22px; color: var(--muted); margin-top: 18px;
+  letter-spacing: .01em;
+}
+.card__foot { font-size: 17px; color: var(--muted); margin-top: 26px; }
+
+.card__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 30px;
+  width: 1030px;
+}
+.card__grid:empty { display: none; }
+.tile {
+  border: 1px solid #2c2521;
+  border-radius: 10px;
+  padding: 14px 15px 15px;
+  text-align: left;
+  background: rgba(255,255,255,.014);
+}
+.tile h3 {
+  font-family: var(--display);
+  font-size: 22px; font-weight: 700; margin-bottom: 5px;
+}
+.tile p { font-size: 13.5px; color: var(--muted); line-height: 1.38; }
+.tile .cost {
+  display: inline-block; margin-top: 10px;
+  font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent);
+}
+.tile .cost.is-free { color: var(--good); }
+
+/* Price row on the closing card. */
+.prices { display: flex; gap: 56px; margin-top: 34px; }
+.price { text-align: center; }
+.price .amt { font-family: var(--display); font-size: 46px; font-weight: 700; }
+.price .who { font-size: 14px; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; margin-top: 6px; }
+.price .plat { font-size: 13px; color: #6f645a; margin-top: 4px; }
+
+/* ── wipe ────────────────────────────────────────────────────────────────── */
+
+.wipe {
+  position: absolute; inset: 0;
+  background: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+}

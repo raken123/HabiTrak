@@ -13,6 +13,7 @@ const HANDLE = 7; // screen pixels
 export function createExpandTool() {
   let margins = { left: 0, right: 0, top: 0, bottom: 0 };
   let removeOverlay = null;
+  let active = false;
   let dragging = null;
   let inputs = {};
 
@@ -63,13 +64,20 @@ export function createExpandTool() {
 
     onActivate(app) {
       margins = { left: 0, right: 0, top: 0, bottom: 0 };
-      removeOverlay = app.viewport.addOverlay((ctx, viewport) => drawOverlay(ctx, viewport, app));
+      active = true;
+      if (!removeOverlay) {
+        removeOverlay = app.viewport.addOverlay((ctx, viewport) => {
+          if (active) drawOverlay(ctx, viewport, app);
+        });
+      }
       sync(app);
     },
 
-    onDeactivate() {
+    onDeactivate(app) {
+      active = false;
       removeOverlay?.();
       removeOverlay = null;
+      app?.render();
     },
 
     onPointerDown(app, event, point) {

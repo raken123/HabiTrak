@@ -18,6 +18,7 @@ export function createRealtouchTool() {
   let maskCtx = null;
   let painting = false;
   let removeOverlay = null;
+  let active = false;
   let hint = '';
 
   const ensureMask = (app) => {
@@ -76,9 +77,14 @@ export function createRealtouchTool() {
     onActivate(app) {
       ensureMask(app);
       brush.set({ color: MASK_COLOR });
-      // Show the mask over the picture while this tool is selected.
+      active = true;
+      // Show the mask over the picture while this tool is selected. The
+      // callback checks `active` rather than trusting that it was unregistered:
+      // a stale registration would otherwise leave the magenta on screen under
+      // whichever tool came next.
+      if (removeOverlay) return;
       removeOverlay = app.viewport.addOverlay((ctx) => {
-        if (!mask) return;
+        if (!active || !mask) return;
         ctx.save();
         ctx.globalAlpha = 0.55;
         ctx.drawImage(mask, 0, 0);
@@ -86,9 +92,11 @@ export function createRealtouchTool() {
       });
     },
 
-    onDeactivate() {
+    onDeactivate(app) {
+      active = false;
       removeOverlay?.();
       removeOverlay = null;
+      app?.render();
     },
 
     onPointerDown(app, event, point) {

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hazelnut — ad</title>
+<link rel="stylesheet" href="scene.css" />
+</head>
+<body>
+  <div class="film" id="film">
+
+    <!-- product footage -->
+    <div class="stage" id="stage-hz">
+      <iframe id="hz" src="/hazelnut/index.html" width="1280" height="720" title="Hazelnut"></iframe>
+    </div>
+
+    <div class="stage stage--device" id="stage-mini">
+      <div class="device">
+        <iframe id="mini" src="/mini/index.html" width="452" height="648" title="Hazelnut Mini"></iframe>
+      </div>
+      <div class="device-note" id="device-note">Windows · Mac · Android</div>
+    </div>
+
+    <!-- vignette and grade, always on top of the footage -->
+    <div class="grade" id="grade"></div>
+
+    <!-- lower third -->
+    <div class="third" id="third">
+      <div class="third__rule"></div>
+      <div class="third__body">
+        <div class="third__eyebrow" id="third-eyebrow">TOOL 01</div>
+        <h2 class="third__name" id="third-name">Draw</h2>
+        <p class="third__line" id="third-line">A brush. Nothing leaves your machine.</p>
+        <div class="third__chip" id="third-chip">Free</div>
+      </div>
+    </div>
+
+    <!-- full-frame cards -->
+    <div class="card" id="card">
+      <div class="card__inner">
+        <img class="mark" id="mark" src="/icons/hazelnut/build/icon.png" alt="" />
+        <h1 class="card__title" id="card-title">Hazelnut</h1>
+        <p class="card__sub" id="card-sub">An advanced AI photo generator.</p>
+        <div class="card__grid" id="card-grid"></div>
+        <p class="card__foot" id="card-foot"></p>
+      </div>
+    </div>
+
+    <div class="wipe" id="wipe"></div>
+  </div>
+  <script type="module" src="scene.js"></script>
+</body>
+</html>
