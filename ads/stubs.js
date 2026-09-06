@@ -8,6 +8,7 @@
 
 import { demoPhoto } from './demo-image.js';
 import { streetScene } from './street-scene.js';
+import { deskScene } from './desk-scene.js';
 
 const TOOLS = {
   draw: { id: 'draw', name: 'Draw', shortcut: 'B', icon: 'brush', ai: false, cost: 0, group: 'paint', tagline: 'Draw what you want, in colour.', help: 'A plain brush. Pick a colour and a size and paint on the active layer. Nothing leaves your machine and nothing is charged.' },
@@ -86,7 +87,9 @@ export function installHazelnutStub() {
       return { cost, balance: state.credits, affordable: state.credits >= cost, allowed: state.ai || !tool.ai, reason: null, message: null };
     },
     refund: async () => state.credits,
-    magicDraw: (_opts, onProgress) => pending(onProgress, [{ after: 400, stage: 'render', message: 'Rendering your sketch…' }]),
+    magicDraw: (_opts, onProgress) => pending(onProgress, [
+      { after: 350, stage: 'render', message: 'Rendering your sketch…' },
+    ]),
     realtouch: (_opts, onProgress) => pending(onProgress, [
       { after: 300, stage: 'examining', message: 'Looking up where this was taken…' },
       { after: 2600, stage: 'rebuilding', message: 'Found 3 references. Rebuilding what was behind it…' },
@@ -96,7 +99,16 @@ export function installHazelnutStub() {
       { after: 1500, stage: 'frames', message: 'Generating keyframe 3 of 8…', done: 2, total: 8 },
     ]),
     aiscopeLearn: (_opts, onProgress) => pending(onProgress, [{ after: 300, stage: 'study', message: 'Studying the crop…' }]),
-    openImage: async () => ({ name: 'ridgeline.jpg', path: 'ridgeline.jpg', dataUrl: demoPhoto() }),
+    openImage: async () => {
+      const scene = new URLSearchParams(location.search).get('scene');
+      if (scene === 'desk') {
+        return { name: 'desk.jpg', path: 'desk.jpg', dataUrl: deskScene({ pc: 'office' }).toDataURL('image/jpeg', 0.92) };
+      }
+      if (scene === 'street') {
+        return { name: 'sofa-outside.jpg', path: 'sofa-outside.jpg', dataUrl: streetScene({ sofa: true }).toDataURL('image/jpeg', 0.92) };
+      }
+      return { name: 'ridgeline.jpg', path: 'ridgeline.jpg', dataUrl: demoPhoto() };
+    },
     openImagePath: async () => null,
     saveImage: async () => ({ path: '~/Pictures/ridgeline.png' }),
     openExternal: async () => true,

@@ -19,13 +19,16 @@
 
 html, body {
   width: 1080px; height: 1920px;
-  overflow: hidden;
+  /* `clip`, not `hidden`: hidden makes these scroll containers, and a
+     scrollIntoView inside the embedded app propagates out through the frame
+     tree and scrolls the whole film sideways. clip cannot be scrolled. */
+  overflow: clip;
   background: var(--ink);
   color: var(--bone);
   font-family: var(--ui);
 }
 
-.film { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+.film { position: relative; width: 1080px; height: 1920px; overflow: clip; }
 
 /* ── the photograph ──────────────────────────────────────────────────────── */
 

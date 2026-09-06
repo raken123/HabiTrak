@@ -1,0 +1,36 @@
+/* Additions for the Magic Draw short: the editor is a landscape window in a
+   portrait frame, so it sits as a slab and the camera goes into it. */
+
+.app {
+  position: absolute;
+  left: 0; top: 620px;
+  width: 1080px;
+  opacity: 0;
+}
+.app__shell {
+  width: 1040px;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #3d352d, #14110d);
+  box-shadow: 0 46px 100px rgba(0,0,0,.75), 0 0 0 1px rgba(224,137,74,.22);
+}
+/* The editor renders at its own size and is scaled down as a whole, so the
+   panels keep their proportions instead of reflowing. */
+.app iframe {
+  border: 0;
+  display: block;
+  width: 1280px; height: 720px;
+  transform: scale(0.803);
+  transform-origin: 0 0;
+  border-radius: 10px;
+}
+.app__frame { width: 1028px; height: 578px; overflow: hidden; border-radius: 10px; }
+
+.flash {
+  position: absolute; inset: 0;
+  background: #fdf3e6;
+  opacity: 0;
+  z-index: 5;
+  pointer-events: none;
+}
