@@ -11,7 +11,8 @@
     "dist": "electron-builder --win --mac",
     "dist:win": "electron-builder --win",
     "dist:mac": "electron-builder --mac",
-    "pack": "electron-builder --dir"
+    "pack": "electron-builder --dir",
+    "build": "electron-builder"
   },
   "devDependencies": {
     "electron": "^33.0.0",

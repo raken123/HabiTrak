@@ -17,6 +17,14 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* `hidden` must win.
+   An author `display` rule (`.pill { display: inline-flex }`) outranks the user
+   agent's `[hidden] { display: none }`, so without this every element the code
+   hides by setting `.hidden = true` — the busy overlay, the job indicator, the
+   credits pill on Free — stays on screen. */
+[hidden] { display: none !important; }
+
+
 html, body {
   margin: 0;
   height: 100%;

@@ -13,6 +13,14 @@
 // itself uses nothing but `fetch`, so Hazelnut Mini's Android build runs the
 // same client in the browser.
 
+// `process` is absent in a browser, so the environment is read defensively —
+// the desktop builds override the defaults through it, the web builds do not.
+const env = (name) => (typeof process !== 'undefined' ? process.env?.[name] : undefined);
+
+export const DEFAULT_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+export const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image';
+export const DEFAULT_TEXT_MODEL = 'gemini-2.5-flash';
+
 export class GeminiError extends Error {
   constructor(message, { status = 0, retryable = false, cause } = {}) {
     super(message);

@@ -1,0 +1,146 @@
+# Build every installer.
+#
+# A DMG can only be made on macOS, an NSIS .exe needs Windows (or NSIS), and an
+# APK needs the Android SDK — so each target is built on the runner that can
+# actually produce it. Push a v* tag and the four artifacts are attached to a
+# release; run it by hand to get them as workflow artifacts.
+
+name: Build installers
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  desktop:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            label: macOS (.dmg)
+            target: --mac
+            artifact: dmg
+          - os: windows-latest
+            label: Windows (.exe)
+            target: --win
+            artifact: exe
+          - os: ubuntu-latest
+            label: Linux (.deb)
+            target: --linux deb
+            artifact: deb
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build Hazelnut
+        run: npm run build -- ${{ matrix.target }}
+        working-directory: apps/hazelnut
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing and notarisation happen only when these are set;
+          # without them the build is unsigned, which is fine for testing.
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Build Hazelnut Mini
+        run: npm run sync:core && npx electron-builder ${{ matrix.target }}
+        working-directory: apps/hazelnut-mini
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hazelnut-${{ matrix.artifact }}
+          path: |
+            apps/*/release/*.dmg
+            apps/*/release/*.exe
+            apps/*/release/*.deb
+          if-no-files-found: error
+
+  android:
+    name: Android (.apk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci --include=optional
+
+      - name: Generate the Android project
+        run: |
+          npm run sync:core
+          npx cap add android
+          npx cap sync android
+        working-directory: apps/hazelnut-mini
+
+      # Only Mini ships on Android: it is the one app whose whole interface is a
+      # chat bar, and its engine already runs in the page.
+      - name: Assemble the APK
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: apps/hazelnut-mini/android
+
+      - name: Sign it
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > keystore.jks
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign \
+            --ks keystore.jks --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            apps/hazelnut-mini/android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hazelnut-mini-apk
+          path: apps/hazelnut-mini/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+  release:
+    name: Attach to the release
+    needs: [desktop, android]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*

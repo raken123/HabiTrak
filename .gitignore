@@ -31,3 +31,7 @@ npm-debug.log*
 # os cruft
 .DS_Store
 Thumbs.db
+
+# packaging
+.build/
+dist/
