@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Squirreal — source clip</title>
+<style>
+  html, body { margin: 0; background: #000; width: 780px; height: 976px; overflow: clip; }
+  canvas { display: block; width: 780px; height: 976px; }
+</style>
+</head>
+<body>
+  <!--
+    Not a film: the source clip the fourth Short opens in the editor. Rendered
+    through the same recorder so the editor decodes a real video file, rather
+    than being handed frames no file ever contained.
+  -->
+  <canvas id="c" width="780" height="976"></canvas>
+  <script type="module">
+    import { shopFrame } from './shop-scene.js';
+
+    const SECONDS = 2.5;
+    // ?van=0 renders the same pan with nothing parked at the kerb — the ad's
+    // stand-in for what Realtouch gives back.
+    const VAN = new URLSearchParams(location.search).get('van') !== '0';
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    window.AD = {
+      duration: SECONDS,
+      async ready() { return true; },
+      seek(t) {
+        ctx.drawImage(shopFrame({ width: 780, height: 976, t: t / SECONDS, van: VAN }), 0, 0);
+        return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      },
+    };
+  </script>
+</body>
+</html>

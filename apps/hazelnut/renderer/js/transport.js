@@ -60,8 +60,12 @@ export function installTransport(app) {
 
   on(play, 'click', () => (playing ? stop() : start()));
   on(scrub, 'input', () => {
+    // Read the position before stopping: stop() renders, and render() writes
+    // the current frame back into this very input — so reading it afterwards
+    // gets the frame we were already on and the scrub never moves.
+    const index = Number(scrub.value);
     stop();
-    app.doc?.setFrame?.(Number(scrub.value));
+    app.doc?.setFrame?.(index);
     render();
   });
 

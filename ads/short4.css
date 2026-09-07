@@ -1,0 +1,20 @@
+/* The fourth Short. The picture is a clip rather than a photograph, so the
+   plate holds a canvas that is redrawn every frame; everything else is the
+   shared Short furniture. */
+
+/* The footage is a clip, and the close-up has to cover the frame: a 1000×1250
+   plate cannot, whatever it is scaled about, so this one is taller than the
+   film is wide and sits centred, letterboxed until the camera goes in. */
+.plate {
+  left: 0;
+  width: 1080px; height: 1350px;
+  margin-left: 0;
+  top: 285px;
+}
+
+.end__engine {
+  margin-top: 30px;
+  font-size: 22px;
+  color: #7f7266;
+  letter-spacing: .04em;
+}

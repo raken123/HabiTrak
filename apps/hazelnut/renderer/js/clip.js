@@ -31,7 +31,7 @@ export class Clip {
   }
 
   /** Decode a video data URL into frames by seeking through it. */
-  static async fromVideo(dataUrl, { fps = 24, maxFrames = 240 } = {}) {
+  static async fromVideo(dataUrl, { fps = 24, maxFrames = 240, pixelBudget = 400e6 } = {}) {
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
@@ -43,21 +43,28 @@ export class Clip {
       video.onerror = () => reject(new Error('That clip could not be decoded.'));
     });
 
-    const count = Math.max(1, Math.min(maxFrames, Math.round(video.duration * fps)));
     const width = video.videoWidth;
     const height = video.videoHeight;
+
+    // Frames are held as canvases, so a long clip at a large frame size can ask
+    // for more memory than the machine has. Cap the decode by pixels as well as
+    // by frame count, and sample at whatever rate that leaves — the clip then
+    // plays at the right speed, just with fewer frames in it.
+    const byBudget = Math.max(8, Math.floor(pixelBudget / (width * height * 4)));
+    const count = Math.max(1, Math.min(maxFrames, byBudget, Math.round(video.duration * fps)));
+    const rate = count / video.duration;
     const frames = [];
 
     for (let i = 0; i < count; i += 1) {
       await new Promise((resolve) => {
         video.onseeked = resolve;
-        video.currentTime = Math.min(video.duration - 0.001, i / fps);
+        video.currentTime = Math.min(video.duration - 0.001, i / rate);
       });
       const canvas = makeCanvas(width, height);
       ctx2d(canvas).drawImage(video, 0, 0);
       frames.push(canvas);
     }
-    return new Clip({ frames, fps, source: dataUrl });
+    return new Clip({ frames, fps: rate, source: dataUrl });
   }
 
   /** Frames handed over already decoded, as data URLs. */

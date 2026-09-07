@@ -304,8 +304,10 @@ app.openClip = async (result, { name = 'Clip' } = {}) => {
   const first = clip.frame(0);
   const doc = new Doc(first.width, first.height, { name });
   doc.addLayer('Background');
-  setDocument(doc);
+  // Attached before the document goes live: a tool that re-quotes when the
+  // document changes has to be able to see how long the clip is.
   attachClip(doc, clip);
+  setDocument(doc);
   app.transport?.render();
   return clip;
 };

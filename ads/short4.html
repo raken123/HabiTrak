@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hazelnut Squirreal — Realtouch short</title>
+<link rel="stylesheet" href="short.css" />
+<link rel="stylesheet" href="short2.css" />
+<link rel="stylesheet" href="short4.css" />
+</head>
+<body>
+  <div class="film" id="film">
+
+    <!-- the footage, and the hand-patched version of it -->
+    <div class="plate" id="plate"><canvas id="photo" width="880" height="1100"></canvas></div>
+
+    <!-- the editor -->
+    <div class="app" id="app">
+      <div class="app__shell">
+        <div class="app__frame"><iframe id="sq" src="/squirreal/index.html" width="1280" height="720" title="Hazelnut Squirreal"></iframe></div>
+      </div>
+    </div>
+
+    <div class="line line--top" id="line-top"><span id="line-top-text"></span></div>
+    <div class="line line--bottom" id="line-bottom"><span id="line-bottom-text"></span></div>
+
+    <div class="stamp" id="stamp"><span id="stamp-text">Swimming</span></div>
+
+    <div class="end" id="end">
+      <img class="end__mark" id="end-mark" src="/icons/hazelnut-squirreal/build/icon.png" alt="" />
+      <h1>Hazelnut <b>Squirreal</b></h1>
+      <p class="end__line">Paint it out once. Not once a frame.</p>
+      <div class="end__price">$29.99<span> / month</span></div>
+      <div class="end__plat">Windows · Mac</div>
+      <div class="end__engine" id="end-engine">Runs on Gemini Omni 1.1 Flash</div>
+    </div>
+
+    <div class="flash" id="flash"></div>
+    <div class="vignette"></div>
+  </div>
+  <script type="module" src="short4.js"></script>
+</body>
+</html>

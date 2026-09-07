@@ -25,12 +25,15 @@ const ROOTS = {
   '/squirreal/': path.join(ROOT, 'apps', 'hazelnut', 'renderer'),
   '/mini/': path.join(ROOT, 'apps', 'hazelnut-mini', 'www'),
   '/core/': path.join(ROOT, 'packages', 'core'),
+  // Media the ads build for themselves — kept out of the repository.
+  '/assets/': path.join(ROOT, '.build'),
 };
 
 const TYPES = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml',
   '.json': 'application/json', '.icns': 'application/octet-stream',
+  '.webm': 'video/webm', '.mp4': 'video/mp4',
 };
 
 const INSTALL = {

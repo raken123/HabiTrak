@@ -21,6 +21,16 @@ export function createRealtouchTool() {
   let active = false;
   let hint = '';
 
+  // The badge on Remove is quoted, not hard-coded: the price differs between
+  // Hazelnut and Squirreal, and in Squirreal it moves with the clip's length.
+  function requote(app) {
+    const badge = document.getElementById('realtouch-cost');
+    if (!badge) return;
+    app.quote('realtouch', app.isVideo ? { seconds: app.doc?.clip?.seconds } : {})
+      .then((quote) => { badge.textContent = String(quote.cost); })
+      .catch(() => { /* the badge is a nicety; a failed quote is not a toast */ });
+  }
+
   const ensureMask = (app) => {
     if (mask && mask.width === app.doc.width && mask.height === app.doc.height) return;
     mask = makeCanvas(app.doc.width, app.doc.height);
@@ -70,13 +80,14 @@ export function createRealtouchTool() {
         el('button', {
           class: 'btn btn--primary',
           onClick: () => run(app),
-        }, ['Remove', el('span', { class: 'cost', text: '20' })]),
+        }, ['Remove', el('span', { class: 'cost', id: 'realtouch-cost', text: '20' })]),
       ];
     },
 
     onActivate(app) {
       ensureMask(app);
       brush.set({ color: MASK_COLOR });
+      requote(app);
       active = true;
       // Show the mask over the picture while this tool is selected. The
       // callback checks `active` rather than trusting that it was unregistered:

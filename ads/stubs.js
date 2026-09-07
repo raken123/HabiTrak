@@ -231,16 +231,31 @@ export function installSquirrealStub() {
       return promise;
     },
 
-    realtouch: (_o, onProgress) => pending(onProgress, [
-      { after: 300, stage: 'examining', message: 'Looking up where this was filmed…' },
-      { after: 2600, stage: 'rebuilding', message: 'Found 3 references. Rebuilding it across every frame…' },
-    ]),
+    /**
+     * RECORDING ONLY, and driven by the film — same arrangement as magicDraw
+     * above, and the same caveat: what it resolves with is the ad's own
+     * footage, not a model output.
+     */
+    realtouch: (_opts, onProgress) => {
+      let resolve;
+      const promise = new Promise((r) => { resolve = r; });
+      promise.cancel = () => {};
+      window.__AD_JOB = {
+        progress: (message, stage = 'rebuilding') => onProgress?.({ stage, message }),
+        finish: (payload, { charged = 88 } = {}) => {
+          state.credits -= charged;
+          resolve({ result: payload, charged, balance: state.credits });
+        },
+      };
+      return promise;
+    },
     gifAnimate: (_o, onProgress) => pending(onProgress, [{ after: 300, stage: 'encoding', message: 'Encoding the GIF…' }]),
     aiscopeLearn: (_o, onProgress) => pending(onProgress, [{ after: 300, stage: 'study', message: 'Studying the crop…' }]),
 
-    // The film builds its own plates and hands one over, so the still that
-    // opens in the editor is the same street the timeline was previewing.
-    openImage: async () => ({
+    // The film says what opens: a still it built itself, or — when it hands
+    // over __AD_OPEN — a real clip file, which the editor decodes through its
+    // own Clip.fromVideo rather than being fed frames from the outside.
+    openImage: async () => window.__AD_OPEN || ({
       name: 'high-street.jpg',
       path: 'high-street.jpg',
       dataUrl: window.__AD_PLATE
