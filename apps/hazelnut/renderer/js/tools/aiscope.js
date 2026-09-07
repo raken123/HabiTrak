@@ -10,7 +10,12 @@ import { busy, confirmSpend, toast } from '../ui.js';
 
 const SCOPE_PX = 252;            // the scope canvas, in device-independent pixels
 const OPTICAL_LIMIT = SCOPE_PX;  // one document pixel filling the scope
-const LEARN_SIZE = 512;          // what gets sent to the model
+const LEARN_SIZE = 512;          // the pixel size of what gets sent to the model
+// The smallest area worth asking a question about. The scope is a microscope:
+// at 80× it is already inside three pixels, and three pixels upscaled to 512
+// tells a model nothing. Learn therefore reads the neighbourhood of the point
+// rather than whatever sliver the scope happens to be magnifying.
+const LEARN_MIN_DOC = 256;
 const MIN_ZOOM = 80;
 const MAX_ZOOM = 60000;
 
@@ -74,9 +79,17 @@ export function createAIScopeTool() {
     badge.className = `scope-quality ${q.className}`;
   }
 
+  /** The document square Learn actually reads — never narrower than 256 px. */
+  function learnRegion() {
+    const { size } = region();
+    const longest = Math.max(app.doc.width, app.doc.height);
+    const span = Math.min(Math.max(size, LEARN_MIN_DOC), longest);
+    return { x: focus.x - span / 2, y: focus.y - span / 2, size: span };
+  }
+
   /** The crop that goes to the model, upscaled so small regions are legible. */
   function learnCrop() {
-    const { x, y, size } = region();
+    const { x, y, size } = learnRegion();
     const canvas = makeCanvas(LEARN_SIZE, LEARN_SIZE);
     const ctx = ctx2d(canvas);
     ctx.imageSmoothingEnabled = true;
@@ -187,19 +200,27 @@ export function createAIScopeTool() {
     const quote = await host.quote('aiscope', { learn: true });
     if (!(await host.gate('aiscope', quote, { learn: true }))) return;
 
-    const q = quality(zoom);
+    const read = Math.round(learnRegion().size);
+    const inside = read > region().size + 0.5;
     if (!(await confirmSpend({
       toolName: 'AIScope Learn',
       cost: quote.cost,
       balance: quote.balance,
-      note: q.key === 'beyond'
-        ? `At ${Math.round(zoom).toLocaleString('en-US')}× there is no real detail left in the picture — the reading will mostly describe interpolation. Drop below ${OPTICAL_LIMIT}× for a useful answer.`
-        : null,
+      // Say what is actually being read. At these magnifications the scope is
+      // usually inside a pixel, and pretending the reading comes from what is
+      // on screen would be the wrong kind of confidence.
+      note: inside
+        ? `At ${Math.round(zoom).toLocaleString('en-US')}× the scope is inside the pixels themselves, so Learn reads a ${read} px square around the point instead of the sliver on screen.`
+        : `Learn reads the ${read} px square the scope is showing.`,
     }))) return;
 
     const job = busy.start({ title: 'AIScope', message: 'Studying the crop…' });
     try {
-      const call = window.hazelnut.aiscopeLearn({ crop: learnCrop(), zoom }, (p) => job.update(p.message));
+      const call = window.hazelnut.aiscopeLearn({
+        crop: learnCrop(),
+        zoom,
+        cropPx: Math.round(learnRegion().size),
+      }, (p) => job.update(p.message));
       const { result, charged, balance } = await call;
       host.setCredits(balance);
       renderCard(result.card);
@@ -214,7 +235,9 @@ export function createAIScopeTool() {
   function renderCard(card) {
     const host = document.getElementById('scope-card');
     if (!host) return;
-    host.replaceChildren(
+    // Filtered, not passed straight in: replaceChildren turns a null into the
+    // text "null", so a card without a material printed one.
+    host.replaceChildren(...[
       el('div', { class: 'cat', text: card.category || 'unknown' }),
       el('h4', { text: card.subject || 'Unclear' }),
       el('p', { text: card.description || '' }),
@@ -226,6 +249,6 @@ export function createAIScopeTool() {
       el('div', { class: 'confidence' }, [
         el('i', { style: `width:${Math.round((card.confidence ?? 0) * 100)}%` }),
       ]),
-    );
+    ].filter(Boolean));
   }
 }

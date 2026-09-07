@@ -223,13 +223,14 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <h2>See it work.</h2>
     </div>
     <video controls preload="none" poster="${dataUri('s-poster.jpg', 'image/jpeg')}" src="Hazelnut-ad-3min.mp4"></video>
-    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on. The four shorts below are the same rule: the editor in them is real, and the finished picture at the end of each is a placeholder standing in for a generation, not a model output.</p>
+    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on. The five shorts below are the same rule: the editor in them is real, and whatever a model would have produced — the finished picture, the clip, the reading — is a placeholder standing in for it, not a model output.</p>
     <div class="shorts">
       ${[
         ['Hazelnut-short-sofa.mp4', 'p-short-sofa.jpg', 'Mini looks the place up'],
         ['Hazelnut-short-gamingpc.mp4', 'p-short-gamingpc.jpg', 'Magic Draw, in one sketch'],
         ['Hazelnut-short-car.mp4', 'p-short-car.jpg', 'Squirreal: one frame, one clip'],
         ['Hazelnut-short-van.mp4', 'p-short-van.jpg', 'Realtouch: gone from every frame'],
+        ['Hazelnut-short-aiscope.mp4', 'p-short-aiscope.jpg', 'AIScope: what the picture actually holds'],
       ]
         .filter(([file]) => fs.existsSync(path.join(DIST, file)))
         .map(([file, poster, caption]) => `<figure><video controls preload="none" poster="${dataUri(poster, 'image/jpeg')}" src="${esc(file)}"></video><figcaption>${esc(caption)}</figcaption></figure>`)

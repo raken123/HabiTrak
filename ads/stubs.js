@@ -99,8 +99,31 @@ export function installHazelnutStub() {
       { after: 300, stage: 'frames', message: 'Generating keyframe 2 of 8…', done: 1, total: 8 },
       { after: 1500, stage: 'frames', message: 'Generating keyframe 3 of 8…', done: 2, total: 8 },
     ]),
-    aiscopeLearn: (_opts, onProgress) => pending(onProgress, [{ after: 300, stage: 'study', message: 'Studying the crop…' }]),
+    /**
+     * RECORDING ONLY, and driven by the film — see the note in short5.js. The
+     * card it resolves with is written by the ad, not read off the picture by
+     * any model.
+     */
+    aiscopeLearn: (_opts, onProgress) => {
+      if (!window.__AD_CARD) {
+        return pending(onProgress, [{ after: 300, stage: 'study', message: 'Studying the crop…' }]);
+      }
+      let resolve;
+      const promise = new Promise((r) => { resolve = r; });
+      promise.cancel = () => {};
+      window.__AD_JOB = {
+        progress: (message, stage = 'study') => onProgress?.({ stage, message }),
+        finish: (card, { charged = 15 } = {}) => {
+          state.credits -= charged;
+          resolve({ result: { card, raw: '' }, charged, balance: state.credits });
+        },
+      };
+      return promise;
+    },
     openImage: async () => {
+      // The film can hand over its own plate; otherwise the scene is picked by
+      // the query string, as the earlier ads do.
+      if (window.__AD_PLATE) return { name: 'tomato-stem.jpg', path: 'tomato-stem.jpg', dataUrl: window.__AD_PLATE };
       const scene = new URLSearchParams(location.search).get('scene');
       if (scene === 'desk') {
         return { name: 'desk.jpg', path: 'desk.jpg', dataUrl: deskScene({ pc: 'office' }).toDataURL('image/jpeg', 0.92) };

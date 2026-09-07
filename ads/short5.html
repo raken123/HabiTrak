@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hazelnut — AIScope short</title>
+<link rel="stylesheet" href="short.css" />
+<link rel="stylesheet" href="short2.css" />
+<link rel="stylesheet" href="short5.css" />
+</head>
+<body>
+  <div class="film" id="film">
+
+    <div class="plate" id="plate"><canvas id="photo" width="1000" height="1250"></canvas></div>
+
+    <div class="app" id="app">
+      <div class="app__shell">
+        <div class="app__frame"><iframe id="hz" src="/hazelnut/index.html" width="1280" height="720" title="Hazelnut"></iframe></div>
+      </div>
+    </div>
+
+    <div class="line line--top" id="line-top"><span id="line-top-text"></span></div>
+    <div class="line line--bottom" id="line-bottom"><span id="line-bottom-text"></span></div>
+
+    <div class="stamp" id="stamp"><span id="stamp-text">Pixels</span></div>
+
+    <div class="end" id="end">
+      <img class="end__mark" id="end-mark" src="/icons/hazelnut/build/icon.png" alt="" />
+      <h1>Hazelnut</h1>
+      <p class="end__line">Zoom as far as you like. It will not invent the rest.</p>
+      <div class="end__price">$19.99<span> / month</span></div>
+      <div class="end__plat">Windows · Mac</div>
+      <div class="end__engine" id="end-engine">Zooming is free · Learn costs 15 credits</div>
+    </div>
+
+    <div class="flash" id="flash"></div>
+    <div class="vignette"></div>
+  </div>
+  <script type="module" src="short5.js"></script>
+</body>
+</html>

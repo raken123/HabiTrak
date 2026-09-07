@@ -200,12 +200,12 @@ export class Engine {
    *
    * @param {{crop:string, zoom:number, signal?:AbortSignal}} opts
    */
-  async aiscopeLearn({ crop, zoom = 80, signal } = {}) {
+  async aiscopeLearn({ crop, zoom = 80, cropPx = null, signal } = {}) {
     this.#gate('aiscope', { learn: true });
 
     return this.credits.charge('aiscope', { learn: true }, async () => {
       const study = await this.client.analyze({
-        prompt: aiscopePrompt({ zoom }),
+        prompt: aiscopePrompt({ zoom, cropPx }),
         images: [asPart(crop)],
         json: AISCOPE_SCHEMA,
         temperature: 0.25,

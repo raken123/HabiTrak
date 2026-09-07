@@ -196,13 +196,15 @@ export const busy = {
   start({ title, message = '', onCancel = null }) {
     const overlay = $('#stage-overlay');
     const bar = el('i');
-    overlay.replaceChildren(
+    // Filtered: replaceChildren turns a null into the text "null", so a job
+    // that cannot be cancelled printed one under the progress bar.
+    overlay.replaceChildren(...[
       el('div', { class: 'spinner spinner--lg' }),
       el('h3', { text: title }),
       el('p', { class: 'busy-message', text: message }),
       el('div', { class: 'progressbar' }, [bar]),
       onCancel ? el('button', { class: 'btn', onClick: onCancel, text: 'Cancel' }) : null,
-    );
+    ].filter(Boolean));
     overlay.hidden = false;
 
     const jobEl = $('#status-job');
