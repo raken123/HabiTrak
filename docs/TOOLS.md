@@ -3,6 +3,11 @@
 Six tools. Two of them never touch a model, which is why they survive into
 Hazelnut Free.
 
+Everything below describes Hazelnut. **Hazelnut Squirreal** has the same six,
+pointed at clips: the prices change (a generation is a clip, not a frame), and
+GIF Animate stops being a generation at all because the motion already exists.
+The differences are listed at the end.
+
 ---
 
 ## Draw — free
@@ -114,3 +119,23 @@ versus interpolation. The card stays in the panel for the rest of the session.
 
 Locked tools stay visible in the toolbar with a padlock, so Free is a version of
 the app rather than a nag screen.
+
+---
+
+## The same six in Squirreal
+
+| Tool | What changes | Cost |
+|---|---|---|
+| **Draw** | Paints on the frame the playhead is parked on. The clip underneath is untouched. | Free |
+| **Magic Draw** | Two more fields: **Seconds** (1–8) and **Movement**. Sketch one frame, say how it moves, and a clip comes back into the transport. | 40–120 — length is 0.55 of the weight |
+| **Realtouch** | The location study is done once and then held steady across every frame, so the rebuilt background does not swim as the camera moves. | 150, floored at 45 for a short clip |
+| **GIF Animate** | Not a generation any more. The frames already exist, so the app encodes them locally with the same GIF writer. | **Free, on every edition** |
+| **Expand** | Mirrors the edge on every frame, not just the one on screen. | Never costs a credit |
+| **AIScope** | Unchanged: zoom is local and free; Learn studies the crop you are parked on. | Free · Learn 15 |
+
+The transport bar under the canvas is the only new piece of interface: play,
+pause, a scrub bar, and the clip's length and rate. `Space` plays and pauses.
+
+Squirreal runs on **Gemini Omni 1.1 Flash**. The request shape in
+`packages/core/video.js` is an assumption, not a verified fact — see the caveat
+in the README.

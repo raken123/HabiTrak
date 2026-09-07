@@ -209,8 +209,8 @@ func openDefault(addr string) error {
 	}
 }
 
-// appDisplayName reads the name from the executable, so one source builds both
-// applications and each announces itself correctly.
+// appDisplayName reads the name from the executable, so one source builds every
+// application and each announces itself correctly.
 func appDisplayName() string {
 	exe, err := os.Executable()
 	if err != nil {
@@ -219,6 +219,9 @@ func appDisplayName() string {
 	name := strings.TrimSuffix(filepath.Base(exe), filepath.Ext(exe))
 	if strings.EqualFold(name, "HazelnutMini") {
 		return "Hazelnut Mini"
+	}
+	if strings.EqualFold(name, "HazelnutSquirreal") {
+		return "Hazelnut Squirreal"
 	}
 	if name == "" {
 		return "Hazelnut"

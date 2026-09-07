@@ -3,11 +3,12 @@
 **An advanced AI photo generator for Windows and Mac.** Free for 7 days, then it
 keeps working — without the AI — as Hazelnut Free.
 
-Three products, one codebase:
+Four products, one codebase:
 
 | | What it is | Platforms | Price |
 |---|---|---|---|
 | **Hazelnut** | The full editor: six tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
+| **Hazelnut Squirreal** | The same editor, pointed at moving pictures. Sketch a frame, say how it moves, get a clip | Windows, Mac | $29.99 / month |
 | **Hazelnut Mini** | One chat bar that removes things from photos | Windows, Mac, **Android** | $9.99 / month — half of Hazelnut |
 | **Hazelnut Free** | Hazelnut with **no AI**. Everything that runs locally, forever, at no cost | Windows, Mac | Free |
 
@@ -35,6 +36,33 @@ detail.
 **Credits are only taken when a result comes back.** A failed or cancelled
 generation costs nothing.
 
+### The same six tools in Squirreal
+
+A generation there is a clip rather than a frame, so two prices move and two
+tools stop being generations at all:
+
+| Tool | In Squirreal | Cost |
+|---|---|---|
+| **Draw** | Paints on the frame the playhead is parked on | Free |
+| **Magic Draw** | Sketch one frame, describe the movement, get the shot back as a clip | 40–120 credits, mostly by length |
+| **Realtouch** | Removes the thing from *every* frame, holding one answer steady as the camera moves | 150 credits a clip |
+| **GIF Animate** | The motion already exists, so this is a local encoder | **Free, on every edition** |
+| **Expand** | Grows the frame, on every frame of the clip | **Never costs a credit** |
+| **AIScope** | The still tool, on whichever frame you are parked on | Free · Learn 15 |
+
+Squirreal's plan carries 3,000 credits a month rather than Hazelnut's 5,000: a
+clip is heavier work, not less of it. It runs on **Gemini Omni 1.1 Flash**.
+
+> **One caveat, stated plainly.** `packages/core/video.js` is written against an
+> *assumed* request shape for the video model — a long-running operation started
+> at `:predictLongRunning` and polled until it reports done — because this
+> machine cannot reach Google to check. The model name, the call mode and the
+> start method are each overridable by environment variable
+> (`HAZELNUT_VIDEO_MODEL`, `HAZELNUT_VIDEO_MODE`, `HAZELNUT_VIDEO_START`), so if
+> the real endpoint differs it is a configuration change rather than a code
+> change. Everything around it — the gating, the pricing, the ledger, the
+> editor — is exercised by the test suite.
+
 ---
 
 ## Running it
@@ -43,9 +71,10 @@ Node 20 or newer, then from the repository root:
 
 ```bash
 npm install          # links the workspace packages
-npm start            # Hazelnut
-npm run start:mini   # Hazelnut Mini
-npm test             # the core test suite
+npm start                # Hazelnut
+npm run start:squirreal  # Hazelnut Squirreal
+npm run start:mini       # Hazelnut Mini
+npm test                 # the core test suite
 ```
 
 ### Your API key
@@ -74,6 +103,7 @@ Draw, Expand and the AIScope zoom work with no key at all.
 
 ```bash
 npm run dist:hazelnut   # .exe (NSIS + portable) and .dmg
+npm run dist:squirreal  # the same for Squirreal
 npm run dist:mini       # the same for Mini
 node scripts/make-icons.mjs   # regenerate the app icons
 ```
@@ -92,10 +122,16 @@ See [`apps/hazelnut-mini/README.md`](apps/hazelnut-mini/README.md).
 
 ```
 packages/core/        the engine — editions, trial, credits, tools, prompts,
-                      the Gemini client and a dependency-free GIF encoder
+                      the Gemini client and a dependency-free GIF encoder.
+                      video-tools.js, video.js and video-engine.js are the
+                      same three ideas for clips
 apps/hazelnut/        Electron desktop app: main process + renderer
+apps/hazelnut-squirreal/  Electron desktop app for video. It has no renderer of
+                      its own: it serves Hazelnut's, which notices the product
+                      in its state and grows a playhead
 apps/hazelnut-mini/   Electron desktop app + Capacitor Android app
-scripts/              icon generation
+scripts/              icons, packaging without electron-builder, the download page
+ads/                  the films — they drive the real apps in a headless browser
 ```
 
 The renderer is sandboxed: no Node, no filesystem, no network. Everything
@@ -109,10 +145,11 @@ the page — only the fact that one is configured. More in
 npm test
 ```
 
-52 tests over the parts that can be tested without a screen: the credit and
+81 tests over the parts that can be tested without a screen: the credit and
 trial rules, the tool gating, the engine's orchestration (against a fake model),
-the image header parsing, and the GIF encoder — which is round-tripped through
-an independently written decoder to prove the LZW code-size handling is right.
+the image header parsing, the video pricing and client, and the GIF encoder —
+which is round-tripped through an independently written decoder to prove the
+LZW code-size handling is right.
 
 ## Licence
 

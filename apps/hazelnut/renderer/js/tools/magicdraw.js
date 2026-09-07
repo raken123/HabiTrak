@@ -44,10 +44,16 @@ export function createMagicDrawTool() {
     brush,
 
     options(app) {
+      // The floor of the band, until the quote comes back a moment later. It
+      // has to come from the registry: Squirreal's floor is not Hazelnut's, and
+      // a stale number on a Submit button is a price the user did not agree to.
+      const meta = app.server.tools.find((t) => t.id === 'magic-draw');
+      const floor = typeof meta?.cost === 'number' ? meta.cost : meta?.cost?.min ?? 5;
+
       const submit = el('button', {
         class: 'btn btn--primary',
         onClick: () => run(app),
-      }, ['Submit', el('span', { class: 'cost', id: 'magic-cost', text: '5' })]);
+      }, ['Submit', el('span', { class: 'cost', id: 'magic-cost', text: String(floor) })]);
 
       const videoFields = app.isVideo ? [
         field('Seconds', el('input', {

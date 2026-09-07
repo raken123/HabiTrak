@@ -21,8 +21,9 @@ DIST="$ROOT/dist"
 
 case "$APP" in
   hazelnut)      NAME="Hazelnut";      BIN="hazelnut";      SRC="$ROOT/apps/hazelnut";      PAYLOAD="electron renderer build";;
+  hazelnut-squirreal) NAME="Hazelnut Squirreal"; BIN="hazelnut-squirreal"; SRC="$ROOT/apps/hazelnut-squirreal"; PAYLOAD="electron build";;
   hazelnut-mini) NAME="Hazelnut Mini"; BIN="hazelnut-mini"; SRC="$ROOT/apps/hazelnut-mini"; PAYLOAD="electron www build";;
-  *) echo "unknown app: $APP (expected hazelnut or hazelnut-mini)" >&2; exit 1;;
+  *) echo "unknown app: $APP (expected hazelnut, hazelnut-squirreal or hazelnut-mini)" >&2; exit 1;;
 esac
 
 VERSION="$(node -p "require('$SRC/package.json').version")"
@@ -50,6 +51,9 @@ rm -rf "$STAGE/opt/$NAME/resources/default_app.asar"
 APPDIR="$STAGE/opt/$NAME/resources/app"
 mkdir -p "$APPDIR"
 for dir in $PAYLOAD; do cp -a "$SRC/$dir" "$APPDIR/"; done
+# Squirreal has no renderer of its own: it runs Hazelnut's, so a packaged build
+# carries a copy of it rather than a second one to keep in step.
+if [ "$APP" = "hazelnut-squirreal" ]; then cp -a "$ROOT/apps/hazelnut/renderer" "$APPDIR/"; fi
 
 # @hazelnut/core is a workspace dependency; without `npm install` to symlink it,
 # copy it into place so Node's resolver finds it exactly as it would normally.

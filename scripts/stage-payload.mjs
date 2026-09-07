@@ -36,7 +36,8 @@ function patchIndex(file, extraBody, extraHead) {
   return html;
 }
 
-if (app === 'hazelnut') {
+if (app === 'hazelnut' || app === 'hazelnut-squirreal') {
+  // Squirreal is the same renderer; only the bridge behind it differs.
   fs.cpSync(path.join(ROOT, 'apps/hazelnut/renderer'), OUT, { recursive: true });
 
   fs.mkdirSync(path.join(OUT, 'core'), { recursive: true });
@@ -50,7 +51,7 @@ if (app === 'hazelnut') {
   // to be rewritten from the repository's layout to this one. It also installs
   // itself: the CSP has no 'unsafe-inline', so the page cannot carry a one-line
   // inline module to call it — the file has to do it on load.
-  const bridge = fs.readFileSync(path.join(ROOT, 'apps/hazelnut/web/bridge.js'), 'utf8')
+  const bridge = fs.readFileSync(path.join(ROOT, `apps/${app}/web/bridge.js`), 'utf8')
     .replaceAll('../../../packages/core/', './core/');
   fs.writeFileSync(
     path.join(OUT, 'bridge.js'),
@@ -59,7 +60,9 @@ if (app === 'hazelnut') {
 
   patchIndex(
     path.join(OUT, 'index.html'),
-    '<input type="file" id="file-input" accept="image/*" hidden />\n  ',
+    app === 'hazelnut-squirreal'
+      ? '<input type="file" id="file-input" accept="image/*,video/*" hidden />\n  '
+      : '<input type="file" id="file-input" accept="image/*" hidden />\n  ',
     '<script type="module" src="/bridge.js"></script>\n  ',
   );
 } else if (app === 'hazelnut-mini') {

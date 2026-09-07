@@ -13,11 +13,22 @@ packages/core/          the engine, shared by both apps
   engine.js             one method per AI tool: gate, quote, run, charge
   gif.js                a dependency-free GIF89a encoder
   imaging.js            data URLs and image header parsing, no Node built-ins
+  video-tools.js        the same registry for clips — length is most of the price
+  video.js              the video client: start an operation, poll it, take the
+                        clip out. UNVERIFIED against the real API, and says so
+  video-prompts.js      the prompts a clip needs, including holding still
+  video-engine.js       gate, quote, run, charge — for moving pictures
 
 apps/hazelnut/
   electron/main.js      window, menus, IPC, file dialogs, the custom protocol
   electron/preload.cjs  the only bridge into the page
   renderer/             the editor: document, layers, history, viewport, tools
+
+apps/hazelnut-squirreal/
+  electron/main.js      the video app's main process. It serves Hazelnut's
+                        renderer rather than a copy: same editor, different
+                        engine behind the same IPC channel names
+  web/bridge.js         the standalone build's bridge, video engine behind it
 
 apps/hazelnut-mini/
   electron/             the desktop build, same shape as Hazelnut's
@@ -25,6 +36,16 @@ apps/hazelnut-mini/
   www/js/web-bridge.js  the browser implementation of the same bridge
   scripts/sync-core.mjs copies the browser-safe core into www/vendor/core
 ```
+
+## How Squirreal is the same app
+
+The renderer reads `product` out of the state its bridge returns. When it is
+`squirreal` it adds a playhead, renames itself, and hands the tools an
+`app.isVideo` flag; everything else — layers, history, the viewport, the
+confirm-before-you-spend rule — is the code Hazelnut runs. There is no second
+editor to keep in step, and no `if (video)` scattered through the drawing code:
+the clip lives in the document's background layer, so a tool that knows nothing
+about video still works on the frame the playhead is parked on.
 
 ## Three rules the rest of the code leans on
 

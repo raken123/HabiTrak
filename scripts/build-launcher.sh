@@ -14,7 +14,7 @@ LAUNCHER="$ROOT/launcher"
 DIST="$ROOT/dist"
 WORK="${WORK:-$ROOT/.build}"
 
-APPS=("${1:-hazelnut hazelnut-mini}")
+APPS=("${1:-hazelnut hazelnut-squirreal hazelnut-mini}")
 PLATFORMS=("${2:-windows macos linux}")
 read -ra APPS <<< "${APPS[0]}"
 read -ra PLATFORMS <<< "${PLATFORMS[0]}"
@@ -71,6 +71,7 @@ PLIST
 for app in "${APPS[@]}"; do
   case "$app" in
     hazelnut)      NAME="Hazelnut";      EXEC="Hazelnut";     IDENT="com.hazelnut.studio";;
+    hazelnut-squirreal) NAME="Hazelnut Squirreal"; EXEC="HazelnutSquirreal"; IDENT="com.hazelnut.squirreal";;
     hazelnut-mini) NAME="Hazelnut Mini"; EXEC="HazelnutMini"; IDENT="com.hazelnut.mini";;
     *) echo "unknown app: $app" >&2; exit 1;;
   esac

@@ -8,7 +8,7 @@
 //   2. Every movement is written to a ledger, so "where did my credits go" has
 //      an answer in the UI rather than in a support ticket.
 
-import { costOf } from './tools.js';
+import { costOf as imageCostOf } from './tools.js';
 
 export const CREDIT_DEFAULTS = {
   credits: 0,
@@ -20,12 +20,18 @@ const LEDGER_LIMIT = 500;
 
 export class Credits {
   /**
+   * `costOf` is injected because the price of a tool depends on the product:
+   * Squirreal's Realtouch works on a clip and costs 150, Hazelnut's works on a
+   * frame and costs 20. The ledger, the grants and the charge-on-success rule
+   * are identical, so only the pricing function differs.
+   *
    * @param {import('./store.js').Store} store
-   * @param {{now?:() => number}} opts
+   * @param {{now?:() => number, costOf?:(id:string, params:object) => number}} opts
    */
-  constructor(store, { now = Date.now } = {}) {
+  constructor(store, { now = Date.now, costOf = imageCostOf } = {}) {
     this.store = store;
     this.now = now;
+    this.costOf = costOf;
   }
 
   get balance() {
@@ -50,7 +56,7 @@ export class Credits {
 
   /** Can this tool run right now, at these parameters? */
   canAfford(toolId, params = {}) {
-    const cost = costOf(toolId, params);
+    const cost = this.costOf(toolId, params);
     return { ok: this.balance >= cost, cost, balance: this.balance, short: Math.max(0, cost - this.balance) };
   }
 

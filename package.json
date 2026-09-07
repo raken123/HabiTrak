@@ -2,16 +2,18 @@
   "name": "hazelnut-workspace",
   "version": "1.0.0",
   "private": true,
-  "description": "Hazelnut — advanced AI photo generator for Windows and Mac, plus Hazelnut Mini and Hazelnut Free.",
+  "description": "Hazelnut — advanced AI photo generator for Windows and Mac, plus Hazelnut Squirreal for video, Hazelnut Mini and Hazelnut Free.",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
     "start": "npm run start --workspace=hazelnut",
+    "start:squirreal": "npm run start --workspace=hazelnut-squirreal",
     "start:mini": "npm run start --workspace=hazelnut-mini",
     "test": "node --test packages/core/test/*.test.js",
     "dist:hazelnut": "npm run dist --workspace=hazelnut",
+    "dist:squirreal": "npm run dist --workspace=hazelnut-squirreal",
     "dist:mini": "npm run dist --workspace=hazelnut-mini"
   },
   "engines": {

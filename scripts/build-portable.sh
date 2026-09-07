@@ -21,6 +21,7 @@ DIST="$ROOT/dist"
 
 case "$APP" in
   hazelnut)      NAME="Hazelnut";      SRC="$ROOT/apps/hazelnut";      PAYLOAD="electron renderer build"; ID="com.hazelnut.studio";;
+  hazelnut-squirreal) NAME="Hazelnut Squirreal"; SRC="$ROOT/apps/hazelnut-squirreal"; PAYLOAD="electron build"; ID="com.hazelnut.squirreal";;
   hazelnut-mini) NAME="Hazelnut Mini"; SRC="$ROOT/apps/hazelnut-mini"; PAYLOAD="electron www build";      ID="com.hazelnut.mini";;
   *) echo "unknown app: $APP" >&2; exit 1;;
 esac
@@ -45,6 +46,9 @@ stage_app() {
   local appdir="$1"
   mkdir -p "$appdir"
   for dir in $PAYLOAD; do cp -a "$SRC/$dir" "$appdir/"; done
+  # Squirreal has no renderer of its own: it runs Hazelnut's, so a packaged
+  # build carries a copy of it rather than a second one to keep in step.
+  if [ "$APP" = "hazelnut-squirreal" ]; then cp -a "$ROOT/apps/hazelnut/renderer" "$appdir/"; fi
   mkdir -p "$appdir/node_modules/@hazelnut"
   cp -a "$ROOT/packages/core" "$appdir/node_modules/@hazelnut/core"
   node -e "

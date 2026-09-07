@@ -24,6 +24,10 @@ const SWATCHES = [
   '#b4642f', '#2f6f4f', '#1f3a5f', '#d94f4f',
 ];
 
+/** Whichever product this build is. The dialogs read it rather than assume. */
+const productName = () => (app.isVideo ? 'Hazelnut Squirreal' : 'Hazelnut');
+const freeName = () => (app.isVideo ? 'Squirreal Free' : 'Hazelnut Free');
+
 const app = {
   doc: null,
   history: null,
@@ -72,7 +76,10 @@ async function boot() {
   if (!app.server.trialStarted) {
     await showWelcome();
   } else if (app.server.edition === 'free' && app.server.trialUsed) {
-    toast('Hazelnut Free', 'Your trial has finished. Draw, Expand and the AIScope zoom keep working — the AI tools need a licence.', { timeout: 9000 });
+    toast(freeName(), app.isVideo
+      ? 'Your trial has finished. Draw, Expand, the AIScope zoom and GIF export keep working — the AI tools need a licence.'
+      : 'Your trial has finished. Draw, Expand and the AIScope zoom keep working — the AI tools need a licence.',
+    { timeout: 9000 });
   }
   if (app.server.ai && !app.server.apiKeyConfigured) {
     toast('No API key yet', 'The AI tools need a Gemini key. Open Settings to add one.', {
@@ -115,7 +122,7 @@ function priceBadge(tool) {
 function tooltipFor(tool) {
   const locked = !editionAllows(tool);
   return `<strong>${tool.name} <em>${tool.shortcut}</em></strong>${tool.tagline}
-    <p>${costLabel(tool)}${locked ? ' — locked on Hazelnut Free' : ''}</p>`;
+    <p>${costLabel(tool)}${locked ? ` — locked on ${freeName()}` : ''}</p>`;
 }
 
 function editionAllows(tool) {
@@ -163,9 +170,23 @@ function selectTool(id) {
 const MENUS = {
   file: () => [
     { label: 'New Canvas…', shortcut: mod('N'), onClick: () => runCommand('file:new') },
-    { label: 'Open Image…', shortcut: mod('O'), onClick: () => runCommand('file:open') },
+    {
+      label: app.isVideo ? 'Open Frame or Clip…' : 'Open Image…',
+      shortcut: mod('O'),
+      onClick: () => runCommand('file:open'),
+    },
     '-',
-    { label: 'Save As…', shortcut: mod('S'), disabled: !app.doc, onClick: () => runCommand('file:save') },
+    {
+      label: app.isVideo ? 'Save Frame As…' : 'Save As…',
+      shortcut: mod('S'),
+      disabled: !app.doc,
+      onClick: () => runCommand('file:save'),
+    },
+    ...(app.isVideo ? [{
+      label: 'Export Clip as GIF…',
+      disabled: !app.doc?.clip,
+      onClick: () => runCommand('file:export-gif'),
+    }] : []),
   ],
   edit: () => [
     { label: 'Undo', shortcut: mod('Z'), disabled: !app.history?.canUndo, onClick: () => runCommand('edit:undo') },
@@ -194,7 +215,7 @@ const MENUS = {
     { label: 'Plans & Credits', onClick: showPlans },
     { label: 'Settings…', onClick: showSettings },
     '-',
-    { label: 'About Hazelnut', onClick: showAbout },
+    { label: app.isVideo ? 'About Squirreal' : 'About Hazelnut', onClick: showAbout },
   ],
 };
 
@@ -313,6 +334,13 @@ async function openFile() {
   try {
     const file = await window.hazelnut.openImage();
     if (!file) return;
+    // Squirreal can be handed a clip rather than a frame; it arrives under its
+    // own key and is decoded into frames before anything is drawn.
+    if (file.clip) {
+      const clip = await app.openClip({ clip: file.clip, fps: 24 }, { name: file.name });
+      toast('Opened', `${file.name} — ${clip.length} frames · ${clip.seconds.toFixed(1)}s`, { timeout: 3000 });
+      return;
+    }
     await openDataUrl(file.dataUrl, file.name);
   } catch (err) {
     toastError(err, 'That file could not be opened.');
@@ -564,6 +592,13 @@ function wireKeyboard() {
       return;
     }
 
+    // Squirreal: Space plays and pauses, as the transport's own tooltip says.
+    if (event.key === ' ' && app.transport && app.doc?.clip) {
+      event.preventDefault();
+      if (app.transport.playing) app.transport.pause(); else app.transport.play();
+      return;
+    }
+
     const brush = app.tools[app.currentToolId]?.brush;
     if (event.key === '[' || event.key === ']') {
       if (!brush) return;
@@ -582,9 +617,12 @@ function wireDragAndDrop() {
   on(window, 'drop', async (event) => {
     event.preventDefault();
     const file = event.dataTransfer?.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    const isClip = app.isVideo && file?.type.startsWith('video/');
+    if (!file || !(isClip || file.type.startsWith('image/'))) return;
     const reader = new FileReader();
-    reader.onload = () => openDataUrl(reader.result, file.name).catch((err) => toastError(err));
+    reader.onload = () => (isClip
+      ? app.openClip({ clip: reader.result, fps: 24 }, { name: file.name })
+      : openDataUrl(reader.result, file.name)).catch((err) => toastError(err));
     reader.readAsDataURL(file);
   });
 }
@@ -668,11 +706,11 @@ app.reportToolError = (err) => {
 
 async function showWelcome() {
   const start = await modal({
-    title: 'Welcome to Hazelnut',
+    title: `Welcome to ${productName()}`,
     wide: true,
     body: el('div', {}, [
       el('p', { text: `Every tool is unlocked for ${app.server.trialDays} days, with ${app.server.trialCreditGrant.toLocaleString('en-US')} AI credits to spend. No card, no account.` }),
-      el('p', { text: 'When the trial ends Hazelnut does not stop working — it becomes Hazelnut Free: the same editor with Draw, Expand and the AIScope zoom, minus anything that needs a model.' }),
+      el('p', { text: `When the trial ends ${productName()} does not stop working — it becomes ${freeName()}: the same editor with Draw, Expand and the AIScope zoom${app.isVideo ? ', and the GIF export' : ''}, minus anything that needs a model.` }),
       toolGuide(app.server.tools),
     ]),
     footer: (close) => [
@@ -704,7 +742,7 @@ function showUpgrade(tool, message) {
   modal({
     title: tool ? `${tool.name} needs the AI` : 'This tool needs the AI',
     body: el('div', {}, [
-      el('p', { text: message || `Hazelnut Free runs everything that works locally. ${tool ? tool.name : 'This tool'} needs a model, so it is part of the paid app.` }),
+      el('p', { text: message || `${freeName()} runs everything that works locally. ${tool ? tool.name : 'This tool'} needs a model, so it is part of the paid app.` }),
       el('div', { class: 'note', text: 'Draw, Expand and the AIScope zoom stay available on Free, forever, at no cost.' }),
     ]),
     footer: (close) => [
@@ -797,7 +835,7 @@ function showSettings() {
     wide: true,
     body: el('div', {}, [
       el('h4', { text: 'AI' }),
-      el('p', { text: 'Hazelnut talks to Gemini with your own API key. It is stored on this machine only and is never sent anywhere but Google.' }),
+      el('p', { text: `${productName()} talks to Gemini with your own API key. It is stored on this machine only and is never sent anywhere but Google.` }),
       el('label', { class: 'stack' }, [
         el('span', { text: 'Gemini API key' }),
         el('input', {
@@ -847,9 +885,11 @@ function showSettings() {
 
 function showAbout() {
   modal({
-    title: 'About Hazelnut',
+    title: `About ${productName()}`,
     body: el('div', {}, [
-      el('p', { text: `Hazelnut ${app.server.version} — an advanced AI photo generator for Windows and Mac.` }),
+      el('p', { text: app.isVideo
+        ? `Hazelnut Squirreal ${app.server.version} — Hazelnut, for moving pictures. Windows and Mac.`
+        : `Hazelnut ${app.server.version} — an advanced AI photo generator for Windows and Mac.` }),
       el('p', { text: `You are on ${app.server.plan.name}.` }),
       el('p', { text: 'Images are sent to Google\'s Gemini API when an AI tool runs, and nowhere else. Draw and Expand never leave this machine.' }),
     ]),

@@ -36,17 +36,25 @@ function fileInfo(name) {
 const DOWNLOADS = [
   { os: 'win', icon: 'WIN', title: 'Hazelnut for Windows', file: 'Hazelnut.exe',
     meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
+  { os: 'win', icon: 'WIN', title: 'Hazelnut Squirreal for Windows', file: 'HazelnutSquirreal.exe',
+    meta: 'Windows 10 or 11, 64-bit · the video app · one file, nothing to install' },
   { os: 'win', icon: 'WIN', title: 'Hazelnut Mini for Windows', file: 'HazelnutMini.exe',
     meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS', file: 'Hazelnut-macos.zip',
     meta: 'Apple silicon · unzip and drag Hazelnut.app to Applications' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut Squirreal for macOS', file: 'HazelnutSquirreal-macos.zip',
+    meta: 'Apple silicon · unzip and drag Hazelnut Squirreal.app to Applications' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS', file: 'HazelnutMini-macos.zip',
     meta: 'Apple silicon · unzip and drag to Applications' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS (Intel)', file: 'Hazelnut-macos-intel',
     meta: 'Intel Macs · run from Terminal, or drop into an app bundle' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut Squirreal for macOS (Intel)', file: 'HazelnutSquirreal-macos-intel',
+    meta: 'Intel Macs' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS (Intel)', file: 'HazelnutMini-macos-intel',
     meta: 'Intel Macs' },
   { os: 'linux', icon: 'LNX', title: 'Hazelnut for Linux', file: 'Hazelnut-linux-x64',
+    meta: 'x86-64 · chmod +x and run' },
+  { os: 'linux', icon: 'LNX', title: 'Hazelnut Squirreal for Linux', file: 'HazelnutSquirreal-linux-x64',
     meta: 'x86-64 · chmod +x and run' },
   { os: 'linux', icon: 'LNX', title: 'Hazelnut Mini for Linux', file: 'HazelnutMini-linux-x64',
     meta: 'x86-64 · chmod +x and run' },
@@ -72,9 +80,23 @@ const PLANS = [
   { name: 'Hazelnut', price: '$19.99', per: '/ month', lead: true,
     blurb: 'The full app. Six tools, and a monthly allowance of credits.',
     points: ['Every tool unlocked', '5,000 credits a month', 'About 250 removals, or 8 full-length GIFs', 'Windows and Mac'] },
+  { name: 'Hazelnut Squirreal', price: '$29.99', per: '/ month', lead: false,
+    blurb: 'The same editor, pointed at moving pictures. A generation is a clip, so it costs more — and the allowance is sized for that, not shrunk.',
+    points: ['3,000 credits a month', 'About 40 short clips, or 20 removals', 'Turning a clip into a GIF is free', 'Windows and Mac'] },
   { name: 'Hazelnut Mini', price: '$9.99', per: '/ month', lead: false,
     blurb: 'The remover on its own, behind one chat bar. Exactly half the price.',
     points: ['1,500 credits a month', 'About 75 removals', 'Say what should go, in words', 'Windows, Mac and Android'] },
+];
+
+// Squirreal's prices for the same six tools. A clip is not a frame, and two of
+// the tools stop being generations altogether.
+const VIDEO_TOOLS_PRICES = [
+  ['Draw', 'Free'],
+  ['Magic Draw', '40–120 credits'],
+  ['Realtouch', '150 credits'],
+  ['GIF Animate', 'Free — the motion is already there'],
+  ['Expand', 'Never costs a credit'],
+  ['AIScope', 'Free · Learn 15'],
 ];
 
 const rows = DOWNLOADS.map((d) => ({ ...d, info: fileInfo(d.file) })).filter((d) => d.info);
@@ -86,7 +108,7 @@ const html = `<!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hazelnut — downloads</title>
-<meta name="description" content="Hazelnut is an advanced AI photo generator for Windows and Mac. Free for seven days, then it keeps working without the AI. Hazelnut Mini removes things from photos on Windows, Mac and Android, for half the price." />
+<meta name="description" content="Hazelnut is an advanced AI photo generator for Windows and Mac. Free for seven days, then it keeps working without the AI. Hazelnut Squirreal is the same editor for moving pictures, and Hazelnut Mini removes things from photos on Windows, Mac and Android for half the price." />
 <link rel="icon" href="${dataUri('icon.png', 'image/png')}" />
 <style>
 ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
@@ -99,7 +121,8 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
     <a class="brand" href="#top"><img src="${dataUri('icon.png', 'image/png')}" alt="" /> Hazelnut</a>
     <nav>
       <a href="#tools">Tools</a>
-      <a href="#apps">The two apps</a>
+      <a href="#squirreal">Squirreal</a>
+      <a href="#apps">The three apps</a>
       <a href="#pricing">Pricing</a>
       <a href="#downloads">Downloads</a>
     </nav>
@@ -112,7 +135,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
   <div class="wrap hero__in">
     <p class="eyebrow">Windows · Mac · Android</p>
     <h1>An advanced AI<br />photo generator.</h1>
-    <p class="lede">Six tools in a workspace built like a photo editor should be. Two of them never touch a model, so they keep working for ever — free.</p>
+    <p class="lede">Six tools in a workspace built like a photo editor should be. Two of them never touch a model, so they keep working for ever — free. And the same six, pointed at video, in <a href="#squirreal">Squirreal</a>.</p>
     <div class="cta" id="cta">
       <a class="btn btn--primary" href="#downloads" id="cta-primary">Download Hazelnut <small id="cta-os"></small></a>
       <a class="btn" href="#film">Watch the 3-minute film</a>
@@ -143,10 +166,11 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
 <section id="apps">
   <div class="wrap apps">
     <div>
-      <p class="eyebrow">Two apps</p>
-      <h2>The whole editor, or just the one thing.</h2>
+      <p class="eyebrow">Three apps</p>
+      <h2>The whole editor, moving pictures, or just the one thing.</h2>
       <ul>
         <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all six tools. Windows and Mac.</li>
+        <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the six tools, pointed at clips instead of stills. Windows and Mac.</li>
         <li><b>Hazelnut Mini</b> is the remover on its own, behind a single chat bar. Attach a photo, say what should go, and the picture that comes back becomes the one you are working on. Windows, Mac and <b>Android</b>.</li>
         <li><b>Hazelnut Free</b> is what the trial becomes. The same editor, minus anything that needs a model — the tools that run locally stay, for ever.</li>
       </ul>
@@ -159,6 +183,39 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
   </div>
 </section>
 
+<section id="squirreal">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">New · Windows and Mac</p>
+      <h2>Hazelnut Squirreal: the same editor, for moving pictures.</h2>
+      <p>Sketch one frame, say how it moves in a line, and get the shot back as a clip you can scrub. It is not a second application to learn — it is Hazelnut with a playhead under the canvas, and it runs on Gemini Omni 1.1 Flash.</p>
+    </div>
+    <div class="shot"><img src="${dataUri('s-squirreal.jpg', 'image/jpeg')}" alt="Hazelnut Squirreal with a two-second clip open, the transport bar under the canvas and Magic Draw quoting its price." width="1560" /></div>
+    <div class="apps" style="margin-top:36px">
+      <div>
+        <h3 style="font-family:var(--display);font-size:26px;margin-bottom:14px">What changes</h3>
+        <ul>
+          <li><b>A clip costs more than a frame</b>, so Magic Draw is priced 40–120 by length, and Realtouch is 150 for the whole clip rather than 20 for one picture.</li>
+          <li><b>GIF Animate stops being a generation.</b> The motion already exists, so turning a clip into a looping GIF is local work and free on every edition — including Squirreal Free.</li>
+          <li><b>Realtouch removes it from every frame</b>, not just the one you painted on: it looks the place up once, then holds that answer steady as the camera moves.</li>
+          <li><b>Everything else is the editor you already know</b> — layers, history, Expand, AIScope, and the same confirm-before-you-spend rule.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="dl" style="gap:0">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr><th style="text-align:left">Tool</th><th style="text-align:right">In Squirreal</th></tr></thead>
+            <tbody>
+              ${VIDEO_TOOLS_PRICES.map(([name, cost]) => `<tr><td>${esc(name)}</td><td style="text-align:right;color:var(--muted)">${esc(cost)}</td></tr>`).join('\n              ')}
+            </tbody>
+          </table>
+        </div>
+        <p style="color:var(--muted);font-size:14px;margin-top:14px">Prices are quoted on the Submit button before anything is spent, and nothing is charged unless a clip comes back.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="film" class="alt">
   <div class="wrap film">
     <div class="head" style="justify-items:center;text-align:center;margin-bottom:0">
@@ -166,7 +223,17 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <h2>See it work.</h2>
     </div>
     <video controls preload="none" poster="${dataUri('s-poster.jpg', 'image/jpeg')}" src="Hazelnut-ad-3min.mp4"></video>
-    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on.</p>
+    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on. The three shorts below are the same rule: the editor in them is real, and the finished picture at the end of each is a placeholder standing in for a generation, not a model output.</p>
+    <div class="shorts">
+      ${[
+        ['Hazelnut-short-sofa.mp4', 'p-short-sofa.jpg', 'Mini looks the place up'],
+        ['Hazelnut-short-gamingpc.mp4', 'p-short-gamingpc.jpg', 'Magic Draw, in one sketch'],
+        ['Hazelnut-short-car.mp4', 'p-short-car.jpg', 'Squirreal: one frame, one clip'],
+      ]
+        .filter(([file]) => fs.existsSync(path.join(DIST, file)))
+        .map(([file, poster, caption]) => `<figure><video controls preload="none" poster="${dataUri(poster, 'image/jpeg')}" src="${esc(file)}"></video><figcaption>${esc(caption)}</figcaption></figure>`)
+        .join('\n      ')}
+    </div>
   </div>
 </section>
 
@@ -230,9 +297,10 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
           <div>
             <h4>From source</h4>
             <pre>npm install
-npm start          # Hazelnut
-npm run start:mini # Hazelnut Mini
-npm test           # 64 tests</pre>
+npm start               # Hazelnut
+npm run start:squirreal # Hazelnut Squirreal
+npm run start:mini      # Hazelnut Mini
+npm test                # 81 tests</pre>
           </div>
         </div>
       </details>
@@ -270,7 +338,7 @@ npm test           # 64 tests</pre>
 
 <footer>
   <div class="wrap">
-    <span>Hazelnut 1.0.0 — an advanced AI photo generator.</span>
+    <span>Hazelnut 1.0.0 — an advanced AI photo generator. Squirreal 1.0.0 — the same, for video.</span>
     <span>Draw and Expand never leave your machine.</span>
   </div>
 </footer>

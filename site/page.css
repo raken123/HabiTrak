@@ -205,3 +205,10 @@ td.hash { font-family: var(--mono); color: var(--muted); word-break: break-all; 
 
 footer { border-top: 1px solid var(--line); padding: 40px 0 56px; color: var(--muted); font-size: 14px; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+
+/* ── the shorts ──────────────────────────────────────────────────────────── */
+
+.shorts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; width: 100%; }
+.shorts figure { margin: 0; display: grid; gap: 10px; }
+.shorts video { width: 100%; aspect-ratio: 9 / 16; border-radius: 12px; background: #000; display: block; }
+.shorts figcaption { color: var(--muted); font-size: 14px; text-align: center; }

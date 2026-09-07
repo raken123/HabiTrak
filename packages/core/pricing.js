@@ -19,6 +19,10 @@ export const MINI_MONTHLY_CREDITS = 1500;
 // month. The plan is not less capable — it is priced against heavier work.
 export const SQUIRREAL_MONTHLY_CREDITS = 3000;
 
+// The trial grant follows the same logic: fewer credits than Hazelnut's, but
+// enough for a dozen or so short clips.
+export const SQUIRREAL_TRIAL_CREDIT_GRANT = 900;
+
 /** Base price for the full Hazelnut desktop app, in USD. */
 const HAZELNUT_MONTHLY_USD = 19.99;
 const HAZELNUT_YEARLY_USD = 199.0;
@@ -86,7 +90,7 @@ export const PLANS = {
     name: 'Squirreal Trial',
     monthlyUsd: 0,
     yearlyUsd: 0,
-    credits: 900,
+    credits: SQUIRREAL_TRIAL_CREDIT_GRANT,
     ai: true,
     blurb: `Every tool unlocked for ${TRIAL_DAYS} days. No card required.`,
   },
