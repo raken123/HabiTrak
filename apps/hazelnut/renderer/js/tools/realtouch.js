@@ -129,13 +129,16 @@ export function createRealtouchTool() {
       return;
     }
 
-    const quote = await app.quote('realtouch');
+    const seconds = app.doc?.clip?.seconds;
+    const quote = await app.quote('realtouch', app.isVideo ? { seconds } : {});
     if (!(await app.gate('realtouch', quote))) return;
     if (!(await confirmSpend({
       toolName: 'Realtouch',
       cost: quote.cost,
       balance: quote.balance,
-      note: 'Realtouch looks the location up online before it rebuilds the gap, so this one takes a little longer than the others.',
+      note: app.isVideo
+        ? 'Realtouch looks the location up online, then rebuilds the gap on every frame — the longest job in Squirreal.'
+        : 'Realtouch looks the location up online before it rebuilds the gap, so this one takes a little longer than the others.',
     }))) return;
 
     // The flattened picture, and the same picture with the mask burned in.
@@ -147,7 +150,15 @@ export function createRealtouchTool() {
 
     const job = busy.start({ title: 'Realtouch', message: 'Examining the scene…', onCancel: () => run.cancel?.() });
     try {
-      const call = window.hazelnut.realtouch({
+      // Squirreal removes the thing from the whole clip, so it is handed the
+      // frame that was painted on, the mask, and the clip the frame came from.
+      const call = window.hazelnut.realtouch(app.isVideo ? {
+        frame: flat.toDataURL('image/png'),
+        marked: marked.toDataURL('image/png'),
+        clip: app.doc.clip?.source || null,
+        seconds,
+        hint,
+      } : {
         image: flat.toDataURL('image/png'),
         marked: marked.toDataURL('image/png'),
         hint,
@@ -155,9 +166,13 @@ export function createRealtouchTool() {
       run.cancel = () => call.cancel();
 
       const { result, charged, balance } = await call;
-      const img = await loadImage(result.image);
-      app.doc.addImageLayer(img, 'Realtouch');
-      app.history.push('Realtouch', 'eraser-magic');
+      if (app.isVideo) {
+        await app.openClip(result, { name: 'Realtouch' });
+      } else {
+        const img = await loadImage(result.image);
+        app.doc.addImageLayer(img, 'Realtouch');
+        app.history.push('Realtouch', 'eraser-magic');
+      }
       app.setCredits(balance);
       clearMask(app);
 

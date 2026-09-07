@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hazelnut Squirreal — short</title>
+<link rel="stylesheet" href="short.css" />
+<link rel="stylesheet" href="short2.css" />
+<link rel="stylesheet" href="short3.css" />
+</head>
+<body>
+  <div class="film" id="film">
+
+    <!-- the old way: a generic timeline, no product -->
+    <div class="nle" id="nle">
+      <div class="nle__view"><canvas id="nle-canvas" width="780" height="975"></canvas></div>
+      <div class="nle__bar">
+        <span class="nle__time" id="nle-time">00:00:14</span>
+        <div class="nle__track" id="nle-track"></div>
+      </div>
+      <div class="nle__render" id="nle-render">
+        <span id="nle-render-label">Rendering preview…</span>
+        <div class="nle__progress"><i id="nle-progress"></i></div>
+        <span class="nle__pct" id="nle-pct">0%</span>
+      </div>
+    </div>
+
+    <!-- the editor -->
+    <div class="app" id="app">
+      <div class="app__shell">
+        <div class="app__frame"><iframe id="sq" src="/squirreal/index.html" width="1280" height="720" title="Hazelnut Squirreal"></iframe></div>
+      </div>
+    </div>
+
+    <div class="line line--top" id="line-top"><span id="line-top-text"></span></div>
+    <div class="line line--bottom" id="line-bottom"><span id="line-bottom-text"></span></div>
+
+    <div class="stamp" id="stamp"><span id="stamp-text">Lagging</span></div>
+
+    <div class="end" id="end">
+      <img class="end__mark" id="end-mark" src="/icons/hazelnut-squirreal/build/icon.png" alt="" />
+      <h1>Hazelnut <b>Squirreal</b></h1>
+      <p class="end__line">Hazelnut, for moving pictures.</p>
+      <div class="end__price">$29.99<span> / month</span></div>
+      <div class="end__plat">Windows · Mac</div>
+      <div class="end__engine" id="end-engine">Runs on Gemini Omni 1.1 Flash</div>
+    </div>
+
+    <div class="flash" id="flash"></div>
+    <div class="vignette"></div>
+  </div>
+  <script type="module" src="short3.js"></script>
+</body>
+</html>

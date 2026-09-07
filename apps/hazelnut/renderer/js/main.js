@@ -11,6 +11,8 @@ import { Doc } from './doc.js';
 import { History } from './history.js';
 import { Viewport } from './viewport.js';
 import { createTools } from './tools/index.js';
+import { Clip, attachClip } from './clip.js';
+import { installTransport } from './transport.js';
 import {
   toast, toastError, modal, confirmDialog, openMenu, attachTooltip,
   toolGuide, costLabel, hideTooltip,
@@ -42,6 +44,18 @@ async function boot() {
   document.body.classList.toggle('is-mac', app.server.platform === 'darwin');
 
   app.viewport = new Viewport($('#viewport'), $('#stage'));
+
+  // Squirreal is this same editor pointed at clips. The tools, their prices and
+  // their help all arrive from the bridge, so the only thing the page adds is a
+  // playhead — and its own name.
+  app.isVideo = app.server.product === 'squirreal';
+  if (app.isVideo) {
+    document.body.classList.add('is-squirreal');
+    $('.menubar__brand span').textContent = 'Squirreal';
+    document.title = 'Hazelnut Squirreal';
+    app.transport = installTransport(app);
+  }
+
   buildToolbar();
   buildSwatches();
   wireMenus();
@@ -253,8 +267,27 @@ function setDocument(doc) {
   renderLayers();
   renderHistory();
   updateStatus();
+  app.transport?.render();
   selectTool(app.currentToolId);
 }
+
+/**
+ * Put a clip in the editor. The frames may arrive already decoded — which is
+ * what the engine does when it has them — or as a video to be decoded here.
+ */
+app.openClip = async (result, { name = 'Clip' } = {}) => {
+  const clip = result.frames
+    ? await Clip.fromFrames(result.frames, { fps: result.fps || 24 })
+    : await Clip.fromVideo(result.clip, { fps: result.fps || 24 });
+
+  const first = clip.frame(0);
+  const doc = new Doc(first.width, first.height, { name });
+  doc.addLayer('Background');
+  setDocument(doc);
+  attachClip(doc, clip);
+  app.transport?.render();
+  return clip;
+};
 
 async function newCanvas() {
   const result = await modal({

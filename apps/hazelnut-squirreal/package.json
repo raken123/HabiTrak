@@ -1,0 +1,75 @@
+{
+  "name": "hazelnut-squirreal",
+  "productName": "Hazelnut Squirreal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hazelnut, for moving pictures. The same six tools, pointed at clips instead of stills.",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --mac",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.hazelnut.squirreal",
+    "productName": "Hazelnut Squirreal",
+    "copyright": "Copyright © Hazelnut",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      {
+        "from": "../hazelnut/renderer",
+        "to": "renderer",
+        "filter": ["**/*"]
+      },
+      "!**/*.map"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "asar": true,
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64", "arm64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "HazelnutSquirreal-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Hazelnut Squirreal"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.video",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "artifactName": "HazelnutSquirreal-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Hazelnut Squirreal ${version}"
+    }
+  },
+  "dependencies": {
+    "@hazelnut/core": "*"
+  }
+}

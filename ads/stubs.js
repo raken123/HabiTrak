@@ -9,6 +9,7 @@
 import { demoPhoto } from './demo-image.js';
 import { streetScene } from './street-scene.js';
 import { deskScene } from './desk-scene.js';
+import { carFrame } from './car-scene.js';
 
 const TOOLS = {
   draw: { id: 'draw', name: 'Draw', shortcut: 'B', icon: 'brush', ai: false, cost: 0, group: 'paint', tagline: 'Draw what you want, in colour.', help: 'A plain brush. Pick a colour and a size and paint on the active layer. Nothing leaves your machine and nothing is charged.' },
@@ -138,5 +139,116 @@ export function installMiniStub() {
       { after: 2200, stage: 'examining', message: 'Looking up where this was taken…' },
       { after: 5200, stage: 'rebuilding', message: 'Found 3 references. Rebuilding what was behind it…' },
     ]),
+  };
+}
+
+
+// ── Squirreal ───────────────────────────────────────────────────────────────
+
+const VIDEO_TOOLS = {
+  draw: { id: 'draw', name: 'Draw', shortcut: 'B', icon: 'brush', ai: false, cost: 0, group: 'paint', tagline: 'Draw what you want, in colour.', help: 'A plain brush, on the frame you are parked on. Free.' },
+  'magic-draw': { id: 'magic-draw', name: 'Magic Draw', shortcut: 'M', icon: 'sparkle-brush', ai: true, cost: { min: 40, max: 120 }, group: 'paint', tagline: 'Sketch a shot. Get the shot, moving.', help: 'Sketch the frame and describe the movement. Squirreal renders it as a clip and holds it steady across every frame.' },
+  realtouch: { id: 'realtouch', name: 'Realtouch', shortcut: 'R', icon: 'eraser-magic', ai: true, cost: 150, group: 'repair', tagline: 'Remove something from every frame at once.', help: 'Paint over it once. Squirreal looks the place up and rebuilds what was behind it, across the whole clip.' },
+  'gif-animate': { id: 'gif-animate', name: 'GIF Animate', shortcut: 'G', icon: 'film', ai: false, cost: 0, group: 'motion', tagline: 'Turn the clip into a looping GIF.', help: 'The motion is already there, so this is local work. Free on every edition.' },
+  expand: { id: 'expand', name: 'Expand', shortcut: 'E', icon: 'expand', ai: false, cost: 0, group: 'canvas', tagline: 'Grow the frame. Never costs a credit.', help: 'Pull the frame out; the margin is mirrored on every frame of the clip.' },
+  aiscope: { id: 'aiscope', name: 'AIScope', shortcut: 'Z', icon: 'scope', ai: false, cost: 0, learnCost: 15, group: 'inspect', minZoom: 80, maxZoom: 60000, tagline: 'Zoom 80× to 60,000× into any frame.', help: 'Park on a frame and dive in. Zooming is free; Learn costs 15.' },
+};
+const VIDEO_ORDER = ['draw', 'magic-draw', 'realtouch', 'gif-animate', 'expand', 'aiscope'];
+
+const SQUIRREAL_PLANS = {
+  'squirreal-free': { id: 'squirreal-free', product: 'squirreal', name: 'Squirreal Free', monthlyUsd: 0, credits: 0, ai: false, blurb: 'Everything that does not need a model, including GIF export.' },
+  'squirreal-pro': { id: 'squirreal-pro', product: 'squirreal', name: 'Hazelnut Squirreal', monthlyUsd: 29.99, credits: 3000, ai: true, blurb: 'Hazelnut, for moving pictures.' },
+  'hazelnut-pro': PLANS['hazelnut-pro'],
+  'mini-pro': PLANS['mini-pro'],
+};
+
+export function installSquirrealStub() {
+  const state = {
+    product: 'squirreal',
+    edition: 'trial',
+    plan: { ...SQUIRREAL_PLANS['squirreal-pro'], name: 'Squirreal Trial' },
+    ai: true,
+    trialStarted: true, trialUsed: false, trialDaysLeft: 7, trialCreditGrant: 900,
+    licensed: false,
+    credits: 900,
+    ledger: [],
+    apiKeyConfigured: true,
+    apiKeySource: 'this machine',
+    platform: 'darwin',
+    version: '1.0.0',
+    tools: VIDEO_ORDER.map((id) => VIDEO_TOOLS[id]),
+    plans: SQUIRREAL_PLANS,
+    trialDays: 7,
+    settings: {},
+  };
+
+  window.hazelnut = {
+    getState: async () => state,
+    saveSettings: async () => state.settings,
+    startTrial: async () => state,
+    activate: async () => ({ ok: true, state }),
+    deactivate: async () => state,
+    saveApiKey: async () => ({ configured: true }),
+
+    quote: async (toolId, params = {}) => {
+      const seconds = Math.min(8, Math.max(1, params.seconds || 4));
+      const cost = toolId === 'magic-draw'
+        ? Math.round(40 + (0.55 * ((seconds - 1) / 7) + 0.2 * Math.min(1, (params.coveragePct || 0) / 60)
+            + 0.1 * Math.min(1, ((params.colorCount || 1) - 1) / 11)
+            + 0.15 * Math.min(1, Math.max(0, ((params.megapixels || 1) - 0.5) / 3.5))) * 80)
+        : toolId === 'realtouch' ? Math.max(45, Math.round((0.4 + 0.6 * (seconds / 8)) * 150))
+        : toolId === 'aiscope' ? (params.learn ? 15 : 0)
+        : 0;
+      return { cost, balance: state.credits, affordable: state.credits >= cost, allowed: true, reason: null, message: null };
+    },
+    refund: async () => state.credits,
+
+    /**
+     * RECORDING ONLY, and driven by the film rather than by a timer.
+     *
+     * A real Magic Draw call returns a clip from the model. This one returns
+     * the ad's own placeholder footage — the same drawn street the ad opens
+     * with — and it is not a model output and is not presented as one; see the
+     * note at the top of short3.js. The film calls progress() and finish() on
+     * its own cues, because the recorder steps virtual time and a wall-clock
+     * setTimeout would land on an unpredictable frame.
+     */
+    magicDraw: (_opts, onProgress) => {
+      let resolve;
+      const promise = new Promise((r) => { resolve = r; });
+      promise.cancel = () => {};
+      window.__AD_JOB = {
+        progress: (message, stage = 'rendering') => onProgress?.({ stage, message }),
+        finish: (frames, { fps = 12, charged = 62 } = {}) => {
+          state.credits -= charged;
+          resolve({
+            result: { frames, fps, seconds: frames.length / fps },
+            charged,
+            balance: state.credits,
+          });
+        },
+      };
+      return promise;
+    },
+
+    realtouch: (_o, onProgress) => pending(onProgress, [
+      { after: 300, stage: 'examining', message: 'Looking up where this was filmed…' },
+      { after: 2600, stage: 'rebuilding', message: 'Found 3 references. Rebuilding it across every frame…' },
+    ]),
+    gifAnimate: (_o, onProgress) => pending(onProgress, [{ after: 300, stage: 'encoding', message: 'Encoding the GIF…' }]),
+    aiscopeLearn: (_o, onProgress) => pending(onProgress, [{ after: 300, stage: 'study', message: 'Studying the crop…' }]),
+
+    // The film builds its own plates and hands one over, so the still that
+    // opens in the editor is the same street the timeline was previewing.
+    openImage: async () => ({
+      name: 'high-street.jpg',
+      path: 'high-street.jpg',
+      dataUrl: window.__AD_PLATE
+        || carFrame({ width: 780, height: 975, t: 0.42 }).toDataURL('image/jpeg', 0.9),
+    }),
+    openImagePath: async () => null,
+    saveImage: async () => ({ path: '~/Movies/high-street.mp4' }),
+    openExternal: async () => true,
+    onMenuCommand: () => () => {},
   };
 }

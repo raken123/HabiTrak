@@ -454,3 +454,50 @@ body.is-mac .menubar { padding-left: 82px; }
 }
 .tag--free { border-color: var(--good); color: var(--good); }
 .tag--ai { border-color: var(--accent); color: var(--accent); }
+
+/* ── transport (Squirreal) ───────────────────────────────────────────────── */
+
+.transport {
+  position: absolute;
+  left: 14px; right: 14px; bottom: 12px;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 30px 54px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 21px;
+  background: rgba(24, 21, 18, .92);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(8px);
+}
+.transport__play {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+}
+.transport__play:hover { background: var(--accent); color: #1a1208; }
+.transport__time,
+.transport__total {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.transport__time { color: var(--text-bright); }
+.transport__scrub { width: 100%; }
+
+/* Squirreal's accent leans cooler than Hazelnut's, so a clip on the canvas is
+   never mistaken for a still. */
+body.is-squirreal {
+  --accent: #d98a3c;
+  --accent-deep: #a85f28;
+}

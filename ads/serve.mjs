@@ -17,9 +17,12 @@ const PORT = Number(process.env.AD_PORT || 8732);
 // which resolves under their own prefix, not at the root.
 const ROOTS = {
   '/hazelnut/core/': path.join(ROOT, 'packages', 'core'),
+  '/squirreal/core/': path.join(ROOT, 'packages', 'core'),
   '/mini/core/': path.join(ROOT, 'packages', 'core'),
   '/icons/': path.join(ROOT, 'apps'),
   '/hazelnut/': path.join(ROOT, 'apps', 'hazelnut', 'renderer'),
+  // Squirreal is the same renderer; only the bridge differs.
+  '/squirreal/': path.join(ROOT, 'apps', 'hazelnut', 'renderer'),
   '/mini/': path.join(ROOT, 'apps', 'hazelnut-mini', 'www'),
   '/core/': path.join(ROOT, 'packages', 'core'),
 };
@@ -32,6 +35,7 @@ const TYPES = {
 
 const INSTALL = {
   '/hazelnut/': 'installHazelnutStub',
+  '/squirreal/': 'installSquirrealStub',
   '/mini/': 'installMiniStub',
 };
 

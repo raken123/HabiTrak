@@ -24,6 +24,28 @@ export function createGifAnimateTool() {
     hint: 'GIF Animate — describe the motion, then Generate. Up to five seconds.',
 
     options(app) {
+      // In Squirreal the motion already exists, so there is nothing to
+      // generate and nothing to charge: this becomes an encoder for the clip
+      // that is already open.
+      if (app.isVideo) {
+        return [
+          el('div', { class: 'field' }, [
+            el('label', { text: 'Loop' }),
+            el('span', {
+              class: 'note',
+              text: app.doc?.clip
+                ? `${app.doc.clip.length} frames · ${app.doc.clip.seconds.toFixed(1)}s at ${app.doc.clip.fps} fps`
+                : 'Open or generate a clip first.',
+            }),
+          ]),
+          el('div', { class: 'divider' }),
+          el('button', {
+            class: 'btn btn--primary',
+            onClick: () => exportClip(app),
+          }, ['Export GIF', el('span', { class: 'cost', text: '0' })]),
+        ];
+      }
+
       const cost = el('span', { class: 'cost', text: '600' });
       const requote = async () => {
         const quote = await app.quote('gif-animate', { seconds, fps });
@@ -52,6 +74,33 @@ export function createGifAnimateTool() {
       ];
     },
   };
+
+  /** Squirreal: encode the open clip, locally and free. */
+  async function exportClip(app) {
+    const clip = app.doc?.clip;
+    if (!clip) {
+      toast('GIF Animate', 'There is no clip open to export.', { kind: 'error' });
+      return;
+    }
+    const job = busy.start({ title: 'GIF Animate', message: 'Encoding the GIF…' });
+    try {
+      const plan = {
+        count: clip.length,
+        seconds: Number(clip.seconds.toFixed(1)),
+        fps: clip.fps,
+        delayMs: Math.round(1000 / clip.fps),
+      };
+      // The frames are already the played frames, so there is nothing to
+      // cross-fade between: hand them over as they are.
+      const gif = await buildGif(app, clip.frames, plan);
+      toast('GIF Animate', `${plan.count} frames encoded — no credits used.`, { kind: 'good' });
+      showResult(app, gif, plan);
+    } catch (err) {
+      app.reportToolError(err);
+    } finally {
+      job.done();
+    }
+  }
 
   async function run(app) {
     if (!motion.trim()) {
@@ -98,8 +147,10 @@ export function createGifAnimateTool() {
    * somewhere between two keyframes; drawing the later one over the earlier at
    * partial alpha gives a smooth dissolve rather than a visible jump.
    */
-  async function buildGif(app, keyframeUrls, plan) {
-    const images = await Promise.all(keyframeUrls.map(loadImage));
+  async function buildGif(app, keyframes, plan) {
+    // Hazelnut hands over keyframe data URLs; Squirreal hands over the clip's
+    // own canvases, which are already decoded.
+    const images = await Promise.all(keyframes.map((k) => (typeof k === 'string' ? loadImage(k) : k)));
     const scale = Math.min(1, MAX_EDGE / Math.max(app.doc.width, app.doc.height));
     const width = Math.max(2, Math.round(app.doc.width * scale));
     const height = Math.max(2, Math.round(app.doc.height * scale));

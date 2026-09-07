@@ -80,7 +80,7 @@ function nut(x, y, { scale = 1, dx = 0, dy = 0 } = {}) {
   return null;
 }
 
-function render({ bubble = false, size = SIZE } = {}) {
+function render({ bubble = false, strip = false, size = SIZE } = {}) {
   const pixels = new Uint8Array(size * size * 4);
   const toDesign = SIZE / size;
 
@@ -103,6 +103,19 @@ function render({ bubble = false, size = SIZE } = {}) {
             alpha = 1;
           }
 
+          if (strip && alpha) {
+            // Squirreal's mark is the same nut, held in a strip of film: a dark
+            // band down each side, punched with sprocket holes.
+            const band = px < 96 || px > 416;
+            if (band) { colour = [46, 36, 27]; alpha = 1; }
+            const hx = px < 256 ? px - 28 : px - 424;   // 0..68 inside the band
+            const hy = (py - 26) % 82;
+            if (band && py > 26 && py < 486 && hx > 0 && hx < 40 && hy > 6 && hy < 52) {
+              colour = [16, 13, 10];
+              alpha = 1;
+            }
+          }
+
           if (bubble) {
             // Mini's mark is the same nut, inside a chat bubble.
             const inBubble = inEllipse(px, py, 256, 232, 198, 168)
@@ -110,7 +123,9 @@ function render({ bubble = false, size = SIZE } = {}) {
             if (inBubble) { colour = [54, 43, 33]; alpha = 1; }
           }
 
-          const mark = bubble ? nut(px, py, { scale: 0.68, dy: -14 }) : nut(px, py);
+          const mark = bubble ? nut(px, py, { scale: 0.68, dy: -14 })
+            : strip ? nut(px, py, { scale: 0.74, dy: -6 })
+            : nut(px, py);
           if (mark) { colour = mark; alpha = 1; }
 
           if (alpha) { r += colour[0]; g += colour[1]; b += colour[2]; a += 255; }
@@ -209,6 +224,7 @@ const ICNS_SIZES = [
 const targets = [
   { file: path.join(HERE, '..', 'apps', 'hazelnut', 'build', 'icon.png'), bubble: false },
   { file: path.join(HERE, '..', 'apps', 'hazelnut-mini', 'build', 'icon.png'), bubble: true },
+  { file: path.join(HERE, '..', 'apps', 'hazelnut-squirreal', 'build', 'icon.png'), strip: true },
 ];
 
 const rel = (f) => path.relative(path.join(HERE, '..'), f);
@@ -216,7 +232,7 @@ const rel = (f) => path.relative(path.join(HERE, '..'), f);
 for (const target of targets) {
   fs.mkdirSync(path.dirname(target.file), { recursive: true });
 
-  const png = encodePng(render({ bubble: target.bubble }), SIZE);
+  const png = encodePng(render({ bubble: target.bubble, strip: target.strip }), SIZE);
   fs.writeFileSync(target.file, png);
   console.log(`wrote ${rel(target.file)} (${(png.length / 1024).toFixed(0)} KB)`);
 
@@ -224,7 +240,7 @@ for (const target of targets) {
   // resampling one bitmap, so the small ones stay crisp.
   const cache = new Map();
   const entries = ICNS_SIZES.map(([type, size]) => {
-    if (!cache.has(size)) cache.set(size, encodePng(render({ bubble: target.bubble, size }), size));
+    if (!cache.has(size)) cache.set(size, encodePng(render({ bubble: target.bubble, strip: target.strip, size }), size));
     return { type, png: cache.get(size) };
   });
   const icns = encodeIcns(entries);

@@ -14,9 +14,17 @@ export const TRIAL_CREDIT_GRANT = 1200;
 export const PRO_MONTHLY_CREDITS = 5000;
 export const MINI_MONTHLY_CREDITS = 1500;
 
+// Squirreal's allowance is smaller than Hazelnut's on purpose: a generation is
+// a clip rather than a frame, so each one costs more and fewer of them fit in a
+// month. The plan is not less capable — it is priced against heavier work.
+export const SQUIRREAL_MONTHLY_CREDITS = 3000;
+
 /** Base price for the full Hazelnut desktop app, in USD. */
 const HAZELNUT_MONTHLY_USD = 19.99;
 const HAZELNUT_YEARLY_USD = 199.0;
+
+const SQUIRREAL_MONTHLY_USD = 29.99;
+const SQUIRREAL_YEARLY_USD = 299.0;
 
 /** Mini is exactly half of Hazelnut, by construction. */
 const half = (n) => Math.round(n * 50) / 100;
@@ -62,6 +70,36 @@ export const PLANS = {
     ai: true,
     blurb: `${TRIAL_DAYS} days of the remover, free.`,
   },
+  'squirreal-free': {
+    id: 'squirreal-free',
+    product: 'squirreal',
+    name: 'Squirreal Free',
+    monthlyUsd: 0,
+    yearlyUsd: 0,
+    credits: 0,
+    ai: false,
+    blurb: 'Everything in Squirreal that does not need a model — including turning a clip into a GIF.',
+  },
+  'squirreal-trial': {
+    id: 'squirreal-trial',
+    product: 'squirreal',
+    name: 'Squirreal Trial',
+    monthlyUsd: 0,
+    yearlyUsd: 0,
+    credits: 900,
+    ai: true,
+    blurb: `Every tool unlocked for ${TRIAL_DAYS} days. No card required.`,
+  },
+  'squirreal-pro': {
+    id: 'squirreal-pro',
+    product: 'squirreal',
+    name: 'Hazelnut Squirreal',
+    monthlyUsd: SQUIRREAL_MONTHLY_USD,
+    yearlyUsd: SQUIRREAL_YEARLY_USD,
+    credits: SQUIRREAL_MONTHLY_CREDITS,
+    ai: true,
+    blurb: 'Hazelnut, for moving pictures. The same six tools, pointed at clips.',
+  },
   'mini-pro': {
     id: 'mini-pro',
     product: 'mini',
@@ -75,9 +113,11 @@ export const PLANS = {
 };
 
 export function planFor(product, edition) {
-  const key = product === 'mini'
-    ? (edition === 'pro' ? 'mini-pro' : 'mini-trial')
-    : (edition === 'pro' ? 'hazelnut-pro' : edition === 'trial' ? 'hazelnut-trial' : 'hazelnut-free');
+  if (product === 'mini') return PLANS[edition === 'pro' ? 'mini-pro' : 'mini-trial'];
+  const family = product === 'squirreal' ? 'squirreal' : 'hazelnut';
+  const key = edition === 'pro' ? `${family}-pro`
+    : edition === 'trial' ? `${family}-trial`
+    : `${family}-free`;
   return PLANS[key];
 }
 
