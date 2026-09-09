@@ -39,6 +39,8 @@ function fileInfo(name) {
 }
 
 const DOWNLOADS = [
+  { os: 'src', icon: 'WEB', title: 'Hazelnut for the Web', file: 'Hazelnut-web.html',
+    meta: 'Any browser · one file · the eleven local tools, no key, nothing uploaded' },
   { os: 'win', icon: 'WIN', title: 'Hazelnut for Windows', file: 'Hazelnut.exe',
     meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
   { os: 'win', icon: 'WIN', title: 'Hazelnut Squirreal for Windows', file: 'HazelnutSquirreal.exe',
@@ -199,9 +201,10 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       </div>
     </div>
     <p style="color:var(--muted);font-size:14px;margin-top:22px">
-      The build sits in <code>web/</code> beside this page. It is a static site — serve the folder over http
-      (<code>python3 -m http.server</code> in <code>web/</code> is enough) and open it; browsers will not load an
-      ES-module app straight off the filesystem.
+      Two shapes, same build. <a href="Hazelnut-web.html">Hazelnut-web.html</a> is the whole editor folded into one
+      file — open it straight from your disk, or drop it on any host. The <code>web/</code> folder beside this page is
+      the same thing unfolded, for hosting as a normal static site (<code>python3 -m http.server</code> inside it is
+      enough; a browser will not load an ES-module app off the filesystem, which is why the single file exists).
     </p>
   </div>
 </section>
