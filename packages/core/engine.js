@@ -9,6 +9,7 @@
 // are implemented entirely in the renderer and never reach this file.
 
 import { availability, costOf } from './tools.js';
+import { TRANSFORMS, transformPrompt, captionPrompt, CAPTION_SCHEMA } from './transforms.js';
 import { parseDataUrl, toDataUrl, imageSize, megapixels, base64ToBytes } from './imaging.js';
 import { framePlan } from './gif.js';
 import {
@@ -219,6 +220,65 @@ export class Engine {
         confidence: 0,
       };
       return { card: { ...card, zoom }, raw: study.text };
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // The cheap edits — Erase, Upscale, Restore, Colourise, Background, Sky
+  // -------------------------------------------------------------------------
+
+  /**
+   * One photograph in, one photograph out. Every tool in `TRANSFORMS` is the
+   * same call with a different instruction, so there is one code path to gate,
+   * charge, cancel and report on rather than six.
+   *
+   * @param {{toolId:string, image:string, mask?:string, params?:object,
+   *          onProgress?:Function, signal?:AbortSignal}} opts
+   */
+  async transform({ toolId, image, mask = null, params = {}, onProgress = () => {}, signal } = {}) {
+    const spec = TRANSFORMS[toolId];
+    if (!spec) throw new Error(`Unknown transform: ${toolId}`);
+    if (spec.needsMask && !mask) throw new Error('Paint over what you want changed first.');
+    this.#gate(toolId, params);
+
+    return this.credits.charge(toolId, params, async () => {
+      onProgress({ stage: 'render', message: 'Sending the picture…' });
+      const out = await this.client.generateImage({
+        prompt: transformPrompt(toolId, params),
+        // The marked copy goes first when there is one: the instruction talks
+        // about "the first image", and the order is what makes that true.
+        images: mask ? [asPart(mask), asPart(image)] : [asPart(image)],
+        temperature: 0.35,
+        signal,
+      });
+      return { image: toDataUrl(out.base64, out.mimeType), note: out.text };
+    });
+  }
+
+  /**
+   * Caption — the only AI tool that generates nothing, which is why it is the
+   * cheapest thing in the app.
+   *
+   * @param {{image:string, signal?:AbortSignal}} opts
+   */
+  async describe({ image, signal } = {}) {
+    this.#gate('caption');
+
+    return this.credits.charge('caption', {}, async () => {
+      const study = await this.client.analyze({
+        prompt: captionPrompt(),
+        images: [asPart(image)],
+        json: CAPTION_SCHEMA,
+        temperature: 0.2,
+        signal,
+      });
+      const data = study.data || {};
+      return {
+        caption: data.caption || study.text || '',
+        alt: data.alt || '',
+        keywords: Array.isArray(data.keywords) ? data.keywords : [],
+        note: data.note || '',
+      };
     });
   }
 

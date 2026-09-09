@@ -93,3 +93,16 @@ test('Mini reports Mini pricing, at half of Hazelnut', () => {
   assert.equal(status.plan.id, 'mini-pro');
   assert.equal(status.plan.monthlyUsd, 9.99);
 });
+
+test('the browser build is one edition and stays there', () => {
+  const store = Store.memory({ ...LICENSE_DEFAULTS, licenseKey: 'HZL-AAAAA-BBBBB-CCCCC-DDDDD' });
+  const license = new License(store, { product: 'hazelnut', fixedEdition: 'web' });
+
+  // Even with a licence key in the store, the web build reports the web plan.
+  assert.equal(license.edition(), 'web');
+  assert.equal(license.status().plan.id, 'hazelnut-web');
+  assert.equal(license.status().ai, false);
+
+  license.startTrial();
+  assert.equal(license.edition(), 'web', 'starting a trial cannot change it');
+});

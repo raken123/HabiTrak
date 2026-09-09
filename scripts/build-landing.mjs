@@ -9,12 +9,17 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = path.join(ROOT, 'site');
 const DIST = path.join(ROOT, 'dist');
+
+const { TOOLS: CORE_TOOLS, TOOL_ORDER, LOCAL_TOOLS, costOf } = await import(
+  pathToFileURL(path.join(ROOT, 'packages/core/tools.js')).href
+);
 
 const dataUri = (file, mime) =>
   `data:${mime};base64,${fs.readFileSync(path.join(SITE, file)).toString('base64')}`;
@@ -64,22 +69,30 @@ const DOWNLOADS = [
     meta: 'Every platform · npm install && npm start' },
 ];
 
-const TOOLS = [
-  ['Draw', 'A brush, a colour and a size. It paints on the active layer, runs entirely on your machine, and works on every edition.', 'Free', true],
-  ['Magic Draw', 'Sketch roughly in 2D, describe it in a line, press Submit — and the realistic version of your drawing comes back as a new layer, over the sketch.', '5–20 credits', false],
-  ['Realtouch', 'Paint over what you want gone. Realtouch works out where the photograph was taken, looks the place up, and reasons about what the object is hiding before it fills the gap.', '20 credits', false],
-  ['GIF Animate', 'Describe the motion and get up to five seconds back, encoded into a looping GIF by an encoder built into the app.', '600 credits', false],
-  ['Expand', 'Pull the canvas out in any direction. The new margin is filled by mirroring the edge, so it reads as more picture rather than a border.', 'Never costs a credit', true],
-  ['AIScope', 'Magnify from 80× to 60,000×. The badge stops saying “optical” the moment there is no real detail left — it will not pretend. Learn studies the crop and writes down what the thing is.', 'Free · Learn 15', false],
-];
+// The tool cards come from the registry the app itself reads, so a price on
+// this page and a price in the toolbar cannot disagree.
+const priceLabel = (id) => {
+  const tool = CORE_TOOLS[id];
+  if (id === 'aiscope') return `Free · Learn ${tool.learnCost}`;
+  if (!tool.ai) return 'Free';
+  if (typeof tool.cost === 'object') return `${tool.cost.min}–${tool.cost.max} credits`;
+  return `${tool.cost} credits`;
+};
+
+const TOOLS = TOOL_ORDER.map((id) => [
+  CORE_TOOLS[id].name,
+  CORE_TOOLS[id].help,
+  priceLabel(id),
+  !CORE_TOOLS[id].ai,
+]);
 
 const PLANS = [
   { name: 'Hazelnut Free', price: 'Free', per: '', lead: false,
     blurb: 'What is left when the model is taken away — which is most of the editor.',
-    points: ['Draw, Expand and the AIScope zoom', 'Layers, history, the whole workspace', 'No expiry, no account', 'Windows and Mac'] },
+    points: ['All eleven local tools', 'Layers, history, the whole workspace', 'No expiry, no account', 'Windows, Mac — and the browser'] },
   { name: 'Hazelnut', price: '$19.99', per: '/ month', lead: true,
-    blurb: 'The full app. Six tools, and a monthly allowance of credits.',
-    points: ['Every tool unlocked', '5,000 credits a month', 'About 250 removals, or 8 full-length GIFs', 'Windows and Mac'] },
+    blurb: 'The full app. Twenty-one tools, and a monthly allowance of credits.',
+    points: ['Every tool unlocked', '5,000 credits a month', 'A thousand Erases, or 250 Realtouches', 'Windows and Mac'] },
   { name: 'Hazelnut Squirreal', price: '$29.99', per: '/ month', lead: false,
     blurb: 'The same editor, pointed at moving pictures. A generation is a clip, so it costs more — and the allowance is sized for that, not shrunk.',
     points: ['3,000 credits a month', 'About 40 short clips, or 20 removals', 'Turning a clip into a GIF is free', 'Windows and Mac'] },
@@ -121,6 +134,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
     <a class="brand" href="#top"><img src="${dataUri('icon.png', 'image/png')}" alt="" /> Hazelnut</a>
     <nav>
       <a href="#tools">Tools</a>
+      <a href="#web">In a browser</a>
       <a href="#squirreal">Squirreal</a>
       <a href="#apps">The three apps</a>
       <a href="#pricing">Pricing</a>
@@ -135,7 +149,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
   <div class="wrap hero__in">
     <p class="eyebrow">Windows · Mac · Android</p>
     <h1>An advanced AI<br />photo generator.</h1>
-    <p class="lede">Six tools in a workspace built like a photo editor should be. Two of them never touch a model, so they keep working for ever — free. And the same six, pointed at video, in <a href="#squirreal">Squirreal</a>.</p>
+    <p class="lede">Twenty-one tools in a workspace built like a photo editor should be. Eleven of them never touch a model, so they keep working for ever — free, and in a browser tab. And the core six, pointed at video, in <a href="#squirreal">Squirreal</a>.</p>
     <div class="cta" id="cta">
       <a class="btn btn--primary" href="#downloads" id="cta-primary">Download Hazelnut <small id="cta-os"></small></a>
       <a class="btn" href="#film">Watch the 3-minute film</a>
@@ -151,7 +165,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
   <div class="wrap">
     <div class="head">
       <p class="eyebrow">The toolbar</p>
-      <h2>Six tools. Two of them never touch a model.</h2>
+      <h2>Twenty-one tools. Eleven never touch a model.</h2>
       <p>Every price is quoted before anything is spent, and credits are only taken once a result actually comes back. A generation that fails, is refused, or that you cancel costs you nothing.</p>
     </div>
     <div class="tools">
@@ -163,20 +177,50 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
   </div>
 </section>
 
+<section id="web" class="alt">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">No download</p>
+      <h2>Half of Hazelnut, in a browser tab.</h2>
+      <p>The same editor — the same layer stack, the same history, the same panels — fixed to the half of the toolbox that runs on your own machine. Eleven tools work; the ten that need a model are locked and say so.</p>
+    </div>
+    <div class="tools">
+      <div class="tool">
+        <div class="tool__top"><h3>What works</h3><span class="cost cost--free">Free</span></div>
+        <p>${LOCAL_TOOLS.map((id) => esc(CORE_TOOLS[id].name)).join(', ')} — and the whole workspace around them.</p>
+      </div>
+      <div class="tool">
+        <div class="tool__top"><h3>What does not</h3><span class="cost">Desktop</span></div>
+        <p>${TOOL_ORDER.filter((id) => CORE_TOOLS[id].ai).map((id) => esc(CORE_TOOLS[id].name)).join(', ')}. They need a model and a key, and both live in the desktop app.</p>
+      </div>
+      <div class="tool">
+        <div class="tool__top"><h3>What it sends</h3><span class="cost cost--free">Nothing</span></div>
+        <p>No account, no key, no upload. The picture you open is decoded in the page and stays there; there is nothing to charge and nothing to leak.</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin-top:22px">
+      The build sits in <code>web/</code> beside this page. It is a static site — serve the folder over http
+      (<code>python3 -m http.server</code> in <code>web/</code> is enough) and open it; browsers will not load an
+      ES-module app straight off the filesystem.
+    </p>
+  </div>
+</section>
+
 <section id="apps">
   <div class="wrap apps">
     <div>
       <p class="eyebrow">Three apps</p>
       <h2>The whole editor, moving pictures, or just the one thing.</h2>
       <ul>
-        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all six tools. Windows and Mac.</li>
-        <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the six tools, pointed at clips instead of stills. Windows and Mac.</li>
+        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-one tools. Windows and Mac.</li>
+        <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the core six tools, pointed at clips instead of stills. Windows and Mac.</li>
         <li><b>Hazelnut Mini</b> is the remover on its own, behind a single chat bar. Attach a photo, say what should go, and the picture that comes back becomes the one you are working on. Windows, Mac and <b>Android</b>.</li>
-        <li><b>Hazelnut Free</b> is what the trial becomes. The same editor, minus anything that needs a model — the tools that run locally stay, for ever.</li>
+        <li><b>Hazelnut Free</b> is what the trial becomes. The same editor, minus anything that needs a model — the eleven tools that run locally stay, for ever.</li>
+        <li><b>Hazelnut for the Web</b> is the same editor in a browser tab, limited to that same local half. No download, no account, no key.</li>
       </ul>
       <div class="note" style="margin-top:26px">
         <h4>You bring the key</h4>
-        <p>The AI tools call Google’s Gemini API with your own API key, entered in Settings. It is stored on your machine and is sent nowhere but Google. Draw, Expand and the AIScope zoom need no key at all.</p>
+        <p>The AI tools call Google’s Gemini API with your own API key, entered in Settings. It is stored on your machine and is sent nowhere but Google. The eleven local tools need no key at all.</p>
       </div>
     </div>
     <div class="mini-shot"><img src="${dataUri('s-mini.jpg', 'image/jpeg')}" alt="Hazelnut Mini: a chat bar with a photo attached and the message “remove the litter bin by the path”." width="760" /></div>

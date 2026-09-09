@@ -44,6 +44,16 @@ export const PLANS = {
     ai: false,
     blurb: 'Everything in Hazelnut that does not need a model. No AI, no credits, no expiry.',
   },
+  'hazelnut-web': {
+    id: 'hazelnut-web',
+    product: 'hazelnut',
+    name: 'Hazelnut for the Web',
+    monthlyUsd: 0,
+    yearlyUsd: 0,
+    credits: 0,
+    ai: false,
+    blurb: 'The full editor in a browser tab, limited to the half of the toolbox that needs no model: 11 of the 21 tools, no account, no key, and nothing leaves the page.',
+  },
   'hazelnut-trial': {
     id: 'hazelnut-trial',
     product: 'hazelnut',
@@ -118,6 +128,8 @@ export const PLANS = {
 
 export function planFor(product, edition) {
   if (product === 'mini') return PLANS[edition === 'pro' ? 'mini-pro' : 'mini-trial'];
+  // The browser build is Hazelnut only, and only ever the local half.
+  if (edition === 'web') return PLANS['hazelnut-web'];
   const family = product === 'squirreal' ? 'squirreal' : 'hazelnut';
   const key = edition === 'pro' ? `${family}-pro`
     : edition === 'trial' ? `${family}-trial`

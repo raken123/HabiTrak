@@ -27,6 +27,8 @@ const ROOTS = {
   '/core/': path.join(ROOT, 'packages', 'core'),
   // Media the ads build for themselves — kept out of the repository.
   '/assets/': path.join(ROOT, '.build'),
+  // The staged browser build, exactly as it would be hosted.
+  '/web/': path.join(ROOT, 'dist', 'web'),
 };
 
 const TYPES = {
@@ -59,7 +61,9 @@ http.createServer((req, res) => {
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404); return res.end('not found'); }
 
-    if (file.endsWith('index.html') && prefix) {
+    // Only the app prefixes get a recording bridge injected. The staged web
+    // build is served exactly as it would be hosted, bridge and all.
+    if (file.endsWith('index.html') && INSTALL[prefix]) {
       const install = INSTALL[prefix];
       buf = Buffer.from(String(buf)
         // The apps' own CSP forbids the cross-origin module import below; the

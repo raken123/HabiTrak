@@ -3,14 +3,15 @@
 **An advanced AI photo generator for Windows and Mac.** Free for 7 days, then it
 keeps working — without the AI — as Hazelnut Free.
 
-Four products, one codebase:
+Five products, one codebase:
 
 | | What it is | Platforms | Price |
 |---|---|---|---|
-| **Hazelnut** | The full editor: six tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
+| **Hazelnut** | The full editor: twenty-one tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
 | **Hazelnut Squirreal** | The same editor, pointed at moving pictures. Sketch a frame, say how it moves, get a clip | Windows, Mac | $29.99 / month |
 | **Hazelnut Mini** | One chat bar that removes things from photos | Windows, Mac, **Android** | $9.99 / month — half of Hazelnut |
-| **Hazelnut Free** | Hazelnut with **no AI**. Everything that runs locally, forever, at no cost | Windows, Mac | Free |
+| **Hazelnut Free** | Hazelnut with **no AI**. The eleven tools that run locally, forever, at no cost | Windows, Mac | Free |
+| **Hazelnut for the Web** | The same editor in a browser tab, fixed to that local half. No download, no account, no key | Any browser | Free |
 
 Everyone starts on a **7-day trial** with every tool unlocked and 1,200 AI
 credits. When it ends the editor does not lock: it becomes Hazelnut Free.
@@ -28,6 +29,42 @@ credits. When it ends the editor does not lock: it becomes Hazelnut Free.
 | **Expand** | Grows the canvas, mirroring the edges so the new margin blends in. | **Never costs a credit** |
 | **AIScope** | Zooms 80× to 60,000×. The zoom is free at any magnification; *Learn* studies the magnified crop and writes down what the thing is. | Free · Learn 15 |
 
+### The fifteen that came after
+
+Eight run on your machine and cost nothing; seven call the model and are priced
+well under the tools above, because none of them buys a search pass or a run of
+frames — each is one edit to a photograph that already exists.
+
+| Tool | What it does | Cost |
+|---|---|---|
+| **Crop** | Drag a box, or type the numbers. Trims the canvas and every layer. | Free |
+| **Straighten** | Rotate by eye; the corners the rotation exposes are trimmed off. | Free |
+| **Levels** | Black point, white point, gamma. | Free |
+| **Colour** | Warmth, tint and saturation, with the luma held. | Free |
+| **Sharpen** | A real unsharp mask, with a radius and a threshold. | Free |
+| **Denoise** | A median filter mixed back in, edge-aware. | Free |
+| **Vignette** | Radial darkening, and monochrome grain if you want it. | Free |
+| **Text** | Click, type, apply. | Free |
+| **Caption** | A caption, an alt text and keywords. Nothing is generated. | 3 credits |
+| **Erase** | Realtouch without the research: a clean fill from what is around the mask. | 5 credits |
+| **Background** | Cut the subject out, or replace what is behind it. | 5 credits |
+| **Sky** | A new sky, with the light underneath relit to match. | 6 credits |
+| **Colourise** | Colour for a black-and-white photograph — an interpretation, not a recovery. | 6 credits |
+| **Upscale** | Twice the size, with the detail rebuilt. | 8 credits |
+| **Restore** | Scratches, creases, fading and damp on a scanned print. | 8 credits |
+
+Eleven of the twenty-one never call a model. That half is what Hazelnut Free
+keeps, and what **Hazelnut for the Web** ships:
+
+```sh
+node scripts/stage-payload.mjs hazelnut-web dist/web
+cd dist/web && python3 -m http.server 8080     # then open http://localhost:8080
+```
+
+The browser build is fixed to the `web` edition: the eleven local tools work,
+the ten that need a model are locked and say so, and nothing is uploaded —
+there is no key and no account.
+
 Magic Draw's price moves inside its band with how much of the canvas you painted,
 how many colours you used and how large the output is — the Submit button quotes
 the real number before you commit. See [`docs/TOOLS.md`](docs/TOOLS.md) for the
@@ -36,7 +73,7 @@ detail.
 **Credits are only taken when a result comes back.** A failed or cancelled
 generation costs nothing.
 
-### The same six tools in Squirreal
+### The original six tools in Squirreal
 
 A generation there is a clip rather than a frame, so two prices move and two
 tools stop being generations at all:
@@ -97,7 +134,7 @@ Get one at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 > a commit should be treated as public and revoked. `.env` is git-ignored, and
 > nothing in this repository contains a key.
 
-Draw, Expand and the AIScope zoom work with no key at all.
+The eleven local tools work with no key at all.
 
 ### Building installers
 

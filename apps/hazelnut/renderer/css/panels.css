@@ -10,7 +10,14 @@
   padding: 6px 0;
   background: var(--panel);
   border-right: 1px solid var(--line);
+  /* Twenty-one tools is taller than a short window: the column scrolls rather
+     than squashing the buttons or spilling over the canvas. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
 }
+.toolbar::-webkit-scrollbar { width: 6px; }
+.toolbar::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
 .tool {
   position: relative;

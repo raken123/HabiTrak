@@ -26,7 +26,8 @@ const SWATCHES = [
 
 /** Whichever product this build is. The dialogs read it rather than assume. */
 const productName = () => (app.isVideo ? 'Hazelnut Squirreal' : 'Hazelnut');
-const freeName = () => (app.isVideo ? 'Squirreal Free' : 'Hazelnut Free');
+const freeName = () => (app.server?.edition === 'web' ? 'Hazelnut for the Web'
+  : app.isVideo ? 'Squirreal Free' : 'Hazelnut Free');
 
 const app = {
   doc: null,
@@ -73,13 +74,13 @@ async function boot() {
   refreshChrome();
   selectTool('draw');
 
-  if (!app.server.trialStarted) {
+  if (app.server.edition === 'web') {
+    await showWebWelcome();
+  } else if (!app.server.trialStarted) {
     await showWelcome();
   } else if (app.server.edition === 'free' && app.server.trialUsed) {
-    toast(freeName(), app.isVideo
-      ? 'Your trial has finished. Draw, Expand, the AIScope zoom and GIF export keep working — the AI tools need a licence.'
-      : 'Your trial has finished. Draw, Expand and the AIScope zoom keep working — the AI tools need a licence.',
-    { timeout: 9000 });
+    toast(freeName(), `Your trial has finished. The ${localCount()} tools that run on your machine keep working — the ones that need a model need a licence.`,
+      { timeout: 9000 });
   }
   if (app.server.ai && !app.server.apiKeyConfigured) {
     toast('No API key yet', 'The AI tools need a Gemini key. Open Settings to add one.', {
@@ -96,7 +97,11 @@ async function boot() {
 function buildToolbar() {
   const host = $('#toolbar');
   host.replaceChildren();
+  let group = null;
   for (const tool of app.server.tools) {
+    // A hairline between groups: paint, repair, adjust, motion, canvas, inspect.
+    if (group !== null && tool.group !== group) host.append(el('div', { class: 'toolbar__sep' }));
+    group = tool.group;
     const locked = !editionAllows(tool);
     const button = el('button', {
       class: `tool${locked ? ' is-locked' : ''}`,
@@ -109,7 +114,6 @@ function buildToolbar() {
     if (price) button.append(el('span', { class: 'price', text: price }));
     attachTooltip(button, () => tooltipFor(tool));
     host.append(button);
-    if (tool.id === 'gif-animate') host.append(el('div', { class: 'toolbar__sep' }));
   }
 }
 
@@ -635,6 +639,11 @@ function wireDragAndDrop() {
 
 app.render = () => app.viewport.render();
 
+// Rebuild the options bar for the current tool. Tools that own their own state
+// (an adjustment that has just been applied, say) call this to make the bar
+// agree with it again.
+app.refreshOptions = () => selectTool(app.currentToolId);
+
 app.onDocChange = (fn) => { app.docListeners.push(fn); return () => { app.docListeners = app.docListeners.filter((f) => f !== fn); }; };
 
 app.setBrushSize = (size) => {
@@ -706,13 +715,44 @@ app.reportToolError = (err) => {
 // Dialogs
 // ---------------------------------------------------------------------------
 
+/** How many of the tools in this build never call a model. */
+function localCount() {
+  return (app.server.tools || []).filter((t) => !t.ai).length;
+}
+
+/**
+ * The browser build's welcome. There is no trial to start and no key to add,
+ * so it says what is here, what is not, and where the rest lives.
+ */
+async function showWebWelcome() {
+  const total = (app.server.tools || []).length;
+  const paid = total - localCount();
+  const go = await modal({
+    title: 'Hazelnut, in a browser tab',
+    wide: true,
+    body: el('div', {}, [
+      el('p', { text: `This is the full editor with half its toolbox: the ${localCount()} tools that run on your machine work, and the ${paid} that need a model are locked.` }),
+      el('p', { text: 'Nothing is uploaded, nothing is charged, and there is no account and no key. The picture you open never leaves this page.' }),
+      el('p', { class: 'note', text: 'Magic Draw, Realtouch, Erase, Restore, Colourise, Background, Sky, Upscale, GIF Animate and AIScope Learn are in the desktop app.' }),
+      toolGuide(app.server.tools),
+    ]),
+    footer: (close) => [
+      el('button', { class: 'btn btn--primary', onClick: () => close(false), text: 'Start editing' }),
+      el('button', { class: 'btn', onClick: () => close(true), text: 'Get the desktop app' }),
+    ],
+  });
+  // The download page sits beside this build in the same directory tree, so
+  // the link is relative — there is no invented address here.
+  if (go === true) window.hazelnut.openExternal(new URL('../Hazelnut-downloads.html', location.href).href);
+}
+
 async function showWelcome() {
   const start = await modal({
     title: `Welcome to ${productName()}`,
     wide: true,
     body: el('div', {}, [
       el('p', { text: `Every tool is unlocked for ${app.server.trialDays} days, with ${app.server.trialCreditGrant.toLocaleString('en-US')} AI credits to spend. No card, no account.` }),
-      el('p', { text: `When the trial ends ${productName()} does not stop working — it becomes ${freeName()}: the same editor with Draw, Expand and the AIScope zoom${app.isVideo ? ', and the GIF export' : ''}, minus anything that needs a model.` }),
+      el('p', { text: `When the trial ends ${productName()} does not stop working — it becomes ${freeName()}: the same editor, with the ${localCount()} tools that run on your machine, minus anything that needs a model.` }),
       toolGuide(app.server.tools),
     ]),
     footer: (close) => [
@@ -745,7 +785,12 @@ function showUpgrade(tool, message) {
     title: tool ? `${tool.name} needs the AI` : 'This tool needs the AI',
     body: el('div', {}, [
       el('p', { text: message || `${freeName()} runs everything that works locally. ${tool ? tool.name : 'This tool'} needs a model, so it is part of the paid app.` }),
-      el('div', { class: 'note', text: 'Draw, Expand and the AIScope zoom stay available on Free, forever, at no cost.' }),
+      el('div', {
+        class: 'note',
+        text: `The ${localCount()} tools that run on your machine — drawing, cropping, straightening, `
+          + 'levels, colour, sharpening, denoising, vignetting, text, expanding and the AIScope zoom — '
+          + `stay available on ${freeName()}, forever, at no cost.`,
+      }),
     ]),
     footer: (close) => [
       el('button', { class: 'btn', onClick: () => close(), text: 'Close' }),

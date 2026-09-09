@@ -6,25 +6,23 @@
 // files, and deliberately leave the AI calls pending for ever: the ad shows the
 // genuine progress UI and cuts away, rather than inventing a result.
 
+// The registries and the prices come from the core itself: a second copy here
+// would drift, and an ad that quotes a price the app does not charge is worse
+// than no ad. The harness serves the package at /core/.
+import { TOOLS, TOOL_ORDER as ORDER, costOf } from '/core/tools.js';
+import { VIDEO_TOOLS, VIDEO_TOOL_ORDER as VIDEO_ORDER, videoCostOf } from '/core/video-tools.js';
+import { PLANS as CORE_PLANS } from '/core/pricing.js';
+
 import { demoPhoto } from './demo-image.js';
 import { streetScene } from './street-scene.js';
 import { deskScene } from './desk-scene.js';
 import { carFrame } from './car-scene.js';
 
-const TOOLS = {
-  draw: { id: 'draw', name: 'Draw', shortcut: 'B', icon: 'brush', ai: false, cost: 0, group: 'paint', tagline: 'Draw what you want, in colour.', help: 'A plain brush. Pick a colour and a size and paint on the active layer. Nothing leaves your machine and nothing is charged.' },
-  'magic-draw': { id: 'magic-draw', name: 'Magic Draw', shortcut: 'M', icon: 'sparkle-brush', ai: true, cost: { min: 5, max: 20 }, group: 'paint', tagline: 'Sketch in 2D, submit, get the real thing.', help: 'Draw as you would with Draw, then press Submit. Hazelnut renders a photoreal version of your sketch, keeping your composition, colours and proportions.' },
-  realtouch: { id: 'realtouch', name: 'Realtouch', shortcut: 'R', icon: 'eraser-magic', ai: true, cost: 20, group: 'repair', tagline: 'Remove an object — and rebuild what was actually behind it.', help: 'Paint over the thing you want gone. Realtouch works out where the photo was taken, looks the place up, and reasons about what the object is hiding before it paints the gap back in.' },
-  'gif-animate': { id: 'gif-animate', name: 'GIF Animate', shortcut: 'G', icon: 'film', ai: true, cost: 600, group: 'motion', tagline: 'Up to five seconds of movement, encoded as a GIF.', help: 'Describe the motion. Hazelnut generates a run of frames and encodes them into a looping GIF.' },
-  expand: { id: 'expand', name: 'Expand', shortcut: 'E', icon: 'expand', ai: false, cost: 0, group: 'canvas', tagline: 'Grow the canvas. Never costs a credit.', help: 'Pull the canvas out in any direction. The new margin is filled by mirroring the edge pixels. Local, instant, free on every edition.' },
-  aiscope: { id: 'aiscope', name: 'AIScope', shortcut: 'Z', icon: 'scope', ai: false, cost: 0, learnCost: 15, group: 'inspect', minZoom: 80, maxZoom: 60000, tagline: 'Zoom 80× to 60,000× and let the AI learn what it is looking at.', help: 'Drag a box to dive into it. Zoom runs locally and is free at any magnification.' },
-};
-const ORDER = ['draw', 'magic-draw', 'realtouch', 'gif-animate', 'expand', 'aiscope'];
 
 const PLANS = {
-  'hazelnut-free': { id: 'hazelnut-free', product: 'hazelnut', name: 'Hazelnut Free', monthlyUsd: 0, yearlyUsd: 0, credits: 0, ai: false, blurb: 'Everything in Hazelnut that does not need a model. No AI, no credits, no expiry.' },
-  'hazelnut-pro': { id: 'hazelnut-pro', product: 'hazelnut', name: 'Hazelnut', monthlyUsd: 19.99, yearlyUsd: 199, credits: 5000, ai: true, blurb: 'The full editor, every tool, and a monthly credit allowance.' },
-  'mini-pro': { id: 'mini-pro', product: 'mini', name: 'Hazelnut Mini', monthlyUsd: 9.99, yearlyUsd: 99.5, credits: 1500, ai: true, blurb: 'One chat bar that removes things. Half the price of Hazelnut.' },
+  'hazelnut-free': CORE_PLANS['hazelnut-free'],
+  'hazelnut-pro': CORE_PLANS['hazelnut-pro'],
+  'mini-pro': CORE_PLANS['mini-pro'],
 };
 
 /**
@@ -81,11 +79,15 @@ export function installHazelnutStub() {
     deactivate: async () => state,
     saveApiKey: async () => ({ configured: true }),
     quote: async (toolId, params = {}) => {
-      const tool = TOOLS[toolId];
-      const cost = toolId === 'aiscope' ? (params.learn ? 15 : 0)
-        : toolId === 'magic-draw' ? 12
-        : typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
-      return { cost, balance: state.credits, affordable: state.credits >= cost, allowed: state.ai || !tool.ai, reason: null, message: null };
+      const cost = costOf(toolId, params);
+      return {
+        cost,
+        balance: state.credits,
+        affordable: state.credits >= cost,
+        allowed: state.ai || !TOOLS[toolId].ai,
+        reason: null,
+        message: null,
+      };
     },
     refund: async () => state.credits,
     magicDraw: (_opts, onProgress) => pending(onProgress, [
@@ -104,6 +106,15 @@ export function installHazelnutStub() {
      * card it resolves with is written by the ad, not read off the picture by
      * any model.
      */
+    // The cheap edits, in the same shape as the rest of the bridge: real
+    // progress, and a promise the film never lets settle unless it says so.
+    transform: (_toolId, _opts, onProgress) => pending(onProgress, [
+      { after: 300, stage: 'render', message: 'Sending the picture…' },
+    ]),
+    describe: (_opts, onProgress) => pending(onProgress, [
+      { after: 300, stage: 'read', message: 'Reading the picture…' },
+    ]),
+
     aiscopeLearn: (_opts, onProgress) => {
       if (!window.__AD_CARD) {
         return pending(onProgress, [{ after: 300, stage: 'study', message: 'Studying the crop…' }]);
@@ -168,21 +179,12 @@ export function installMiniStub() {
 
 // ── Squirreal ───────────────────────────────────────────────────────────────
 
-const VIDEO_TOOLS = {
-  draw: { id: 'draw', name: 'Draw', shortcut: 'B', icon: 'brush', ai: false, cost: 0, group: 'paint', tagline: 'Draw what you want, in colour.', help: 'A plain brush, on the frame you are parked on. Free.' },
-  'magic-draw': { id: 'magic-draw', name: 'Magic Draw', shortcut: 'M', icon: 'sparkle-brush', ai: true, cost: { min: 40, max: 120 }, group: 'paint', tagline: 'Sketch a shot. Get the shot, moving.', help: 'Sketch the frame and describe the movement. Squirreal renders it as a clip and holds it steady across every frame.' },
-  realtouch: { id: 'realtouch', name: 'Realtouch', shortcut: 'R', icon: 'eraser-magic', ai: true, cost: 150, group: 'repair', tagline: 'Remove something from every frame at once.', help: 'Paint over it once. Squirreal looks the place up and rebuilds what was behind it, across the whole clip.' },
-  'gif-animate': { id: 'gif-animate', name: 'GIF Animate', shortcut: 'G', icon: 'film', ai: false, cost: 0, group: 'motion', tagline: 'Turn the clip into a looping GIF.', help: 'The motion is already there, so this is local work. Free on every edition.' },
-  expand: { id: 'expand', name: 'Expand', shortcut: 'E', icon: 'expand', ai: false, cost: 0, group: 'canvas', tagline: 'Grow the frame. Never costs a credit.', help: 'Pull the frame out; the margin is mirrored on every frame of the clip.' },
-  aiscope: { id: 'aiscope', name: 'AIScope', shortcut: 'Z', icon: 'scope', ai: false, cost: 0, learnCost: 15, group: 'inspect', minZoom: 80, maxZoom: 60000, tagline: 'Zoom 80× to 60,000× into any frame.', help: 'Park on a frame and dive in. Zooming is free; Learn costs 15.' },
-};
-const VIDEO_ORDER = ['draw', 'magic-draw', 'realtouch', 'gif-animate', 'expand', 'aiscope'];
 
 const SQUIRREAL_PLANS = {
-  'squirreal-free': { id: 'squirreal-free', product: 'squirreal', name: 'Squirreal Free', monthlyUsd: 0, credits: 0, ai: false, blurb: 'Everything that does not need a model, including GIF export.' },
-  'squirreal-pro': { id: 'squirreal-pro', product: 'squirreal', name: 'Hazelnut Squirreal', monthlyUsd: 29.99, credits: 3000, ai: true, blurb: 'Hazelnut, for moving pictures.' },
-  'hazelnut-pro': PLANS['hazelnut-pro'],
-  'mini-pro': PLANS['mini-pro'],
+  'squirreal-free': CORE_PLANS['squirreal-free'],
+  'squirreal-pro': CORE_PLANS['squirreal-pro'],
+  'hazelnut-pro': CORE_PLANS['hazelnut-pro'],
+  'mini-pro': CORE_PLANS['mini-pro'],
 };
 
 export function installSquirrealStub() {
@@ -214,14 +216,7 @@ export function installSquirrealStub() {
     saveApiKey: async () => ({ configured: true }),
 
     quote: async (toolId, params = {}) => {
-      const seconds = Math.min(8, Math.max(1, params.seconds || 4));
-      const cost = toolId === 'magic-draw'
-        ? Math.round(40 + (0.55 * ((seconds - 1) / 7) + 0.2 * Math.min(1, (params.coveragePct || 0) / 60)
-            + 0.1 * Math.min(1, ((params.colorCount || 1) - 1) / 11)
-            + 0.15 * Math.min(1, Math.max(0, ((params.megapixels || 1) - 0.5) / 3.5))) * 80)
-        : toolId === 'realtouch' ? Math.max(45, Math.round((0.4 + 0.6 * (seconds / 8)) * 150))
-        : toolId === 'aiscope' ? (params.learn ? 15 : 0)
-        : 0;
+      const cost = videoCostOf(toolId, params);
       return { cost, balance: state.credits, affordable: state.credits >= cost, allowed: true, reason: null, message: null };
     },
     refund: async () => state.credits,
@@ -259,6 +254,13 @@ export function installSquirrealStub() {
      * above, and the same caveat: what it resolves with is the ad's own
      * footage, not a model output.
      */
+    transform: (_toolId, _opts, onProgress) => pending(onProgress, [
+      { after: 300, stage: 'render', message: 'That tool edits a still…' },
+    ]),
+    describe: (_opts, onProgress) => pending(onProgress, [
+      { after: 300, stage: 'read', message: 'Reading…' },
+    ]),
+
     realtouch: (_opts, onProgress) => {
       let resolve;
       const promise = new Promise((r) => { resolve = r; });

@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld('hazelnut', {
   refund: (toolId, amount, note) => call('credits:refund', toolId, amount, note),
 
   magicDraw: (opts, onProgress) => job('tool:magic-draw', opts, onProgress),
+  // The cheap edits all take the same shape, so they share one channel.
+  transform: (toolId, opts, onProgress) => job('tool:transform', { toolId, ...opts }, onProgress),
+  describe: (opts, onProgress) => job('tool:describe', opts, onProgress),
   realtouch: (opts, onProgress) => job('tool:realtouch', opts, onProgress),
   gifAnimate: (opts, onProgress) => job('tool:gif-animate', opts, onProgress),
   aiscopeLearn: (opts, onProgress) => job('tool:aiscope-learn', opts, onProgress),

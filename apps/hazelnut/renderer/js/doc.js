@@ -200,9 +200,18 @@ export class Doc extends EventTarget {
       layer.ctx = nctx;
     }
 
-    this.width = w;
-    this.height = h;
-    this.composed = makeCanvas(w, h);
+    this.reframe(w, h);
+  }
+
+  /**
+   * Adopt a new canvas size after the layers have been replaced wholesale —
+   * what Straighten does, having rotated every one of them into a new frame.
+   * The composite buffer is the document's size, so it has to be rebuilt.
+   */
+  reframe(width, height) {
+    this.width = Math.max(1, Math.round(width));
+    this.height = Math.max(1, Math.round(height));
+    this.composed = makeCanvas(this.width, this.height);
     this.composedCtx = ctx2d(this.composed);
     this.touch();
   }

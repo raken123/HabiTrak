@@ -1,12 +1,16 @@
 # The tools
 
-Six tools. Two of them never touch a model, which is why they survive into
-Hazelnut Free.
+Twenty-one tools. Eleven of them never touch a model, which is why they survive
+into Hazelnut Free — and why they are exactly what the browser build ships.
 
-Everything below describes Hazelnut. **Hazelnut Squirreal** has the same six,
-pointed at clips: the prices change (a generation is a clip, not a frame), and
-GIF Animate stops being a generation at all because the motion already exists.
-The differences are listed at the end.
+The six below came first and are described in full. The fifteen that followed
+are listed after them: eight local and free, seven that call the model and cost
+between three and eight credits.
+
+Everything below describes Hazelnut. **Hazelnut Squirreal** has the original
+six, pointed at clips: the prices change (a generation is a clip, not a frame),
+and GIF Animate stops being a generation at all because the motion already
+exists. The differences are listed at the end.
 
 ---
 
@@ -139,3 +143,80 @@ pause, a scrub bar, and the clip's length and rate. `Space` plays and pauses.
 Squirreal runs on **Gemini Omni 1.1 Flash**. The request shape in
 `packages/core/video.js` is an assumption, not a verified fact — see the caveat
 in the README.
+
+
+---
+
+# The fifteen
+
+## The eight that run here
+
+Nothing in this group leaves the machine, and nothing in it is ever charged, on
+any edition — including the browser build.
+
+- **Crop** (`C`) — drag the box or type the numbers, then Apply. One call to
+  `doc.resize()` with a negative offset and no mirroring: the same code path
+  Expand uses, pointed the other way.
+- **Straighten** (`K`) — rotate every layer about the centre, then trim to the
+  largest rectangle of the original aspect that still fits inside the rotated
+  frame. The overlay shows both the angle grid and the rectangle you will keep.
+- **Levels** (`L`) — black point, white point and gamma, as one lookup table.
+- **Colour** (`U`) — warmth, tint and saturation. Saturation is applied around
+  the Rec. 601 luma, so moving it does not change how bright anything is.
+- **Sharpen** (`H`) — an unsharp mask: the picture minus a blurred copy of
+  itself, added back at the amount you set. The threshold leaves flat areas
+  alone, so grain is not sharpened along with the detail.
+- **Denoise** (`N`) — a 3×3 median mixed back into the original. *Keep detail*
+  trusts the original more wherever a pixel is far from its median, which is
+  what an edge looks like.
+- **Vignette** (`V`) — a radial darkening with a feather, and optional grain.
+  The grain is one value per pixel across all three channels: film grain is
+  monochrome, and per-channel noise reads as a sensor fault.
+- **Text** (`T`) — click where the line starts, type, and Apply draws it onto
+  the layer.
+
+All five adjustments share one factory: they snapshot the layer when you pick
+the tool, recompute the whole layer from that snapshot on every slider move,
+and only touch the history when you press **Apply**. Switching away without
+applying puts the snapshot back, so nothing is ever left half-changed.
+
+## The seven that call the model
+
+Each is one edit to a photograph that already exists — no search pass, no run
+of frames — which is why they are priced where they are.
+
+| Tool | Cost | What it sends |
+|---|---|---|
+| **Caption** (`D`) | 3 | The picture. Nothing is generated: it comes back as a caption, an alt text and keywords. |
+| **Erase** (`X`) | 5 | The masked copy and the original. Fills from the surrounding pixels only — no location lookup. |
+| **Background** (`J`) | 5 | The picture. Cuts the subject out, or replaces what is behind it with what you describe. |
+| **Sky** (`S`) | 6 | The picture. Replaces the sky and relights the ground underneath so the horizon is not a paste. |
+| **Colourise** (`Y`) | 6 | The picture. An interpretation, not a recovery — the colour was never in the negative. |
+| **Upscale** (`I`) | 8 | The picture. Comes back at twice the size, and the document grows with it. |
+| **Restore** (`O`) | 8 | The picture. Scratches, creases, fading and damp, without redrawing faces. |
+
+They share one engine call (`Engine#transform`) and one IPC channel, so there
+is a single place where the gate, the charge, the cancel and the error live.
+**Erase** is the only one that takes a mask.
+
+### Erase or Realtouch?
+
+Erase is a quarter of Realtouch's price because it does a quarter of the work:
+it fills the hole from what surrounds it. Realtouch works out where the
+photograph was taken, looks the place up with Google Search grounding, and
+reasons about what is physically behind the object before it paints. Use Erase
+for wires, litter, spots and strangers in the distance; use Realtouch when what
+is behind the thing is a real place that can be looked up.
+
+---
+
+# Hazelnut for the Web
+
+The browser build is the same renderer and the same bridge, fixed to the `web`
+edition. The eleven local tools work; the ten that need a model are locked and
+say why. There is no key, no account, and nothing is uploaded — the picture is
+decoded in the page and stays there.
+
+```sh
+node scripts/stage-payload.mjs hazelnut-web dist/web
+```

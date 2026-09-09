@@ -17,6 +17,22 @@ export const ICONS = {
   layers: svg('<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3.5 12.5 8.5 4.7 8.5-4.7"/>'),
   image: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="m4 17 5-4.5 3.5 3 3-2.5L20 17"/>'),
   wand: svg('<path d="m5 19 9-9"/><path d="m14.5 4.5 5 5-3 3-5-5 3-3Z"/><path d="M4 6h2M5 5v2M18 17h2M19 16v2"/>'),
+  // ── the fifteen ──────────────────────────────────────────────────────────
+  crop: svg('<path d="M7 3v14h14"/><path d="M3 7h14v14"/>'),
+  straighten: svg('<path d="M3 16.5 21 7.5"/><path d="M4 20h16"/><path d="M6.5 15.2l1.6 2.8M11 12.9l1.6 2.8M15.5 10.6l1.6 2.8"/>'),
+  levels: svg('<path d="M4 19V9M9 19V5M14 19v-7M19 19V8"/><path d="M3 19h18"/>'),
+  droplet: svg('<path d="M12 3.5s5.5 6 5.5 9.6A5.5 5.5 0 0 1 12 18.6a5.5 5.5 0 0 1-5.5-5.5C6.5 9.5 12 3.5 12 3.5Z"/><path d="M12 18.6V3.5"/>'),
+  sharpen: svg('<path d="m12 4 7 15H5l7-15Z"/><path d="M12 9.5v6"/>'),
+  denoise: svg('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M7.5 8.5h.01M11 11h.01M15.5 8h.01M8.5 15h.01M13 16h.01M17 13h.01"/>'),
+  vignette: svg('<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><ellipse cx="12" cy="12" rx="6.4" ry="5"/>'),
+  text: svg('<path d="M5 6.5V5h14v1.5"/><path d="M12 5v14"/><path d="M9 19h6"/>'),
+  eraser: svg('<path d="m10 19-5.2-5.2a1.6 1.6 0 0 1 0-2.3l7.3-7.3a1.6 1.6 0 0 1 2.3 0l4.4 4.4a1.6 1.6 0 0 1 0 2.3L13 19Z"/><path d="M10 19h9"/><path d="m8.2 10.4 5.4 5.4"/>'),
+  upscale: svg('<rect x="3" y="7" width="9" height="9" rx="1.5"/><path d="M14 5h6v6"/><path d="m20 5-7.5 7.5"/>'),
+  restore: svg('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="m5 16 4.5-4.5 3 2.6 3.2-3.4L20 15"/><path d="m7 4 3.5 16"/>'),
+  palette: svg('<path d="M12 3.5c-4.7 0-8.5 3.6-8.5 8 0 3 2.3 4.6 4.6 4.6h1.5c1 0 1.8.8 1.8 1.8 0 1.4 1 2.6 2.4 2.6 3.9 0 6.7-3.6 6.7-8 0-4.9-3.8-9-8.5-9Z"/><circle cx="7.8" cy="10.5" r="1"/><circle cx="11" cy="7.5" r="1"/><circle cx="15" cy="8.4" r="1"/><circle cx="16.6" cy="12" r="1"/>'),
+  cutout: svg('<path d="M4 8V4h4M20 16v4h-4M16 4h4v4M8 20H4v-4"/><path d="M9.5 15.5a3.5 3.5 0 1 1 5-5"/><path d="M14.5 15.5 9.5 10.5"/>'),
+  cloud: svg('<path d="M7.5 18h9.2a3.8 3.8 0 0 0 .3-7.6 5.2 5.2 0 0 0-10-1.6A3.6 3.6 0 0 0 7.5 18Z"/>'),
+  caption: svg('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 14.5h5M14.5 14.5h2.5M7 10.5h10"/>'),
 };
 
 export function icon(name) {

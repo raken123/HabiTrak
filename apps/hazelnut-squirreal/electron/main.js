@@ -327,6 +327,14 @@ handle('tool:realtouch', (jobId, opts) => runJob(jobId, (ctx) =>
 handle('tool:aiscope-learn', (jobId, opts) => runJob(jobId, (ctx) =>
   engine.aiscopeLearn({ ...opts, ...ctx })));
 
+handle('tool:transform', () => {
+  throw new Error('That tool edits a still. Squirreal works on clips — use Hazelnut for it.');
+});
+
+handle('tool:describe', () => {
+  throw new Error('That tool reads a still. Squirreal works on clips — use Hazelnut for it.');
+});
+
 // Deliberately not implemented: the renderer encodes the open clip itself.
 handle('tool:gif-animate', () => {
   throw new Error('In Squirreal the clip is encoded on this machine — nothing is sent and nothing is charged.');

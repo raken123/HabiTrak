@@ -24,8 +24,13 @@ presses the button, not at install, so nothing is burned by someone who opened
 the app once.
 
 When it ends the app does **not** lock. It becomes **Hazelnut Free**: the same
-editor, the same layers, the same history, with Draw, Expand and the AIScope
-zoom still working and the model-backed tools showing a padlock.
+editor, the same layers, the same history, with the eleven local tools — Draw,
+Text, Crop, Straighten, Levels, Colour, Sharpen, Denoise, Vignette, Expand and
+the AIScope zoom — still working, and the ten model-backed tools showing a
+padlock.
+
+**Hazelnut for the Web** is that same half in a browser tab: no download, no
+account, no key, nothing uploaded.
 
 The trial is measured against the local clock, and a clock wound backwards
 spends it rather than extending it. That is a speed bump, not a licence server —

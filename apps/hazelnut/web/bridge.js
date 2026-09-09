@@ -41,9 +41,14 @@ class WebStore {
   }
 }
 
-export function installWebBridge() {
+/**
+ * @param {{limited?: boolean}} opts — `limited` is the hosted browser build:
+ *   the full editor, fixed to the `web` edition, which is the half of the
+ *   toolbox that needs no model. No key, no account, nothing uploaded.
+ */
+export function installWebBridge({ limited = false } = {}) {
   const store = new WebStore(STATE_KEY, { ...LICENSE_DEFAULTS, ...CREDIT_DEFAULTS, product: 'hazelnut', settings: {} });
-  const license = new License(store, { product: 'hazelnut' });
+  const license = new License(store, { product: 'hazelnut', ...(limited ? { fixedEdition: 'web' } : {}) });
   const credits = new Credits(store);
   const readKey = () => { try { return localStorage.getItem(API_KEY) || null; } catch { return null; } };
   const client = new GeminiClient({ apiKey: readKey(), apiBase: API_BASE });
@@ -53,8 +58,8 @@ export function installWebBridge() {
     ...license.status(),
     credits: credits.balance,
     ledger: credits.history(20),
-    apiKeyConfigured: client.configured,
-    apiKeySource: client.configured ? 'this computer' : null,
+    apiKeyConfigured: limited ? false : client.configured,
+    apiKeySource: limited ? null : (client.configured ? 'this computer' : null),
     platform: navigator.platform?.toLowerCase().includes('mac') ? 'darwin'
       : navigator.platform?.toLowerCase().includes('win') ? 'win32' : 'linux',
     version: '1.0.0',
@@ -84,12 +89,16 @@ export function installWebBridge() {
     },
 
     async startTrial() {
+      if (limited) return state();
       const status = license.startTrial();
       credits.grant('trial-grant', TRIAL_CREDIT_GRANT, 'Trial credits');
       return { ...status, credits: credits.balance };
     },
 
     async activate(key) {
+      if (limited) {
+        return { ok: false, error: 'Licences are for the desktop app — this is the browser edition.', state: state() };
+      }
       const result = license.activate(key);
       if (result.ok) {
         const plan = license.status().plan;
@@ -111,6 +120,8 @@ export function installWebBridge() {
     async refund(toolId, amount, note) { return credits.refund(toolId, amount, note); },
 
     magicDraw: (opts, onProgress) => job((ctx) => engine.magicDraw({ ...opts, ...ctx }), onProgress),
+    transform: (toolId, opts, onProgress) => job((ctx) => engine.transform({ toolId, ...opts, ...ctx }), onProgress),
+    describe: (opts, onProgress) => job((ctx) => engine.describe({ ...opts, ...ctx }), onProgress),
     realtouch: (opts, onProgress) => job((ctx) => engine.realtouch({ ...opts, ...ctx }), onProgress),
     gifAnimate: (opts, onProgress) => job((ctx) => engine.gifAnimate({ ...opts, ...ctx }), onProgress),
     aiscopeLearn: (opts, onProgress) => job((ctx) => engine.aiscopeLearn({ ...opts, ...ctx }), onProgress),
@@ -149,7 +160,9 @@ export function installWebBridge() {
   };
 
   // Tell the launcher the window is still open. When these stop arriving it
-  // shuts itself down, so closing the window ends the process.
+  // shuts itself down, so closing the window ends the process. The hosted
+  // build has no launcher behind it, so it says nothing to anybody.
+  if (limited) return;
   const beat = () => { fetch('/__alive', { method: 'POST', keepalive: true }).catch(() => {}); };
   beat();
   setInterval(beat, 2000);

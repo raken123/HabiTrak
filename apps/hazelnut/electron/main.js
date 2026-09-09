@@ -319,6 +319,12 @@ handle('tool:magic-draw', (jobId, opts) => runJob(jobId, (ctx) =>
 handle('tool:realtouch', (jobId, opts) => runJob(jobId, (ctx) =>
   engine.realtouch({ ...opts, ...ctx })));
 
+handle('tool:transform', (jobId, opts) => runJob(jobId, (ctx) =>
+  engine.transform({ ...opts, ...ctx })));
+
+handle('tool:describe', (jobId, opts) => runJob(jobId, (ctx) =>
+  engine.describe({ ...opts, ...ctx })));
+
 handle('tool:gif-animate', (jobId, opts) => runJob(jobId, (ctx) =>
   engine.gifAnimate({ ...opts, ...ctx })));
 

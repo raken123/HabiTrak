@@ -1,6 +1,7 @@
 // Assemble what the launcher embeds and serves.
 //
 //   node scripts/stage-payload.mjs hazelnut launcher/payload
+//   node scripts/stage-payload.mjs hazelnut-web dist/web
 //
 // Kept in Node rather than inline in the shell script: the rewrites below are
 // full of quotes and backslashes, and shell quoting mangles them silently.
@@ -36,7 +37,13 @@ function patchIndex(file, extraBody, extraHead) {
   return html;
 }
 
-if (app === 'hazelnut' || app === 'hazelnut-squirreal') {
+// hazelnut-web is the hosted browser build: the same renderer and the same
+// bridge, fixed to the `web` edition — the eleven local tools work, the ten
+// that need the model are locked, and nothing leaves the page.
+const source = app === 'hazelnut-web' ? 'hazelnut' : app;
+const limited = app === 'hazelnut-web';
+
+if (app === 'hazelnut' || app === 'hazelnut-squirreal' || app === 'hazelnut-web') {
   // Squirreal is the same renderer; only the bridge behind it differs.
   fs.cpSync(path.join(ROOT, 'apps/hazelnut/renderer'), OUT, { recursive: true });
 
@@ -51,19 +58,22 @@ if (app === 'hazelnut' || app === 'hazelnut-squirreal') {
   // to be rewritten from the repository's layout to this one. It also installs
   // itself: the CSP has no 'unsafe-inline', so the page cannot carry a one-line
   // inline module to call it — the file has to do it on load.
-  const bridge = fs.readFileSync(path.join(ROOT, `apps/${app}/web/bridge.js`), 'utf8')
+  const bridge = fs.readFileSync(path.join(ROOT, `apps/${source}/web/bridge.js`), 'utf8')
     .replaceAll('../../../packages/core/', './core/');
   fs.writeFileSync(
     path.join(OUT, 'bridge.js'),
-    `${bridge}\n// Installed on load: this build has no inline scripts.\ninstallWebBridge();\n`,
+    `${bridge}\n// Installed on load: this build has no inline scripts.\n`
+    + `installWebBridge(${limited ? '{ limited: true }' : ''});\n`,
   );
 
   patchIndex(
     path.join(OUT, 'index.html'),
-    app === 'hazelnut-squirreal'
+    source === 'hazelnut-squirreal'
       ? '<input type="file" id="file-input" accept="image/*,video/*" hidden />\n  '
       : '<input type="file" id="file-input" accept="image/*" hidden />\n  ',
-    '<script type="module" src="/bridge.js"></script>\n  ',
+    // Relative, not rooted: the launcher serves the payload at /, but a hosted
+    // build can sit in a subdirectory, and this resolves in both.
+    '<script type="module" src="bridge.js"></script>\n  ',
   );
 } else if (app === 'hazelnut-mini') {
   // Mini's page already picks its own bridge; it only needs the tightened CSP.
