@@ -220,3 +220,40 @@ decoded in the page and stays there.
 ```sh
 node scripts/stage-payload.mjs hazelnut-web dist/web
 ```
+
+
+---
+
+# Mini's toolbar
+
+Mini was one chat bar and one skill. It still is — Remove is the composer, and
+it is the reason Mini exists — but twelve tools sit above it as a strip of
+chips, because *rotate this* and *the colour is flat* are not sentences worth
+typing on a phone.
+
+| Tool | Cost | Where it runs |
+|---|---|---|
+| **Enhance** | Free | The phone. Auto levels from the picture's own histogram, plus a little saturation. |
+| **Rotate** | Free | The phone. A quarter turn. |
+| **Sharpen** | Free | The phone. One slider. |
+| **Denoise** | Free | The phone. One slider. |
+| **Vignette** | Free | The phone. Darken and grain. |
+| **Black & white** | Free | The phone. Rec. 601 luma, with a tone slider. |
+| **Caption** | 3 | The model. Words, not pixels — the answer lands in the transcript. |
+| **Background** | 5 | The model. |
+| **Sky** | 6 | The model. |
+| **Colourise** | 6 | The model. |
+| **Restore** | 8 | The model. |
+| **Upscale** | 8 | The model. |
+| **Remove** | 20 | The model, through the composer — Realtouch, with a sentence instead of a mask. |
+
+The six local tools run the kernels in `@hazelnut/core/adjustments.js` — the
+same code Hazelnut's toolbar runs, so a photograph adjusted on a phone and the
+same photograph adjusted on a desktop come out identical. They cost nothing on
+every edition, including after the trial ends.
+
+The six model-backed ones are the same engine call at the same prices Hazelnut
+charges. Nothing in Mini is dearer because it is on a phone.
+
+Anything a tool needs to know is asked once, in one sheet, with the price on
+the button — so a run is one tap and one sheet, never two.

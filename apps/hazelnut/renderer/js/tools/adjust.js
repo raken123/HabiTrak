@@ -8,7 +8,10 @@
 //
 // Nothing here leaves the machine and nothing is charged, on any edition.
 
-import { el, clamp } from '../dom.js';
+import { el } from '../dom.js';
+import {
+  applyLevels, applyColour, applySharpen, applyDenoise, applyVignette,
+} from '../../core/adjustments.js';
 import { field } from './draw.js';
 import { toast } from '../ui.js';
 
@@ -136,13 +139,11 @@ export function createAdjustTool(spec) {
   };
 }
 
-// ── the kernels ────────────────────────────────────────────────────────────
-
-const lut = (fn) => {
-  const table = new Uint8ClampedArray(256);
-  for (let i = 0; i < 256; i += 1) table[i] = fn(i);
-  return table;
-};
+// ── the five ───────────────────────────────────────────────────────────────
+//
+// The pixel work lives in @hazelnut/core so that Mini runs exactly the same
+// code: a photograph adjusted on a phone and the same photograph adjusted here
+// should come out identical.
 
 export function createLevelsTool() {
   return createAdjustTool({
@@ -155,17 +156,7 @@ export function createLevelsTool() {
       { key: 'white', label: 'White', min: 140, max: 255, value: 255 },
       { key: 'gamma', label: 'Gamma', min: 30, max: 250, value: 100, format: (v) => (v / 100).toFixed(2) },
     ],
-    apply(src, out, v) {
-      const black = Math.min(v.black, v.white - 1);
-      const span = Math.max(1, v.white - black);
-      const gamma = 100 / Math.max(1, v.gamma);
-      const table = lut((i) => 255 * ((Math.min(255, Math.max(0, i - black)) / span) ** gamma));
-      for (let i = 0; i < src.data.length; i += 4) {
-        out.data[i] = table[src.data[i]];
-        out.data[i + 1] = table[src.data[i + 1]];
-        out.data[i + 2] = table[src.data[i + 2]];
-      }
-    },
+    apply: (src, out, v) => applyLevels(src, out, { black: v.black, white: v.white, gamma: v.gamma / 100 }),
   });
 }
 
@@ -180,59 +171,8 @@ export function createColourTool() {
       { key: 'tint', label: 'Tint', min: -60, max: 60, value: 0 },
       { key: 'saturation', label: 'Saturation', min: -100, max: 100, value: 0 },
     ],
-    apply(src, out, v) {
-      const sat = 1 + v.saturation / 100;
-      for (let i = 0; i < src.data.length; i += 4) {
-        let r = src.data[i] + v.warmth;
-        let g = src.data[i + 1] + v.tint * 0.6;
-        let b = src.data[i + 2] - v.warmth;
-        // Rec. 601 luma, so a saturation move keeps the brightness it had.
-        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-        r = luma + (r - luma) * sat;
-        g = luma + (g - luma) * sat;
-        b = luma + (b - luma) * sat;
-        out.data[i] = r; out.data[i + 1] = g; out.data[i + 2] = b;
-      }
-    },
+    apply: (src, out, v) => applyColour(src, out, v),
   });
-}
-
-/** A separable box blur, run twice — close enough to a Gaussian, far cheaper. */
-function boxBlur(src, width, height, radius) {
-  const out = new Float32Array(src.length);
-  const tmp = new Float32Array(src.length);
-  const r = Math.max(1, Math.round(radius));
-
-  for (let pass = 0; pass < 2; pass += 1) {
-    const input = pass === 0 ? src : out;
-    // Horizontal.
-    for (let y = 0; y < height; y += 1) {
-      for (let c = 0; c < 3; c += 1) {
-        let sum = 0;
-        for (let x = -r; x <= r; x += 1) sum += input[(y * width + clamp(x, 0, width - 1)) * 4 + c];
-        for (let x = 0; x < width; x += 1) {
-          tmp[(y * width + x) * 4 + c] = sum / (r * 2 + 1);
-          const add = input[(y * width + clamp(x + r + 1, 0, width - 1)) * 4 + c];
-          const drop = input[(y * width + clamp(x - r, 0, width - 1)) * 4 + c];
-          sum += add - drop;
-        }
-      }
-    }
-    // Vertical.
-    for (let x = 0; x < width; x += 1) {
-      for (let c = 0; c < 3; c += 1) {
-        let sum = 0;
-        for (let y = -r; y <= r; y += 1) sum += tmp[(clamp(y, 0, height - 1) * width + x) * 4 + c];
-        for (let y = 0; y < height; y += 1) {
-          out[(y * width + x) * 4 + c] = sum / (r * 2 + 1);
-          const add = tmp[(clamp(y + r + 1, 0, height - 1) * width + x) * 4 + c];
-          const drop = tmp[(clamp(y - r, 0, height - 1) * width + x) * 4 + c];
-          sum += add - drop;
-        }
-      }
-    }
-  }
-  return out;
 }
 
 export function createSharpenTool() {
@@ -246,19 +186,7 @@ export function createSharpenTool() {
       { key: 'radius', label: 'Radius', min: 1, max: 6, value: 2 },
       { key: 'threshold', label: 'Threshold', min: 0, max: 40, value: 3 },
     ],
-    apply(src, out, v) {
-      if (v.amount === 0) return;
-      const blurred = boxBlur(src.data, src.width, src.height, v.radius);
-      const amount = v.amount / 100;
-      for (let i = 0; i < src.data.length; i += 4) {
-        for (let c = 0; c < 3; c += 1) {
-          const value = src.data[i + c];
-          const detail = value - blurred[i + c];
-          // Below the threshold it is noise, not detail — leave it alone.
-          out.data[i + c] = Math.abs(detail) < v.threshold ? value : value + detail * amount;
-        }
-      }
-    },
+    apply: (src, out, v) => applySharpen(src, out, v),
   });
 }
 
@@ -273,37 +201,7 @@ export function createDenoiseTool() {
       { key: 'strength', label: 'Strength', min: 0, max: 100, value: 55, format: (v) => `${v}%` },
       { key: 'detail', label: 'Keep detail', min: 0, max: 100, value: 40, format: (v) => `${v}%` },
     ],
-    apply(src, out, v) {
-      if (v.strength === 0) return;
-      const { width, height, data } = src;
-      const mix = v.strength / 100;
-      const keep = v.detail / 100;
-      const window = new Uint8ClampedArray(9);
-
-      for (let y = 0; y < height; y += 1) {
-        for (let x = 0; x < width; x += 1) {
-          const i = (y * width + x) * 4;
-          for (let c = 0; c < 3; c += 1) {
-            let n = 0;
-            for (let dy = -1; dy <= 1; dy += 1) {
-              const yy = clamp(y + dy, 0, height - 1);
-              for (let dx = -1; dx <= 1; dx += 1) {
-                const xx = clamp(x + dx, 0, width - 1);
-                window[n] = data[(yy * width + xx) * 4 + c];
-                n += 1;
-              }
-            }
-            window.sort();
-            const median = window[4];
-            const value = data[i + c];
-            // An edge is a big difference from the median; keeping detail means
-            // trusting the original more where that difference is large.
-            const edge = Math.min(1, Math.abs(value - median) / 40) * keep;
-            out.data[i + c] = value + (median - value) * mix * (1 - edge);
-          }
-        }
-      }
-    },
+    apply: (src, out, v) => applyDenoise(src, out, v),
   });
 }
 
@@ -318,28 +216,6 @@ export function createVignetteTool() {
       { key: 'feather', label: 'Feather', min: 10, max: 100, value: 55, format: (v) => `${v}%` },
       { key: 'grain', label: 'Grain', min: 0, max: 40, value: 0 },
     ],
-    apply(src, out, v) {
-      const { width, height } = src;
-      const cx = width / 2;
-      const cy = height / 2;
-      const maxR = Math.hypot(cx, cy);
-      const inner = (v.feather / 100) * maxR;
-      const amount = v.amount / 100;
-
-      for (let y = 0; y < height; y += 1) {
-        for (let x = 0; x < width; x += 1) {
-          const i = (y * width + x) * 4;
-          const d = Math.hypot(x - cx, y - cy);
-          const t = Math.min(1, Math.max(0, (d - inner) / Math.max(1, maxR - inner)));
-          const shade = 1 - amount * t * t;
-          // One noise value per pixel, applied to all three channels: film
-          // grain is monochrome, and per-channel noise reads as sensor fault.
-          const n = v.grain ? (Math.random() - 0.5) * v.grain * 2 : 0;
-          out.data[i] = src.data[i] * shade + n;
-          out.data[i + 1] = src.data[i + 1] * shade + n;
-          out.data[i + 2] = src.data[i + 2] * shade + n;
-        }
-      }
-    },
+    apply: (src, out, v) => applyVignette(src, out, v),
   });
 }

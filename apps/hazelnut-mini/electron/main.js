@@ -16,6 +16,7 @@ import { GeminiClient } from '@hazelnut/core/gemini.js';
 import { resolveApiKey, saveApiKey } from '@hazelnut/core/keystore.js';
 import { Engine } from '@hazelnut/core/engine.js';
 import { PLANS, TRIAL_DAYS } from '@hazelnut/core/pricing.js';
+import { costOf } from '@hazelnut/core/tools.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -34,6 +35,12 @@ let credits;
 let client;
 let engine;
 const jobs = new Map();
+
+/** What Mini's toolbar charges — the same numbers the engine will take. */
+const PRICES = Object.fromEntries(
+  ['realtouch', 'restore', 'colourise', 'upscale', 'sky', 'background', 'caption']
+    .map((id) => [id, costOf(id)]),
+);
 
 function boot() {
   store = new Store({
@@ -123,7 +130,10 @@ function state() {
     version: app.getVersion(),
     plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },
     trialDays: TRIAL_DAYS,
-    removalCost: 20,
+    // Quoted from the registry rather than typed here, so Mini's toolbar and
+    // Hazelnut's cannot disagree about what anything costs.
+    costs: PRICES,
+    removalCost: PRICES.realtouch,
   };
 }
 
@@ -147,15 +157,21 @@ handle('apikey:save', (key) => {
   return { configured: client.configured };
 });
 
-handle('mini:remove', (jobId, opts) => {
+/** Run an engine call as a cancellable job that reports progress to the page. */
+function run(jobId, fn) {
   const controller = new AbortController();
   jobs.set(jobId, controller);
-  return engine.miniRemove({
-    ...opts,
+  return fn({
     signal: controller.signal,
     onProgress: (payload) => win?.webContents.send('job:progress', { jobId, ...payload }),
   }).finally(() => jobs.delete(jobId));
-});
+}
+
+handle('mini:remove', (jobId, opts) => run(jobId, (ctx) => engine.miniRemove({ ...opts, ...ctx })));
+
+// Mini's toolbar: the same cheap edits as Hazelnut, at the same prices.
+handle('tool:transform', (jobId, opts) => run(jobId, (ctx) => engine.transform({ ...opts, ...ctx })));
+handle('tool:describe', (jobId, opts) => run(jobId, (ctx) => engine.describe({ ...opts, ...ctx })));
 
 ipcMain.on('job:cancel', (_e, jobId) => { jobs.get(jobId)?.abort(); jobs.delete(jobId); });
 

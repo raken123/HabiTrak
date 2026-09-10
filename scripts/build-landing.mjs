@@ -99,8 +99,8 @@ const PLANS = [
     blurb: 'The same editor, pointed at moving pictures. A generation is a clip, so it costs more — and the allowance is sized for that, not shrunk.',
     points: ['3,000 credits a month', 'About 40 short clips, or 20 removals', 'Turning a clip into a GIF is free', 'Windows and Mac'] },
   { name: 'Hazelnut Mini', price: '$9.99', per: '/ month', lead: false,
-    blurb: 'The remover on its own, behind one chat bar. Exactly half the price.',
-    points: ['1,500 credits a month', 'About 75 removals', 'Say what should go, in words', 'Windows, Mac and Android'] },
+    blurb: 'The remover behind one chat bar, with twelve tools above it. Exactly half the price.',
+    points: ['1,500 credits a month', 'About 75 removals, or 500 Captions', 'Six tools that run on the phone, free', 'Windows, Mac and Android'] },
 ];
 
 // Squirreal's prices for the same six tools. A clip is not a frame, and two of
@@ -217,7 +217,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <ul>
         <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-one tools. Windows and Mac.</li>
         <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the core six tools, pointed at clips instead of stills. Windows and Mac.</li>
-        <li><b>Hazelnut Mini</b> is the remover on its own, behind a single chat bar. Attach a photo, say what should go, and the picture that comes back becomes the one you are working on. Windows, Mac and <b>Android</b>.</li>
+        <li><b>Hazelnut Mini</b> is the remover behind a single chat bar, with a strip of twelve tools above it — Enhance, Rotate, Sharpen, Denoise, Vignette and Black &amp; white run on the phone itself and cost nothing; Caption, Background, Sky, Colourise, Restore and Upscale call the model at Hazelnut's prices. Windows, Mac and <b>Android</b>.</li>
         <li><b>Hazelnut Free</b> is what the trial becomes. The same editor, minus anything that needs a model — the eleven tools that run locally stay, for ever.</li>
         <li><b>Hazelnut for the Web</b> is the same editor in a browser tab, limited to that same local half. No download, no account, no key.</li>
       </ul>

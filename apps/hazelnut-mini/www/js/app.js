@@ -1,15 +1,22 @@
 // Hazelnut Mini — the whole app.
 //
-// One transcript, one composer, one skill. Attach a photo, say what should go,
-// and the picture that comes back becomes the new working photo, so removals
-// stack up naturally without a layers panel or an undo stack.
+// One transcript, one composer, and a strip of tools above it. Attach a photo,
+// say what should go — or tap a tool — and the picture that comes back becomes
+// the new working photo, so edits stack up naturally without a layers panel or
+// an undo stack.
+//
+// Six of the tools run on the phone and are free on every edition. The rest
+// call the model at exactly the prices Hazelnut charges.
 
 import { createWebBridge } from './web-bridge.js';
+import { TOOLS } from './tools.js';
+import { local } from './local-tools.js';
 
 const bridge = window.hazelnutMini || createWebBridge();
 
 const ui = {
   chat: document.getElementById('chat'),
+  tools: document.getElementById('tools'),
   input: document.getElementById('composer-input'),
   send: document.getElementById('send'),
   attach: document.getElementById('attach'),
@@ -22,6 +29,7 @@ const app = {
   photo: null,        // the working photo, as a data URL
   original: null,     // what was first attached, for "start over"
   busy: false,
+  prices: {},         // tool id -> credits, quoted by the bridge
 };
 
 // ---------------------------------------------------------------------------
@@ -31,6 +39,7 @@ const app = {
 (async function boot() {
   app.state = await bridge.getState();
   renderChip();
+  buildTools();
   showEmptyState();
 
   ui.attach.addEventListener('click', attachPhoto);
@@ -103,7 +112,7 @@ function showPhoto(dataUrl, { caption, actions = [] } = {}) {
 function showEmptyState() {
   ui.chat.replaceChildren(el('div', { class: 'empty' }, [
     el('h1', { text: 'Remove anything' }),
-    el('p', { text: 'Add a photo, then say what should go — “the car behind her”, “the sign”, “that guy in the background”.' }),
+    el('p', { text: 'Add a photo, then say what should go — “the car behind her”, “the sign”, “that guy in the background”. Or use the tools: six of them run on this device and cost nothing.' }),
     el('button', { class: 'btn btn--primary', text: 'Choose a photo', onClick: attachPhoto }),
   ]));
 }
@@ -118,8 +127,9 @@ async function attachPhoto() {
     if (!file) return;
     app.photo = file.dataUrl;
     app.original = file.dataUrl;
+    syncTools();
     showPhoto(file.dataUrl, { caption: file.name });
-    say('Got it. What should I remove?');
+    say('Got it. Tap a tool, or tell me what to remove.');
     ui.input.focus();
   } catch (err) {
     say(err.message || 'That photo could not be opened.', { error: true });
@@ -164,11 +174,7 @@ async function submit() {
     say(result.reply);
     showPhoto(result.image, {
       caption: `${charged} credits used · ${app.state.credits} left`,
-      actions: [
-        { label: 'Save', primary: true, onClick: () => save(result.image) },
-        { label: 'Undo', onClick: () => { app.photo = previous; say('Back to the previous version.'); showPhoto(previous, { caption: 'Restored' }); } },
-        { label: 'Start over', onClick: () => { app.photo = app.original; say('Back to the original photo.'); showPhoto(app.original, { caption: 'Original' }); } },
-      ],
+      actions: photoActions(result.image, previous),
     });
   } catch (err) {
     progress.done();
@@ -200,6 +206,7 @@ function setBusy(busy) {
   ui.send.disabled = busy;
   ui.attach.disabled = busy;
   ui.input.disabled = busy;
+  syncTools();
 }
 
 function renderChip() {
@@ -208,6 +215,199 @@ function renderChip() {
   ui.chip.textContent = edition === 'trial'
     ? `Trial · ${trialDaysLeft}d · ${credits}`
     : ai ? `${plan.name} · ${credits}` : 'Trial ended';
+}
+
+// ---------------------------------------------------------------------------
+// The toolbar
+// ---------------------------------------------------------------------------
+
+const svg = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${
+  paths.split('|').map((d) => `<path d="${d}"/>`).join('')}</svg>`;
+
+const priceOf = (tool) => (tool.local ? 0 : app.state.costs?.[tool.tool] ?? 0);
+
+function buildTools() {
+  ui.tools.replaceChildren(...TOOLS.map((tool) => {
+    const cost = priceOf(tool);
+    const locked = !tool.local && !app.state.ai;
+    const chip = el('button', {
+      class: `tool${locked ? ' tool--locked' : ''}`,
+      type: 'button',
+      title: tool.blurb,
+      'aria-label': `${tool.name} — ${cost ? `${cost} credits` : 'free'}`,
+      onClick: () => pickTool(tool),
+    }, [
+      el('span', { class: 'icon', html: svg(tool.icon) }),
+      el('span', { text: tool.name }),
+      el('span', { class: `price${cost ? '' : ' price--free'}`, text: cost ? String(cost) : 'free' }),
+    ]);
+    return chip;
+  }));
+  syncTools();
+}
+
+/** The strip is dead until there is a photograph to point it at. */
+function syncTools() {
+  const ready = Boolean(app.photo) && !app.busy;
+  for (const chip of ui.tools.children) chip.disabled = !ready;
+}
+
+async function pickTool(tool) {
+  if (!app.photo || app.busy) return;
+  if (!tool.local && !(await canAfford(tool))) return;
+
+  // Anything a tool needs to know is asked for once, up front, with the price
+  // on the button — so a run is one tap and one sheet, never two.
+  const params = { ...(tool.params || {}) };
+  let asked = false;
+  if (tool.sliders || tool.field) {
+    if (await askFor(tool, params) !== true) return;
+    asked = true;
+  }
+
+  if (tool.local) return runLocal(tool, params);
+  return runModel(tool, params, { confirmed: asked });
+}
+
+/** The three reasons a paid tool cannot run, said plainly rather than tried. */
+async function canAfford(tool) {
+  if (!app.state.ai) {
+    showPlan(`Your trial has finished. ${tool.name} needs a licence — the six tools that run on this device keep working.`);
+    return false;
+  }
+  if (!app.state.apiKeyConfigured) { showApiKeySheet(); return false; }
+  const cost = priceOf(tool);
+  if (app.state.credits < cost) {
+    showPlan(`${tool.name} costs ${cost} credits and you have ${app.state.credits}.`);
+    return false;
+  }
+  return true;
+}
+
+function askFor(tool, params) {
+  const inputs = [];
+  const body = el('div', {}, [
+    el('div', { class: 'note', text: tool.blurb }),
+    ...(tool.sliders || []).map((slider) => {
+      params[slider.key] = slider.value;
+      const output = el('output', { text: `${slider.value}${slider.suffix || ''}` });
+      const input = el('input', {
+        type: 'range', min: slider.min, max: slider.max, value: slider.value,
+        oninput: (e) => {
+          params[slider.key] = +e.target.value;
+          output.textContent = `${e.target.value}${slider.suffix || ''}`;
+        },
+      });
+      inputs.push(input);
+      return el('label', { class: 'slider' }, [el('span', { text: slider.label }), input, output]);
+    }),
+    tool.field ? el('label', {}, [
+      el('span', { text: tool.field.label }),
+      el('input', {
+        type: 'text', autocomplete: 'off', placeholder: tool.field.placeholder || '',
+        oninput: (e) => { params[tool.field.key] = e.target.value.trim(); },
+      }),
+    ]) : null,
+  ]);
+
+  const cost = priceOf(tool);
+  return sheet({
+    title: tool.name,
+    body,
+    actions: (close) => [
+      el('button', { class: 'btn', text: 'Cancel', onClick: () => close(false) }),
+      el('button', {
+        class: 'btn btn--primary',
+        text: cost ? `Run · ${cost} credits` : 'Apply',
+        onClick: () => close(true),
+      }),
+    ],
+  });
+}
+
+async function runLocal(tool, params) {
+  setBusy(true);
+  const progress = thinking(`${tool.name}…`);
+  try {
+    const previous = app.photo;
+    const image = await local[tool.local](app.photo, params);
+    progress.done();
+    app.photo = image;
+    showPhoto(image, {
+      caption: `${tool.name} · on this device, no credits`,
+      actions: photoActions(image, previous),
+    });
+  } catch (err) {
+    progress.done();
+    reportError(err);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function runModel(tool, params, { confirmed = false } = {}) {
+  const cost = priceOf(tool);
+  const go = confirmed ? true : await sheet({
+    title: `Run ${tool.name}?`,
+    body: el('div', {}, [
+      el('div', { class: 'note', text: tool.blurb }),
+      el('p', { text: `This will use ${cost} credits. You have ${app.state.credits}.` }),
+      el('div', { class: 'note', text: 'Credits are only taken if the result comes back. A failed run costs nothing.' }),
+    ]),
+    actions: (close) => [
+      el('button', { class: 'btn', text: 'Cancel', onClick: () => close(false) }),
+      el('button', { class: 'btn btn--primary', text: `Use ${cost}`, onClick: () => close(true) }),
+    ],
+  });
+  if (go !== true) return;
+
+  setBusy(true);
+  const progress = thinking(`${tool.name}…`);
+  try {
+    if (tool.reads) {
+      // Caption generates nothing: the answer is words, so it lands as a message.
+      const { result, charged, balance } = await bridge.describe({ image: app.photo }, (p) => progress.update(p.message));
+      progress.done();
+      app.state.credits = balance;
+      renderChip();
+      say(result.caption);
+      if (result.alt) say(`Alt text: ${result.alt}`);
+      if (result.keywords?.length) say(result.keywords.join(' · '));
+      if (result.note) say(result.note);
+      say(`${charged} credits used · ${balance} left`);
+      return;
+    }
+
+    const previous = app.photo;
+    const { result, charged, balance } = await bridge.transform(tool.tool, {
+      image: app.photo,
+      params,
+    }, (p) => progress.update(p.message));
+    progress.done();
+
+    app.state.credits = balance;
+    renderChip();
+    app.photo = result.image;
+    showPhoto(result.image, {
+      caption: `${tool.name} · ${charged} credits used · ${balance} left`,
+      actions: photoActions(result.image, previous),
+    });
+  } catch (err) {
+    progress.done();
+    reportError(err);
+  } finally {
+    setBusy(false);
+  }
+}
+
+/** Save, step back one, or go all the way back to what was attached. */
+function photoActions(image, previous) {
+  return [
+    { label: 'Save', primary: true, onClick: () => save(image) },
+    { label: 'Undo', onClick: () => { app.photo = previous; say('Back to the previous version.'); showPhoto(previous, { caption: 'Restored' }); } },
+    { label: 'Start over', onClick: () => { app.photo = app.original; say('Back to the original photo.'); showPhoto(app.original, { caption: 'Original' }); } },
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -234,8 +434,8 @@ async function showWelcome() {
   const start = await sheet({
     title: 'Hazelnut Mini',
     body: el('div', {}, [
-      el('p', { text: `One chat bar that removes things from photos. Free for ${app.state.trialDays} days, no card.` }),
-      el('p', { text: 'It is the removal engine from Hazelnut, on its own — and half the price.' }),
+      el('p', { text: `A chat bar that removes things, and twelve tools above it. Free for ${app.state.trialDays} days, no card.` }),
+      el('p', { text: 'Six of the tools run on this device and stay free for ever, trial or no trial. The rest cost what they cost in Hazelnut — and Mini is half the price.' }),
     ]),
     actions: (close) => [
       el('button', { class: 'btn', text: 'Later', onClick: () => close(false) }),

@@ -149,6 +149,62 @@ button, input { font: inherit; color: inherit; }
 .empty h1 { margin: 0; font-size: 18px; color: var(--text); }
 .empty p { margin: 0; }
 
+/* ── toolbar ─────────────────────────────────────────────────────────────── */
+
+/* A single scrolling row: on a phone there is no room for a grid, and a row
+   that scrolls sideways is a shape people already know. */
+.tools {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  -webkit-overflow-scrolling: touch;
+}
+.tools::-webkit-scrollbar { display: none; }
+
+.tool {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 13px 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tool:active { transform: translateY(1px); }
+.tool[disabled] { opacity: .45; }
+.tool svg { width: 18px; height: 18px; flex: none; }
+.tool .price {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(224, 137, 74, .16);
+  color: var(--accent);
+}
+.tool .price--free { background: rgba(120, 180, 120, .14); color: #86bd86; }
+.tool--locked .price { background: rgba(255, 255, 255, .07); color: var(--muted); }
+
+/* A slider row inside a sheet: label, track, and the number it is on. */
+.sheet .slider {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.sheet .slider output { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 42px; text-align: right; }
+.sheet input[type="range"] { width: 100%; accent-color: var(--accent); }
+
 /* ── composer ────────────────────────────────────────────────────────────── */
 
 .composer {

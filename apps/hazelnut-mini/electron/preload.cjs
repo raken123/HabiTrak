@@ -23,15 +23,20 @@ contextBridge.exposeInMainWorld('hazelnutMini', {
   saveImage: (dataUrl) => call('file:save', dataUrl),
   openExternal: (url) => call('shell:open-external', url),
 
-  remove(opts, onProgress) {
-    const jobId = `job-${Date.now().toString(36)}-${(seq += 1)}`;
-    const listener = (_e, payload) => {
-      if (payload.jobId === jobId && onProgress) onProgress(payload);
-    };
-    ipcRenderer.on('job:progress', listener);
-    const promise = call('mini:remove', jobId, opts)
-      .finally(() => ipcRenderer.removeListener('job:progress', listener));
-    promise.cancel = () => ipcRenderer.send('job:cancel', jobId);
-    return promise;
-  },
+  remove: (opts, onProgress) => job('mini:remove', opts, onProgress),
+  transform: (toolId, opts, onProgress) => job('tool:transform', { toolId, ...opts }, onProgress),
+  describe: (opts, onProgress) => job('tool:describe', opts, onProgress),
 });
+
+/** A tool run: progress on the way, and a cancel that reaches the engine. */
+function job(channel, opts, onProgress) {
+  const jobId = `job-${Date.now().toString(36)}-${(seq += 1)}`;
+  const listener = (_e, payload) => {
+    if (payload.jobId === jobId && onProgress) onProgress(payload);
+  };
+  ipcRenderer.on('job:progress', listener);
+  const promise = call(channel, jobId, opts)
+    .finally(() => ipcRenderer.removeListener('job:progress', listener));
+  promise.cancel = () => ipcRenderer.send('job:cancel', jobId);
+  return promise;
+}

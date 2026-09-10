@@ -152,26 +152,42 @@ export function installHazelnutStub() {
 }
 
 export function installMiniStub() {
-  const state = { ...baseState('trial'), product: 'mini', plan: PLANS['mini-pro'], credits: 300, removalCost: 20, plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] } };
+  // The toolbar's prices come from the registry, exactly as the real bridges
+  // quote them — an ad must not show a number the app would not charge.
+  const costs = Object.fromEntries(
+    ['realtouch', 'restore', 'colourise', 'upscale', 'sky', 'background', 'caption']
+      .map((id) => [id, costOf(id)]),
+  );
+  const state = {
+    ...baseState('trial'),
+    product: 'mini',
+    plan: PLANS['mini-pro'],
+    credits: 300,
+    costs,
+    removalCost: costs.realtouch,
+    plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },
+  };
   window.hazelnutMini = {
     kind: 'desktop',
     getState: async () => state,
     startTrial: async () => state,
     activate: async () => ({ ok: true, state }),
     saveApiKey: async () => ({ configured: true }),
-    openImage: async () => ({
-      name: 'sofa-outside.jpg',
-      dataUrl: (new URLSearchParams(location.search).get('scene') === 'street'
-        ? streetScene({ width: 1000, height: 1250, sofa: true })
-        : (() => { const c = document.createElement('canvas'); const i = new Image(); i.src = demoPhoto(1200, 750); return c; })()
-      ).toDataURL?.('image/jpeg', 0.9) || demoPhoto(1200, 750),
-    }),
+    openImage: async () => (new URLSearchParams(location.search).get('scene') === 'street'
+      ? { name: 'sofa-outside.jpg', dataUrl: streetScene({ width: 1000, height: 1250, sofa: true }).toDataURL('image/jpeg', 0.9) }
+      : { name: 'ridgeline.jpg', dataUrl: demoPhoto(1200, 750) }),
     saveImage: async () => ({ path: '~/Pictures/ridgeline.png' }),
     openExternal: async () => true,
     remove: (_opts, onProgress) => pending(onProgress, [
       { after: 250, stage: 'reading', message: 'Reading your message…' },
       { after: 2200, stage: 'examining', message: 'Looking up where this was taken…' },
       { after: 5200, stage: 'rebuilding', message: 'Found 3 references. Rebuilding what was behind it…' },
+    ]),
+    transform: (_toolId, _opts, onProgress) => pending(onProgress, [
+      { after: 250, stage: 'render', message: 'Sending the picture…' },
+    ]),
+    describe: (_opts, onProgress) => pending(onProgress, [
+      { after: 250, stage: 'read', message: 'Reading the picture…' },
     ]),
   };
 }

@@ -10,10 +10,17 @@ import { Credits, CREDIT_DEFAULTS } from '../vendor/core/credits.js';
 import { GeminiClient } from '../vendor/core/gemini.js';
 import { Engine } from '../vendor/core/engine.js';
 import { PLANS, TRIAL_DAYS } from '../vendor/core/pricing.js';
+import { costOf } from '../vendor/core/tools.js';
 import { parseDataUrl } from '../vendor/core/imaging.js';
 import { LocalStore } from './localstore.js';
 
 const KEY_STORAGE = 'hazelnut-mini-api-key';
+
+/** What Mini's toolbar charges — the same numbers the engine will take. */
+const PRICES = Object.fromEntries(
+  ['realtouch', 'restore', 'colourise', 'upscale', 'sky', 'background', 'caption']
+    .map((id) => [id, costOf(id)]),
+);
 
 // Under the desktop launcher the page is served from loopback and Gemini is
 // reached through that same origin, so the browser never makes a cross-origin
@@ -41,7 +48,10 @@ export function createWebBridge() {
     version: '1.0.0',
     plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },
     trialDays: TRIAL_DAYS,
-    removalCost: 20,
+    // Quoted from the registry rather than typed here, so Mini's toolbar and
+    // Hazelnut's cannot disagree about what anything costs.
+    costs: PRICES,
+    removalCost: PRICES.realtouch,
   });
 
   if (VIA_LAUNCHER) {
@@ -54,6 +64,14 @@ export function createWebBridge() {
       fetch('/__closing', { method: 'POST', keepalive: true }).catch(() => {});
     });
   }
+
+  /** Give an engine call the `.cancel()` the desktop bridge's jobs carry. */
+  const job = (fn, onProgress) => {
+    const controller = new AbortController();
+    const promise = fn({ signal: controller.signal, onProgress: onProgress || (() => {}) });
+    promise.cancel = () => controller.abort();
+    return promise;
+  };
 
   return {
     kind: VIA_LAUNCHER ? 'standalone' : 'web',
@@ -128,11 +146,12 @@ export function createWebBridge() {
       return true;
     },
 
-    remove(opts, onProgress) {
-      const controller = new AbortController();
-      const promise = engine.miniRemove({ ...opts, onProgress, signal: controller.signal });
-      promise.cancel = () => controller.abort();
-      return promise;
-    },
+    remove: (opts, onProgress) => job((ctx) => engine.miniRemove({ ...opts, ...ctx }), onProgress),
+
+    // Mini's toolbar. The same engine call the desktop apps make, so the price
+    // and the prompt are the same wherever you run it.
+    transform: (toolId, opts, onProgress) =>
+      job((ctx) => engine.transform({ toolId, ...opts, ...ctx }), onProgress),
+    describe: (opts, onProgress) => job((ctx) => engine.describe({ ...opts, ...ctx }), onProgress),
   };
 }

@@ -29,12 +29,16 @@ export const LICENSE_DEFAULTS = {
 export class License {
   /**
    * @param {import('./store.js').Store} store
-   * @param {{product?:'hazelnut'|'mini', now?:() => number}} opts
+   * @param {{product?:'hazelnut'|'mini'|'squirreal', now?:() => number,
+   *          fixedEdition?:string}} opts
    */
-  constructor(store, { product = 'hazelnut', now = Date.now } = {}) {
+  constructor(store, { product = 'hazelnut', now = Date.now, fixedEdition = null } = {}) {
     this.store = store;
     this.now = now;
     this.product = product;
+    // A build that is one edition and can never be another — the browser one,
+    // which has no trial to start and no licence to activate.
+    this.fixedEdition = fixedEdition;
     if (!this.store.get('installedAt')) {
       this.store.update({ installedAt: this.now(), product });
     }
@@ -96,6 +100,7 @@ export class License {
 
   /** 'pro' | 'trial' | 'free' — the single value every gate is decided on. */
   edition() {
+    if (this.fixedEdition) return this.fixedEdition;
     if (this.store.get('licenseKey')) return 'pro';
     if (!this.store.get('trialStartedAt')) return 'free';
     return this.trialRemainingMs() > 0 ? 'trial' : 'free';

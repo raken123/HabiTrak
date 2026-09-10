@@ -17,6 +17,9 @@ const OUT = path.join(HERE, '..', 'www', 'vendor', 'core');
 const MODULES = [
   'pricing.js', 'tools.js', 'license.js', 'credits.js',
   'gemini.js', 'engine.js', 'prompts.js', 'imaging.js', 'gif.js',
+  // The cheap edits and the local adjustments: Mini runs the same kernels and
+  // the same prompts as Hazelnut rather than a second implementation.
+  'transforms.js', 'adjustments.js',
 ];
 
 function coreDir() {

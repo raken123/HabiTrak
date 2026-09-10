@@ -9,7 +9,7 @@ Five products, one codebase:
 |---|---|---|---|
 | **Hazelnut** | The full editor: twenty-one tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
 | **Hazelnut Squirreal** | The same editor, pointed at moving pictures. Sketch a frame, say how it moves, get a clip | Windows, Mac | $29.99 / month |
-| **Hazelnut Mini** | One chat bar that removes things from photos | Windows, Mac, **Android** | $9.99 / month — half of Hazelnut |
+| **Hazelnut Mini** | A chat bar that removes things, and twelve tools above it — six of them free | Windows, Mac, **Android** | $9.99 / month — half of Hazelnut |
 | **Hazelnut Free** | Hazelnut with **no AI**. The eleven tools that run locally, forever, at no cost | Windows, Mac | Free |
 | **Hazelnut for the Web** | The same editor in a browser tab, fixed to that local half. No download, no account, no key | Any browser | Free |
 

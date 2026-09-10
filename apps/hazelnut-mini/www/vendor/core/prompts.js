@@ -95,9 +95,13 @@ export function gifFramePrompt({ motion, index, total, isFirst }) {
   ].join('\n');
 }
 
-export function aiscopePrompt({ zoom }) {
+export function aiscopePrompt({ zoom, cropPx = null }) {
   return [
     `This is a crop of a photograph, magnified about ${formatZoom(zoom)}.`,
+    cropPx
+      ? `The crop is a ${cropPx} px square of the original, enlarged for you — so`
+        + ' anything finer than that was never in the picture.'
+      : null,
     'Identify what is in it and describe it so precisely that the description',
     'could be used to recognise the same thing in another photograph.',
     '',
@@ -106,7 +110,7 @@ export function aiscopePrompt({ zoom }) {
     'those you are seeing, and say when the magnification has passed the point',
     'where real detail exists and you are describing interpolation artefacts',
     'rather than the subject.',
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 export const AISCOPE_SCHEMA = {
