@@ -290,9 +290,13 @@ function ready() {
     pro.textContent = priceLabel(id, 'pro');
     if (priceLabel(id, 'pro') === 'Unlimited') pro.classList.add('free');
   });
+  // The two models do not share a ceiling on Hazelnut — 2.5 stops at 1536 and
+  // 5 Pro goes to 2048 — so the line names them rather than quoting one number
+  // and letting it stand for both.
+  const caps = models.map((id) => `${IMAGE_MODELS[id].name} ${modelMaxEdge(id, 'pro')}px`).join(', ');
   $('prices-note').innerHTML =
     `Per picture. The trial opens with ${TRIAL_CREDIT_GRANT} credits and is never topped up.<br>`
-    + `Up to ${modelMaxEdge('hazelnut-5-pro', 'trial')}px on the trial, ${modelMaxEdge('hazelnut-5-pro', 'pro')}px on Hazelnut.`;
+    + `Longest edge: ${modelMaxEdge('hazelnut-2.5', 'trial')}px on the trial, and on Hazelnut ${caps}.`;
 
   $('facts').innerHTML = [
     `<div><b>Hazelnut Free is gone.</b> The trial replaced it.</div>`,
