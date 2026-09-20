@@ -32,10 +32,12 @@ class FakeClient {
   }
 }
 
-function build({ credits = 5000, edition = 'trial', client = new FakeClient() } = {}) {
+// Most of what the engine does is a partner tool, so the default edition here
+// is the one that has them. The trial's refusals are tested on their own below.
+function build({ credits = 5000, edition = 'pro', client = new FakeClient() } = {}) {
   const licenseStore = Store.memory({ ...LICENSE_DEFAULTS });
   const license = new License(licenseStore);
-  if (edition !== 'free') license.startTrial();
+  license.startTrial();
   if (edition === 'pro') license.activate('HZL-A1B2C-D3E4F-G5H6J-K7M8N');
 
   const creditStore = Store.memory({ ...CREDIT_DEFAULTS, credits });
@@ -105,15 +107,15 @@ test('AIScope Learn returns a structured card for 15 credits', async () => {
   assert.equal(out.result.card.zoom, 1200);
 });
 
-test('Hazelnut Free locks the AI tools and says why', async () => {
-  const { engine, credits } = build({ edition: 'free' });
+test('the trial locks the partner tools and says why', async () => {
+  const { engine, credits } = build({ edition: 'trial' });
   for (const run of [
     () => engine.magicDraw({ sketch: PIXEL }),
     () => engine.realtouch({ image: PIXEL, marked: PIXEL }),
     () => engine.gifAnimate({ image: PIXEL, motion: 'wind' }),
     () => engine.aiscopeLearn({ crop: PIXEL }),
   ]) {
-    await assert.rejects(run(), (err) => err instanceof LockedError && err.reason === 'no-ai-on-free');
+    await assert.rejects(run(), (err) => err instanceof LockedError && err.reason === 'partner-needs-pro');
   }
   assert.equal(credits.balance, 5000, 'a locked tool must not spend credits');
 });
@@ -123,9 +125,11 @@ test('quote() tells the UI the price, the balance and the lock in one call', () 
   const quote = engine.quote('realtouch');
   assert.deepEqual(quote, { cost: 20, balance: 10, affordable: false, allowed: true, reason: null, message: null });
 
-  const free = build({ edition: 'free' }).engine.quote('gif-animate');
-  assert.equal(free.allowed, false);
-  assert.match(free.message, /Hazelnut Free/);
+  const trial = build({ edition: 'trial' }).engine.quote('gif-animate');
+  assert.equal(trial.allowed, false);
+  assert.match(trial.message, /partner model/);
+  // The refusal still quotes a price, so the UI can say what the licence buys.
+  assert.equal(trial.cost, 600);
 });
 
 test('Mini charges only when it actually removes something', async () => {

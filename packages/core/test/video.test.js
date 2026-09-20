@@ -44,7 +44,7 @@ class FakeText {
 function build({ credits = 3000, edition = 'trial', video = new FakeVideo(), client = new FakeText() } = {}) {
   const licenseStore = Store.memory({ ...LICENSE_DEFAULTS });
   const license = new License(licenseStore, { product: 'squirreal' });
-  if (edition !== 'free') license.startTrial();
+  license.startTrial();
   if (edition === 'pro') license.activate('HZL-A1B2C-D3E4F-G5H6J-K7M8N');
 
   const creditStore = Store.memory({ ...CREDIT_DEFAULTS, credits });
@@ -124,14 +124,12 @@ test('a failed render costs nothing', async () => {
   assert.equal(credits.balance, 3000);
 });
 
-test('Squirreal Free locks the generating tools and keeps the local ones', async () => {
-  const { engine, credits } = build({ edition: 'free' });
-  for (const run of [
-    () => engine.magicDraw({ sketch: PIXEL }),
-    () => engine.realtouch({ frame: PIXEL, marked: PIXEL }),
-  ]) {
-    await assert.rejects(run(), (err) => err instanceof LockedError && err.reason === 'no-ai-on-free');
-  }
+test('Squirreal keeps its partner models on the trial — it has nothing else', async () => {
+  // Every AI tool Squirreal has is a video model, so the Hazelnut rule would
+  // leave a trial of the GIF encoder. What limits it here is the credit grant.
+  const { engine, credits } = build({ edition: 'trial' });
+  assert.equal(engine.quote('realtouch').allowed, true);
+  assert.equal(engine.quote('magic-draw').allowed, true);
   assert.equal(engine.quote('gif-animate').allowed, true);
   assert.equal(engine.quote('expand').allowed, true);
   assert.equal(credits.balance, 3000);

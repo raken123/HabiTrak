@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TOOLS, TOOL_ORDER, LOCAL_TOOLS, costOf, needsAi, availability } from '../tools.js';
+import { TOOLS, TOOL_ORDER, LOCAL_TOOLS, PARTNER_TOOLS, isPartnerTool, costOf, needsAi, availability } from '../tools.js';
 import { TRANSFORMS, transformPrompt } from '../transforms.js';
 
 test('every advertised tool exists and is ordered', () => {
@@ -9,17 +9,28 @@ test('every advertised tool exists and is ordered', () => {
   for (const id of ['draw', 'magic-draw', 'realtouch', 'gif-animate', 'expand', 'aiscope']) {
     assert.ok(TOOL_ORDER.includes(id), `${id} left the toolbar`);
   }
-  assert.equal(TOOL_ORDER.length, 22);
-  assert.equal(new Set(TOOL_ORDER).size, 22, 'a tool is listed twice');
+  assert.equal(TOOL_ORDER.length, 23);
+  assert.equal(new Set(TOOL_ORDER).size, 23, 'a tool is listed twice');
   for (const id of TOOL_ORDER) assert.ok(TOOLS[id], `${id} is missing`);
   for (const id of Object.keys(TOOLS)) assert.ok(TOOL_ORDER.includes(id), `${id} is not in the order`);
 });
 
-test('the toolbox is half local, half model — and the shortcuts are unique', () => {
-  const ai = TOOL_ORDER.filter((id) => TOOLS[id].ai);
-  assert.equal(LOCAL_TOOLS.length, 11);
-  assert.equal(ai.length, 11);
-  assert.equal(LOCAL_TOOLS.length + ai.length, TOOL_ORDER.length);
+test('the toolbox splits on whose machine, not on whether there is a model', () => {
+  // Twelve stay here and eleven do not. Imagine is the one that makes the two
+  // counts disagree: it needs a model, and the model is ours and runs locally.
+  assert.equal(LOCAL_TOOLS.length, 12);
+  assert.equal(PARTNER_TOOLS.length, 11);
+  assert.equal(LOCAL_TOOLS.length + PARTNER_TOOLS.length, TOOL_ORDER.length);
+  assert.equal(LOCAL_TOOLS.includes('imagine'), true);
+  assert.equal(isPartnerTool('imagine'), false, 'Imagine must never be a partner tool');
+  assert.equal(TOOLS.imagine.ai, true, 'but it is still a model, and still charged');
+
+  // A new AI tool is a partner tool unless it opts out on purpose.
+  for (const id of TOOL_ORDER) {
+    if (TOOLS[id].ai && TOOLS[id].partner !== false) {
+      assert.equal(isPartnerTool(id), true, `${id} should default to partner`);
+    }
+  }
 
   const keys = TOOL_ORDER.map((id) => TOOLS[id].shortcut);
   assert.equal(new Set(keys).size, keys.length, `two tools share a shortcut: ${keys.join(' ')}`);
@@ -41,11 +52,14 @@ test('the fifteen new tools are cheap, and the browser edition locks the paid ha
   for (const id of LOCAL_TOOLS) {
     assert.equal(availability(id, 'web').allowed, true, `${id} should work in a browser`);
   }
-  for (const id of TOOL_ORDER.filter((t) => TOOLS[t].ai)) {
+  for (const id of PARTNER_TOOLS) {
     const check = availability(id, 'web');
     assert.equal(check.allowed, false, `${id} should be locked on the web`);
     assert.equal(check.reason, 'web-half');
   }
+  // Imagine is an AI tool that the browser build keeps, because it never
+  // sends anything anywhere.
+  assert.equal(availability('imagine', 'web').allowed, true);
   // AIScope is local, but its Learn button is not.
   assert.equal(availability('aiscope', 'web', { learn: true }).allowed, false);
 });
@@ -83,25 +97,46 @@ test('AIScope covers the full advertised magnification range', () => {
   assert.equal(TOOLS.aiscope.maxZoom, 60000);
 });
 
-test('Hazelnut Free keeps the local tools and locks the model', () => {
-  for (const id of ['draw', 'expand']) {
-    assert.equal(availability(id, 'free').allowed, true, `${id} must work on Free`);
+test('the trial keeps the local tools and our own models, and locks the partners', () => {
+  for (const id of ['draw', 'expand', 'imagine']) {
+    assert.equal(availability(id, 'trial').allowed, true, `${id} must work on the trial`);
   }
   for (const id of ['magic-draw', 'realtouch', 'gif-animate']) {
-    const check = availability(id, 'free');
-    assert.equal(check.allowed, false, `${id} must be locked on Free`);
-    assert.equal(check.reason, 'no-ai-on-free');
+    const check = availability(id, 'trial');
+    assert.equal(check.allowed, false, `${id} must be locked on the trial`);
+    assert.equal(check.reason, 'partner-needs-pro');
   }
-  assert.equal(availability('aiscope', 'free', { learn: false }).allowed, true, 'optical zoom stays on Free');
-  assert.equal(availability('aiscope', 'free', { learn: true }).allowed, false, 'Learn does not');
+  assert.equal(availability('aiscope', 'trial', { learn: false }).allowed, true, 'optical zoom stays');
+  assert.equal(availability('aiscope', 'trial', { learn: true }).allowed, false, 'Learn does not');
 });
 
-test('trial and pro unlock everything', () => {
-  for (const edition of ['trial', 'pro']) {
-    for (const id of TOOL_ORDER) {
-      assert.equal(availability(id, edition, { learn: true }).allowed, true, `${id} on ${edition}`);
-    }
+test('pro unlocks everything; the trial unlocks everything that runs here', () => {
+  for (const id of TOOL_ORDER) {
+    assert.equal(availability(id, 'pro', { learn: true }).allowed, true, `${id} on pro`);
   }
+  for (const id of LOCAL_TOOLS) {
+    // Except AIScope's Learn, which is a partner call wearing a local tool's
+    // clothes — the zoom is free, the asking is not.
+    const params = id === 'aiscope' ? { learn: false } : {};
+    assert.equal(availability(id, 'trial', params).allowed, true, `${id} on trial`);
+  }
+});
+
+test('Imagine is priced by model and edition, exactly as advertised', () => {
+  // These four numbers are what the app quotes, the ad states and the page
+  // prints. If one of them moves, all of those are wrong until it moves back.
+  assert.equal(costOf('imagine', { model: 'hazelnut-2.5', edition: 'trial' }), 25);
+  assert.equal(costOf('imagine', { model: 'hazelnut-2.5', edition: 'pro' }), 0);
+  assert.equal(costOf('imagine', { model: 'hazelnut-5-pro', edition: 'trial' }), 350);
+  assert.equal(costOf('imagine', { model: 'hazelnut-5-pro', edition: 'pro' }), 120);
+
+  // Paying must never cost more than not paying.
+  for (const model of ['hazelnut-2.5', 'hazelnut-5-pro']) {
+    const trial = costOf('imagine', { model, edition: 'trial' });
+    const pro = costOf('imagine', { model, edition: 'pro' });
+    assert.ok(pro <= trial, `${model} costs more on Hazelnut than on the trial`);
+  }
+  assert.equal(needsAi('imagine'), true);
 });
 
 test('an unknown tool is refused rather than priced', () => {

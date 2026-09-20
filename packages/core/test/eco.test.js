@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ECO, ECO_PRICES, ecoCost, ecoScale, ECO_NOTES, ECO_SUMMARY } from '../eco.js';
+import { ECO, ECO_PRICES, ECO_EXEMPT, ecoCost, ecoExempt, ecoScale, ECO_NOTES, ECO_SUMMARY } from '../eco.js';
 import { costOf, TOOL_ORDER, TOOLS } from '../tools.js';
 import { videoCostOf } from '../video-tools.js';
 import { Engine } from '../engine.js';
@@ -9,7 +9,7 @@ import { License, LICENSE_DEFAULTS } from '../license.js';
 import { Store } from '../store.js';
 
 test('Eco Mode costs less than full, and never nothing', () => {
-  for (const id of TOOL_ORDER.filter((t) => TOOLS[t].ai)) {
+  for (const id of TOOL_ORDER.filter((t) => TOOLS[t].ai && !ecoExempt(t))) {
     const full = costOf(id);
     const eco = costOf(id, { eco: true });
     assert.ok(eco < full, `${id}: ${eco} is not less than ${full}`);
@@ -35,6 +35,23 @@ test('a tool with its own Eco price is quoted at that price, not the discount', 
     assert.ok(price <= costOf(id), `${id} costs more in Eco Mode than at full rate`);
     assert.equal(costOf(id, { eco: true }), price);
   }
+});
+
+test('Eco Mode does not discount what it cannot make cheaper', () => {
+  // Imagine runs on the user's own processor. There is no datacentre to ask
+  // less of, so there is no saving to pass on, and pretending otherwise would
+  // be exactly the invented figure the rest of this file refuses to print.
+  for (const id of ECO_EXEMPT) {
+    for (const model of ['hazelnut-2.5', 'hazelnut-5-pro']) {
+      for (const edition of ['trial', 'pro']) {
+        const plain = costOf(id, { model, edition });
+        const eco = costOf(id, { model, edition, eco: true });
+        assert.equal(eco, plain, `${id} (${model}, ${edition}) changed price in Eco Mode`);
+      }
+    }
+  }
+  // And it says so where the switch is, rather than staying quiet.
+  assert.match(ECO_NOTES.imagine, /runs on your machine/i);
 });
 
 test('a free tool stays free — there is nothing to save', () => {
@@ -77,7 +94,11 @@ class FakeClient {
 }
 
 function engineWith() {
-  const store = Store.memory({ ...LICENSE_DEFAULTS, ...CREDIT_DEFAULTS, trialStartedAt: Date.now() });
+  // Realtouch and GIF Animate are partner tools, so these need the licence.
+  const store = Store.memory({
+    ...LICENSE_DEFAULTS, ...CREDIT_DEFAULTS,
+    trialStartedAt: Date.now(), licenseKey: 'HZL-A1B2C-D3E4F-G5H6J-K7M8N',
+  });
   const client = new FakeClient();
   const credits = new Credits(store);
   credits.grant('test', 5000, 'test');

@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8">
+<style>body{margin:0;background:#1b1c21;color:#eee;font:12px sans-serif;padding:12px}
+canvas{display:block;background:#000;border-radius:4px}td{padding:6px}</style>
+<table id="t"></table>
+<script type="module">
+import { planImage } from 'http://127.0.0.1:8732/core/imagine-plan.js';
+import { paint } from 'http://127.0.0.1:8732/core/imagine-paint.js';
+const t = document.getElementById('t');
+for (const [label, model] of [['Hazelnut 2.5','hazelnut-2.5'],['Hazelnut 5 Pro','hazelnut-5-pro']]) {
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${label}</td>`;
+  for (let s = 0; s < 3; s += 1) {
+    const c = document.createElement('canvas'); c.width = 420; c.height = 420;
+    const plan = planImage({ prompt: 'a person waving with hands', model, edition: 'pro', width: 420, height: 420, seed: 1000 + s });
+    // Frame the hands: draw big, then crop by scaling the context.
+    const ctx = c.getContext('2d');
+    ctx.save(); ctx.scale(2.2, 2.2); ctx.translate(-100, -95);
+    paint(ctx, { ...plan, width: 420, height: 420 });
+    ctx.restore();
+    const td = document.createElement('td'); td.append(c); row.append(td);
+  }
+  t.append(row);
+}
+</script>

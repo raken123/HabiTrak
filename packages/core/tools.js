@@ -209,16 +209,24 @@ export const TOOL_ORDER = [
 ];
 
 /**
- * Does this tool send your picture to somebody else's model?
+ * Does this tool, with these parameters, send your picture to somebody else's
+ * model?
  *
  * Every model-backed tool does unless it says otherwise, so a new AI tool is a
  * partner tool by default and has to opt out on purpose. Only Hazelnut's own
  * generator has.
+ *
+ * The parameters matter, and getting that wrong is easy: AIScope is registered
+ * `ai: false` because its zoom is optical and local, but its Learn button is a
+ * partner call. Asking `TOOLS[id].ai` would let Learn run free on the trial.
+ * So the question is routed through `needsAi`, which is the one place that
+ * knows a tool can be local at one setting and not at another.
  */
-export function isPartnerTool(toolId) {
+export function isPartnerTool(toolId, params = {}) {
   const tool = TOOLS[toolId];
   if (!tool) return false;
-  return Boolean(tool.ai) && tool.partner !== false;
+  if (tool.partner === false) return false;
+  return needsAi(toolId, params);
 }
 
 /**
@@ -321,7 +329,7 @@ export function availability(toolId, edition, params = {}) {
   if (!EDITIONS.includes(edition)) return { allowed: false, reason: 'unlicensed' };
   if (!needsAi(toolId, params)) return { allowed: true };
 
-  if (isPartnerTool(toolId)) {
+  if (isPartnerTool(toolId, params)) {
     if (edition === 'web') {
       return {
         allowed: false,
