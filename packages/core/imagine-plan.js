@@ -70,7 +70,7 @@ const STYLES = {
 
 /** Subjects made of words. These are where the thinking pass earns its keep. */
 const DOCUMENTS = {
-  worksheet: ['worksheet', 'homework', 'quiz', 'test', 'exam', 'problems', 'questions', 'maths', 'math'],
+  worksheet: ['worksheet', 'worksheets', 'homework', 'sheet', 'sheets', 'quiz', 'test', 'exam', 'problems', 'questions', 'maths', 'math'],
   poster: ['poster', 'flyer', 'advert', 'advertisement'],
   sign: ['sign', 'signpost', 'banner', 'nameplate'],
   menu: ['menu'],

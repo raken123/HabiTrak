@@ -145,8 +145,13 @@ function priceBadge(tool) {
 function tooltipFor(tool) {
   const locked = !editionAllows(tool);
   const eco = app.eco && ECO_NOTES[tool.id] ? `<p>Eco Mode: ${ECO_NOTES[tool.id]}</p>` : '';
+  // Imagine has two prices and they depend on the edition, so the tooltip
+  // prints both rather than a range that means nothing.
+  const price = tool.id === 'imagine'
+    ? (app.server.models || []).map((m) => `${m.name} — ${m.priceLabel.toLowerCase()}`).join('<br>')
+    : costLabel(tool);
   return `<strong>${tool.name} <em>${tool.shortcut}</em></strong>${tool.tagline}
-    <p>${costLabel(tool)}${locked ? ` — locked on ${freeName()}` : ''}</p>${eco}`;
+    <p>${price}${locked ? ` — needs ${productName()}` : ''}</p>${eco}`;
 }
 
 function editionAllows(tool) {
@@ -548,8 +553,11 @@ function refreshChrome() {
   pill.textContent = edition === 'trial' ? 'Trial · no deadline' : plan.name;
 
   $('#credits-value').textContent = credits.toLocaleString('en-US');
-  $('#credits-pill').classList.toggle('is-low', app.server.ai && credits < 60);
-  $('#credits-pill').hidden = !app.server.ai;
+  $('#credits-pill').classList.toggle('is-low', credits < 60);
+  // Every edition can spend credits now — the browser build included, because
+  // Imagine runs there. Hiding the balance would hide the only thing that
+  // moves.
+  $('#credits-pill').hidden = false;
   buildToolbar();
   $$('.tool').forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tool === app.currentToolId));
 }
@@ -722,9 +730,11 @@ function ecoPriceLine() {
 
 function wireEco() {
   const pill = $('#eco-pill');
-  // Nothing to save where nothing calls a model: the browser build and Free
-  // hide the switch rather than offering a saving they cannot make.
-  if (!app.server.ai) { pill.hidden = true; app.eco = false; return; }
+  // Nothing to save where nothing reaches a datacentre. On the trial and in
+  // the browser build every partner tool is locked, and the one model-backed
+  // tool that does run — Imagine — is exempt from Eco Mode because it runs
+  // here. So the switch is hidden rather than offering a saving it cannot make.
+  if (!app.server.partnerModels) { pill.hidden = true; app.eco = false; return; }
   const paint = () => {
     pill.setAttribute('aria-pressed', String(app.eco));
     document.body.classList.toggle('is-eco', app.eco);

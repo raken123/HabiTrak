@@ -253,6 +253,10 @@ export function toolGuide(tools) {
 
 export function costLabel(tool) {
   if (tool.id === 'aiscope') return 'free · Learn 15';
+  // Imagine's band runs from 0 to 350 and quoting that range would say nothing
+  // true: the price is per model and per edition, and the toolbar's tooltip
+  // prints the real ones.
+  if (tool.id === 'imagine') return 'priced by model';
   if (!tool.ai) return 'free';
   return typeof tool.cost === 'number' ? `${tool.cost} credits` : `${tool.cost.min}–${tool.cost.max} credits`;
 }
