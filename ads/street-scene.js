@@ -11,6 +11,9 @@ const MORTAR = '#c9b7a6';
 
 export const SOFA_RECT = { x: 0.470, y: 0.632, w: 0.370, h: 0.203 };
 
+/** Next door's wheelie bin, which is in the shot and should not be. */
+export const BIN_RECT = { x: 0.205, y: 0.598, w: 0.135, h: 0.250 };
+
 /** The region the sofa occupies, in pixels, for a given canvas size. */
 export const sofaRegion = (w, h) => ({
   x: Math.round(SOFA_RECT.x * w),
@@ -19,7 +22,15 @@ export const sofaRegion = (w, h) => ({
   h: Math.round(SOFA_RECT.h * h),
 });
 
-export function streetScene({ width = 1200, height = 1500, sofa = true } = {}) {
+/** The bin's place in the frame, in pixels, for a given canvas size. */
+export const binRegion = (w, h) => ({
+  x: Math.round(BIN_RECT.x * w),
+  y: Math.round(BIN_RECT.y * h),
+  w: Math.round(BIN_RECT.w * w),
+  h: Math.round(BIN_RECT.h * h),
+});
+
+export function streetScene({ width = 1200, height = 1500, sofa = true, bin = false, seed = 20260920 } = {}) {
   const c = document.createElement('canvas');
   c.width = width; c.height = height;
   const g = c.getContext('2d');
@@ -111,17 +122,79 @@ export function streetScene({ width = 1200, height = 1500, sofa = true } = {}) {
   g.fillRect(196 * S, 300 * S, 15 * S, (kerbY - 6 * S) - 300 * S);
   g.fillRect(160 * S, kerbY - 14 * S, 88 * S, 14 * S);
 
+  if (bin) drawBin(g, S, width, height);
   if (sofa) drawSofa(g, S, width, height);
 
-  // A little grain, so the picture does not read as a diagram.
+  // A little grain, so the picture does not read as a diagram. Seeded, so the
+  // same street with and without the bin differs only where the bin was.
+  const rnd = mulberry32(seed);
   const grain = g.getImageData(0, 0, width, height);
   for (let i = 0; i < grain.data.length; i += 4) {
-    const n = (Math.random() - 0.5) * 13;
+    const n = (rnd() - 0.5) * 13;
     grain.data[i] += n; grain.data[i + 1] += n; grain.data[i + 2] += n;
   }
   g.putImageData(grain, 0, 0);
 
   return c;
+}
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** A wheelie bin on the pavement, lid down, one wheel showing. */
+function drawBin(g, S, width, height) {
+  const { x, y, w, h } = binRegion(width, height);
+
+  g.fillStyle = 'rgba(0,0,0,.3)';
+  g.beginPath();
+  g.ellipse(x + w / 2, y + h - 4 * S, w * 0.58, 13 * S, 0, 0, Math.PI * 2);
+  g.fill();
+
+  // Body: tapered, darker down the right where the light does not reach.
+  const body = g.createLinearGradient(x, y, x + w, y);
+  body.addColorStop(0, '#3f5b42');
+  body.addColorStop(0.55, '#33482f');
+  body.addColorStop(1, '#22331f');
+  g.fillStyle = body;
+  g.beginPath();
+  g.moveTo(x + 6 * S, y + h * 0.13);
+  g.lineTo(x + w - 6 * S, y + h * 0.13);
+  g.lineTo(x + w - 13 * S, y + h - 14 * S);
+  g.lineTo(x + 13 * S, y + h - 14 * S);
+  g.closePath(); g.fill();
+
+  // Ribs.
+  g.strokeStyle = 'rgba(0,0,0,.22)';
+  g.lineWidth = 3 * S;
+  for (let i = 1; i < 4; i += 1) {
+    const yy = y + h * (0.13 + i * 0.19);
+    g.beginPath(); g.moveTo(x + 9 * S, yy); g.lineTo(x + w - 9 * S, yy); g.stroke();
+  }
+
+  // Lid, and the lip under it.
+  g.fillStyle = '#4a6a4b';
+  g.beginPath();
+  g.moveTo(x, y + h * 0.13);
+  g.lineTo(x + w, y + h * 0.13);
+  g.lineTo(x + w - 5 * S, y + h * 0.045);
+  g.lineTo(x + 5 * S, y + h * 0.045);
+  g.closePath(); g.fill();
+  g.fillStyle = 'rgba(0,0,0,.25)';
+  g.fillRect(x + 2 * S, y + h * 0.13, w - 4 * S, 5 * S);
+  g.fillStyle = '#2a3d27';
+  g.fillRect(x + w * 0.36, y + h * 0.02, w * 0.28, 8 * S);
+
+  // Wheel.
+  g.fillStyle = '#1b1b1c';
+  g.beginPath(); g.arc(x + 20 * S, y + h - 12 * S, 13 * S, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.arc(x + w - 20 * S, y + h - 12 * S, 13 * S, 0, Math.PI * 2); g.fill();
 }
 
 function drawSofa(g, S, width, height) {

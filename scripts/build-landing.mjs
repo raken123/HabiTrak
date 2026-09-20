@@ -302,6 +302,13 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <h2>See it work.</h2>
     </div>
     <video controls preload="none" poster="${dataUri('s-poster.jpg', 'image/jpeg')}" src="Hazelnut-ad-3min.mp4"></video>
+${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
+    <div class="head" style="justify-items:center;text-align:center;margin:44px 0 0">
+      <p class="eyebrow">Ten minutes</p>
+      <h2>The Week Recap.</h2>
+      <p style="max-width:680px">Everything that changed this week — fifteen new tools, the browser build, tools in Mini, Eco Mode and Magic Text — told through five people who needed one of them. Landscape, and the longest thing here.</p>
+    </div>
+    <video controls preload="none" poster="${dataUri('p-recap.jpg', 'image/jpeg')}" src="Hazelnut-week-recap.mp4"></video>` : ''}
     <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on. The seven shorts below are the same rule: the editor in them is real, and whatever a model would have produced — the finished picture, the clip, the reading — is a placeholder standing in for it, not a model output.</p>
     <div class="shorts">
       ${[

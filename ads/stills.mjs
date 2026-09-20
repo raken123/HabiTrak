@@ -17,6 +17,11 @@ const CDP_PORT = Number(process.env.AD_CDP_PORT || 9451);
 const WIDTH = Number(process.env.AD_WIDTH || 1080);
 const HEIGHT = Number(process.env.AD_HEIGHT || 1920);
 const SCENE = process.env.AD_SCENE || 'short3.html';
+// How finely to step time on the way to each still. The default matches the
+// recorder closely enough for cues to land where they will in the film; a
+// longer step is for checking a late moment in a long film without walking
+// every frame to get there.
+const STEP = Number(process.env.AD_STEP || 1 / 24);
 const OUT = process.env.AD_STILLS || path.join(ROOT, '.build', 'stills');
 
 const times = process.argv.slice(2).map(Number);
@@ -96,7 +101,7 @@ fs.mkdirSync(OUT, { recursive: true });
 // up to each wanted time rather than jumping.
 let at = 0;
 for (const t of times.sort((a, b) => a - b)) {
-  for (; at < t; at = Math.min(t, at + 1 / 24)) await evaluate(`AD.seek(${at.toFixed(2)})`);
+  for (; at < t; at = Math.min(t, at + STEP)) await evaluate(`AD.seek(${at.toFixed(2)})`);
   await evaluate(`AD.seek(${t.toFixed(2)})`);
   const shot = await send('Page.captureScreenshot', { format: 'png' });
   const file = path.join(OUT, `t${t.toFixed(1).replace('.', '_')}.png`);

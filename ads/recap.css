@@ -1,0 +1,229 @@
+/* The Week Recap — landscape, 1920×1080.
+   Same world as the rest of the campaign: warm near-black, hazelnut amber,
+   Charter for display against Liberation Sans for anything technical.
+
+   Nothing here transitions or animates in CSS. The recorder steps virtual time
+   and screenshots each frame, so every value that moves is set from JS. */
+
+:root {
+  --ink:        #0d0c0b;
+  --bone:       #f4efe8;
+  --muted:      #97897c;
+  --accent:     #e0894a;
+  --good:       #7ec98a;
+  --eco:        #8fc98f;
+  --warn:       #e0b44a;
+  --display: "Bitstream Charter", "Charter", Georgia, serif;
+  --ui: "Liberation Sans", "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 1920px; height: 1080px;
+  /* clip, not hidden: a scrollIntoView inside an embedded app propagates out
+     through the frame tree and would scroll the whole film. */
+  overflow: clip;
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--ui);
+}
+
+.film { position: relative; width: 1920px; height: 1080px; overflow: clip; }
+
+/* ── the apps ────────────────────────────────────────────────────────────── */
+
+.stage { position: absolute; inset: 0; opacity: 0; }
+.stage iframe { border: 0; display: block; }
+
+.stage--device {
+  display: grid;
+  justify-items: center; align-content: center;
+  gap: 22px;
+  padding-left: 560px;
+  background: radial-gradient(120% 100% at 62% 0%, #241c16 0%, var(--ink) 64%);
+}
+.device {
+  border-radius: 34px;
+  padding: 12px;
+  background: linear-gradient(160deg, #40372f, #17140f);
+  box-shadow: 0 50px 110px rgba(0,0,0,.72), 0 0 0 1px rgba(224,137,74,.22);
+}
+.device iframe { border-radius: 24px; background: #17140f; }
+.device-note {
+  font-size: 15px; letter-spacing: .28em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.grade {
+  position: absolute; inset: 0;
+  pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(130% 130% at 50% 45%, rgba(0,0,0,0) 44%, rgba(0,0,0,.5) 100%),
+    linear-gradient(0deg, rgba(224,137,74,.05), rgba(0,0,0,0) 38%);
+}
+
+/* ── the film's own furniture, down the left gutter ──────────────────────── */
+/*
+   The apps fill the frame, so everything the film says sits in the column to
+   the left of the canvas — where the workspace is empty — over a scrim that
+   keeps it legible whatever the photograph is doing behind it. */
+
+.furniture {
+  position: absolute;
+  left: 72px; bottom: 74px;
+  width: 620px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 26px;
+  z-index: 3;
+}
+.scrim {
+  position: absolute; inset: 0;
+  pointer-events: none; opacity: 0; z-index: 2;
+  background:
+    linear-gradient(100deg, rgba(13,12,11,.94) 0%, rgba(13,12,11,.86) 26%, rgba(13,12,11,.4) 44%, rgba(13,12,11,0) 58%),
+    linear-gradient(0deg, rgba(13,12,11,.8) 0%, rgba(13,12,11,0) 34%);
+}
+
+.chip {
+  display: flex; align-items: center; gap: 14px;
+  opacity: 0;
+}
+.chip__n {
+  font-family: var(--display);
+  font-size: 30px; font-weight: 700;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  padding: 2px 12px 5px;
+  background: rgba(13,12,11,.55);
+}
+.chip__t {
+  font-size: 19px; letter-spacing: .22em; text-transform: uppercase;
+  color: #d8cec4;
+  text-shadow: 0 3px 18px rgba(0,0,0,.9);
+}
+
+/* ── lower third ─────────────────────────────────────────────────────────── */
+
+.third {
+  display: flex; gap: 22px;
+  opacity: 0;
+  width: 100%;
+}
+.third__rule { width: 4px; background: var(--accent); border-radius: 2px; flex: none; }
+.third__eyebrow {
+  font-size: 15px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.third__name {
+  font-family: var(--display);
+  font-size: 50px; line-height: 1.02; font-weight: 700;
+  margin-bottom: 12px;
+  text-wrap: balance;
+  text-shadow: 0 6px 30px rgba(0,0,0,.85);
+}
+.third__line {
+  font-size: 20px; line-height: 1.5; color: #ded5cb; max-width: 540px;
+  text-shadow: 0 3px 20px rgba(0,0,0,.9);
+}
+.third__chip {
+  display: inline-block; margin-top: 16px;
+  padding: 6px 15px; border-radius: 999px;
+  border: 1px solid var(--accent); color: var(--accent);
+  font-size: 15px; letter-spacing: .1em; text-transform: uppercase;
+  background: rgba(13,12,11,.5);
+}
+.third__chip.is-free { border-color: var(--good); color: var(--good); }
+.third__chip.is-eco { border-color: var(--eco); color: var(--eco); }
+
+/* Every placeholder result on screen is labelled while it is on screen. */
+.standin {
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  bottom: 24px;
+  opacity: 0;
+  z-index: 3;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  background: rgba(13,12,11,.72);
+  font-size: 17px; letter-spacing: .06em;
+}
+
+/* ── full-frame cards ────────────────────────────────────────────────────── */
+
+.card {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: radial-gradient(90% 70% at 50% 42%, #221a13 0%, var(--ink) 70%);
+  opacity: 0; text-align: center;
+  z-index: 4;
+}
+.card__inner { display: grid; justify-items: center; padding: 0 110px; }
+.mark {
+  width: 150px; height: 150px;
+  margin-bottom: 30px; display: block;
+  border-radius: 32px;
+  box-shadow: 0 26px 60px rgba(0,0,0,.55);
+}
+.card__num {
+  font-size: 17px; letter-spacing: .34em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 18px;
+}
+.card__title {
+  font-family: var(--display);
+  font-size: 116px; font-weight: 700; line-height: .95; letter-spacing: -.015em;
+}
+.card__sub { font-size: 28px; color: var(--muted); margin-top: 22px; max-width: 1200px; }
+.card__foot { font-size: 20px; color: var(--muted); margin-top: 30px; max-width: 1100px; line-height: 1.5; }
+
+.card__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px; margin-top: 40px; width: 1480px;
+}
+.card__grid:empty { display: none; }
+.tile {
+  border: 1px solid #2c2521; border-radius: 12px;
+  padding: 18px 20px 20px; text-align: left;
+  background: rgba(255,255,255,.015);
+}
+.tile h3 { font-family: var(--display); font-size: 28px; font-weight: 700; margin-bottom: 7px; }
+.tile p { font-size: 17px; color: var(--muted); line-height: 1.4; }
+.tile .cost {
+  display: inline-block; margin-top: 13px;
+  font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+}
+.tile .cost.is-free { color: var(--good); }
+
+.prices { display: flex; gap: 74px; margin-top: 42px; }
+.price { text-align: center; }
+.price .amt { font-family: var(--display); font-size: 58px; font-weight: 700; }
+.price .who { font-size: 16px; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; margin-top: 8px; }
+.price .plat { font-size: 15px; color: #6f645a; margin-top: 5px; }
+
+/* ── who it is for ───────────────────────────────────────────────────────── */
+
+.cast {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; gap: 72px;
+  background: radial-gradient(90% 80% at 42% 40%, #1f1a15 0%, var(--ink) 72%);
+  opacity: 0;
+  z-index: 4;
+}
+.cast__portrait { flex: none; filter: drop-shadow(0 30px 60px rgba(0,0,0,.6)); }
+.cast__portrait canvas { display: block; width: 420px; height: 420px; }
+.cast__body { max-width: 760px; }
+.cast__eyebrow {
+  font-size: 16px; letter-spacing: .32em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+}
+.cast__name { font-family: var(--display); font-size: 92px; font-weight: 700; line-height: 1; }
+.cast__line { font-size: 30px; line-height: 1.45; color: #ded5cb; margin-top: 22px; }
+.cast__need {
+  font-size: 22px; line-height: 1.5; color: var(--muted); margin-top: 24px;
+  border-left: 3px solid var(--accent); padding-left: 20px;
+}
+
+.wipe { position: absolute; inset: 0; background: var(--ink); opacity: 0; pointer-events: none; z-index: 6; }

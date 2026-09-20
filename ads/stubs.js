@@ -130,9 +130,24 @@ export function installHazelnutStub() {
       };
       return promise;
     },
-    describe: (_opts, onProgress) => pending(onProgress, [
-      { after: 300, stage: 'read', message: 'Reading the picture…' },
-    ]),
+    // Caption, on the same terms as `transform`: pending unless the film says
+    // otherwise, and what it hands over is written by the film.
+    describe: (opts, onProgress) => {
+      if (!window.__AD_DESCRIBE) {
+        return pending(onProgress, [{ after: 300, stage: 'read', message: 'Reading the picture…' }]);
+      }
+      let resolve;
+      const promise = new Promise((r) => { resolve = r; });
+      promise.cancel = () => {};
+      window.__AD_JOB = {
+        progress: (message, stage = 'read') => onProgress?.({ stage, message }),
+        finish: (reading, { charged = costOf('caption', { eco: opts?.eco }) } = {}) => {
+          state.credits -= charged;
+          resolve({ result: reading, charged, balance: state.credits });
+        },
+      };
+      return promise;
+    },
 
     aiscopeLearn: (_opts, onProgress) => {
       if (!window.__AD_CARD) {

@@ -47,16 +47,31 @@ const chrome = spawn(CHROME, [
   `http://127.0.0.1:${PORT}/${SCENE}`,
 ], { stdio: 'ignore' });
 
+/**
+ * The debugging target for *this* scene.
+ *
+ * A browser left over from an earlier shoot answers on the same port, and
+ * taking the first page it offers means recording whatever that one happens to
+ * be showing — which is how a ten-minute film came back as a forty-five-second
+ * one. Match the URL, and say so plainly when nothing matches.
+ */
 async function debuggerUrl() {
+  const wanted = `http://127.0.0.1:${PORT}/${SCENE}`;
+  let seen = [];
   for (let i = 0; i < 60; i += 1) {
     try {
       const list = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`)).json();
-      const target = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl);
+      seen = list.filter((t) => t.type === 'page').map((t) => t.url);
+      const target = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl
+        && t.url.split('#')[0] === wanted);
       if (target) return target.webSocketDebuggerUrl;
     } catch { /* still starting */ }
     await wait(250);
   }
-  throw new Error('the browser never exposed a debugging target');
+  throw new Error(seen.length
+    ? `no tab is showing ${wanted} — the browser on port ${CDP_PORT} has ${seen.join(', ')}. `
+      + 'Another recording is probably still running.'
+    : 'the browser never exposed a debugging target');
 }
 
 const ws = new WebSocket(await debuggerUrl());

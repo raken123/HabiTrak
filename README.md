@@ -209,9 +209,10 @@ the page — only the fact that one is configured. More in
 npm test
 ```
 
-81 tests over the parts that can be tested without a screen: the credit and
-trial rules, the tool gating, the engine's orchestration (against a fake model),
-the image header parsing, the video pricing and client, and the GIF encoder —
+106 tests over the parts that can be tested without a screen: the credit and
+trial rules, the tool gating and pricing (Eco Mode included), the engine's
+orchestration against a fake model, the image header parsing, the video pricing
+and client, the local adjustments, and the GIF encoder —
 which is round-tripped through an independently written decoder to prove the
 LZW code-size handling is right.
 
