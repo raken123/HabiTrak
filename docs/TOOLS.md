@@ -1,11 +1,12 @@
 # The tools
 
-Twenty-one tools. Eleven of them never touch a model, which is why they survive
+Twenty-two tools. Eleven of them never touch a model, which is why they survive
 into Hazelnut Free — and why they are exactly what the browser build ships.
 
 The six below came first and are described in full. The fifteen that followed
 are listed after them: eight local and free, seven that call the model and cost
-between three and eight credits.
+between three and eight credits. Magic Text came last and has a section of its
+own.
 
 Everything below describes Hazelnut. **Hazelnut Squirreal** has the original
 six, pointed at clips: the prices change (a generation is a clip, not a frame),
@@ -197,7 +198,44 @@ of frames — which is why they are priced where they are.
 
 They share one engine call (`Engine#transform`) and one IPC channel, so there
 is a single place where the gate, the charge, the cancel and the error live.
-**Erase** is the only one that takes a mask.
+**Erase** and **Magic Text** are the two that take a mask.
+
+---
+
+# Magic Text — 12 credits, 4 in Eco Mode
+
+Paint over the lettering in the photograph, type what it should say instead,
+press **Generate**. It is the masked-transform machinery Erase uses, pointed at
+words rather than at something you want gone, so it shares the same engine call,
+the same mask brush and the same confirm dialog.
+
+What the prompt asks for, and what the tool therefore promises:
+
+- the new words **character for character** — no corrected spelling, no
+  translation, nothing added that was not typed;
+- the lettering that is already there — typeface, weight, spacing, case, colour,
+  outline, the angle and perspective of the surface, the light across it, and
+  the wear, dirt, reflections and focus it has taken on;
+- the same baseline and the same space: a longer replacement is **tightened**
+  rather than allowed to run off the sign;
+- nothing outside the magenta changes.
+
+It refuses to run without both a mask and words — `TRANSFORMS['magic-text']`
+carries `needsMask` and `requires`, and `Engine#transform` checks both before
+the gate and the charge, so an empty field cannot spend 12 credits putting the
+same sign back.
+
+### Why 4 in Eco Mode, and not 8
+
+Every other tool takes the flat Eco discount. Magic Text has its own price in
+`ECO_PRICES`, because Eco Mode takes more away from it than 40% of the work: the
+renderer sends only the bounding box of the mask, padded outwards, instead of
+the whole photograph, and lands the result back into that rectangle. That is a
+far smaller request — and a much rougher match, because the model is matching a
+typeface it can only see a few centimetres of. On a plain painted board it
+holds; on anything ornate it does not, and the dialog says so before you spend.
+
+---
 
 ### Erase or Realtouch?
 

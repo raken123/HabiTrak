@@ -125,7 +125,7 @@ function buildToolbar() {
 function priceBadge(tool) {
   // The badge follows Eco Mode, because the button under it will charge the
   // Eco price the moment it is pressed.
-  const eco = (n) => (app.eco ? ecoCost(n) : n);
+  const eco = (n) => (app.eco ? ecoCost(n, tool.id) : n);
   if (tool.id === 'aiscope') return String(eco(tool.learnCost ?? 15));
   if (!tool.ai) return null;
   return typeof tool.cost === 'number' ? String(eco(tool.cost)) : `${eco(tool.cost.min)}+`;
@@ -685,6 +685,16 @@ app.encode = (canvas, type = 'image/png', quality) => {
 /** What this tool gives up in Eco Mode, or nothing when it is off. */
 app.ecoNote = (toolId) => (app.eco ? ECO_NOTES[toolId] || null : null);
 
+/** The discount, in the settings dialog's own words — exceptions included. */
+function ecoPriceLine() {
+  const flat = `Everything that needs the model costs ${Math.round((1 - ECO.discount) * 100)}% less`;
+  const magic = app.server.tools?.find((t) => t.id === 'magic-text');
+  if (!magic || typeof magic.cost !== 'number') return `${flat}.`;
+  const eco = ecoCost(magic.cost, magic.id);
+  if (eco === ecoCost(magic.cost)) return `${flat}.`;
+  return `${flat} — and Magic Text, which gives up the most, costs ${eco} instead of ${magic.cost}.`;
+}
+
 function wireEco() {
   const pill = $('#eco-pill');
   // Nothing to save where nothing calls a model: the browser build and Free
@@ -976,7 +986,8 @@ function showSettings() {
         el('li', { text: `Pictures are sent at no more than ${ECO.maxEdge}px on the longest side.` }),
         el('li', { text: 'Realtouch skips the location lookup — one model call instead of two.' }),
         el('li', { text: 'GIF Animate generates half the keyframes; Squirreal renders shorter clips at a lower rate.' }),
-        el('li', { text: `Everything that needs the model costs ${Math.round((1 - ECO.discount) * 100)}% less.` }),
+        el('li', { text: 'Magic Text is sent a crop around the words rather than the whole picture.' }),
+        el('li', { text: ecoPriceLine() }),
       ]),
     ]),
     footer: (close) => [

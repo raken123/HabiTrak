@@ -12,6 +12,8 @@
 //   - Realtouch's first pass — the one that looks the place up with a search —
 //     is skipped entirely, which removes a whole model call and the search
 //     behind it;
+//   - Magic Text is sent only a crop around the words, not the photograph they
+//     are in;
 //   - GIF Animate generates half as many keyframes;
 //   - Squirreal renders shorter clips at a lower frame rate;
 //   - and because all of that is less work bought, it costs fewer credits.
@@ -43,11 +45,30 @@ export const ECO = {
 };
 
 /**
+ * A few tools are given their own Eco price rather than the flat discount,
+ * because what Eco Mode takes away from them is bigger than 40% of the work.
+ * Magic Text is the clearest case: at full price it reads the whole photograph
+ * to match a typeface; in Eco Mode it is sent a small crop around the words
+ * and little else, which is a much cheaper request and a much rougher match.
+ *
+ * A fixed price is never allowed to exceed what the tool costs at full rate —
+ * Eco Mode must not be the expensive option by accident.
+ */
+export const ECO_PRICES = {
+  'magic-text': 4,
+};
+
+/**
  * The Eco price of a tool. Never free and never rounded down into a lie: a
  * request still costs something, so the floor is one credit.
+ *
+ * Pass the tool id where you have it, so a tool with its own Eco price in
+ * `ECO_PRICES` is quoted at that price instead of the flat discount.
  */
-export function ecoCost(cost) {
+export function ecoCost(cost, toolId = null) {
   if (!cost) return cost;
+  const fixed = toolId ? ECO_PRICES[toolId] : undefined;
+  if (typeof fixed === 'number') return Math.max(1, Math.min(cost, fixed));
   return Math.max(1, Math.ceil(cost * ECO.discount));
 }
 
@@ -64,6 +85,7 @@ export function ecoScale(width, height) {
 
 /** What each tool actually gives up. Shown wherever Eco Mode is offered. */
 export const ECO_NOTES = {
+  'magic-text': 'Only a crop around the words goes up, not the whole picture: the new lettering is matched to what is immediately around it, so the typeface, the wear and the reflections are approximations. On a plain sign it holds; on anything ornate it will not.',
   'magic-draw': 'The sketch goes up smaller, so the picture comes back smaller and softer.',
   realtouch: 'No location lookup: the gap is filled from the pixels around it, the way Erase does it. On a recognisable place, that is a real loss.',
   erase: 'The picture goes up smaller, so the patch is coarser.',
@@ -79,7 +101,8 @@ export const ECO_NOTES = {
 
 /** The one-line summary every app shows next to the switch. */
 export const ECO_SUMMARY =
-  'Eco Mode asks the model for less: a smaller picture, no location lookup, '
-  + 'fewer frames. Less work means less electricity and less water drawn by the '
+  'Eco Mode asks the model for less: a smaller picture — sometimes only a crop '
+  + 'of it — no location lookup, fewer frames. Less work means less electricity '
+  + 'and less water drawn by the '
   + 'datacentre that serves it — we cannot measure how much from here, so we do '
   + 'not print a figure. The results are worse, and cost fewer credits.';

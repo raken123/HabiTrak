@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ECO, ecoCost, ecoScale, ECO_NOTES, ECO_SUMMARY } from '../eco.js';
+import { ECO, ECO_PRICES, ecoCost, ecoScale, ECO_NOTES, ECO_SUMMARY } from '../eco.js';
 import { costOf, TOOL_ORDER, TOOLS } from '../tools.js';
 import { videoCostOf } from '../video-tools.js';
 import { Engine } from '../engine.js';
@@ -19,6 +19,22 @@ test('Eco Mode costs less than full, and never nothing', () => {
   assert.equal(costOf('realtouch', { eco: true }), 12);
   assert.equal(costOf('caption', { eco: true }), 2);
   assert.equal(videoCostOf('realtouch', { seconds: 8, eco: true }), 90);
+});
+
+test('a tool with its own Eco price is quoted at that price, not the discount', () => {
+  // Magic Text is 12, and 4 in Eco Mode — a third, not the usual 60%, because
+  // Eco Mode sends a crop around the words instead of the whole photograph.
+  assert.equal(costOf('magic-text'), 12);
+  assert.equal(costOf('magic-text', { eco: true }), 4);
+  assert.equal(ecoCost(12, 'magic-text'), 4);
+  assert.equal(ecoCost(12), 8, 'without the id it is still the flat discount');
+
+  // A fixed Eco price may never be the expensive way to buy the same tool.
+  for (const [id, price] of Object.entries(ECO_PRICES)) {
+    assert.ok(TOOLS[id], `${id} has an Eco price but is not a tool`);
+    assert.ok(price <= costOf(id), `${id} costs more in Eco Mode than at full rate`);
+    assert.equal(costOf(id, { eco: true }), price);
+  }
 });
 
 test('a free tool stays free — there is nothing to save', () => {

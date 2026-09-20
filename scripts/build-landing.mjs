@@ -247,7 +247,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <p class="eyebrow">Three apps</p>
       <h2>The whole editor, moving pictures, or just the one thing.</h2>
       <ul>
-        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-one tools. Windows and Mac.</li>
+        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-two tools. Windows and Mac.</li>
         <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the core six tools, pointed at clips instead of stills. Windows and Mac.</li>
         <li><b>Hazelnut Mini</b> is the remover behind a single chat bar, with a strip of twelve tools above it — Enhance, Rotate, Sharpen, Denoise, Vignette and Black &amp; white run on the phone itself and cost nothing; Caption, Background, Sky, Colourise, Restore and Upscale call the model at Hazelnut's prices. Windows, Mac and <b>Android</b>.</li>
         <li><b>Hazelnut Free</b> is what the trial becomes. The same editor, minus anything that needs a model — the eleven tools that run locally stay, for ever.</li>
@@ -302,7 +302,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <h2>See it work.</h2>
     </div>
     <video controls preload="none" poster="${dataUri('s-poster.jpg', 'image/jpeg')}" src="Hazelnut-ad-3min.mp4"></video>
-    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on. The six shorts below are the same rule: the editor in them is real, and whatever a model would have produced — the finished picture, the clip, the reading — is a placeholder standing in for it, not a model output.</p>
+    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on. The seven shorts below are the same rule: the editor in them is real, and whatever a model would have produced — the finished picture, the clip, the reading — is a placeholder standing in for it, not a model output.</p>
     <div class="shorts">
       ${[
         ['Hazelnut-short-sofa.mp4', 'p-short-sofa.jpg', 'Mini looks the place up'],
@@ -311,6 +311,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
         ['Hazelnut-short-van.mp4', 'p-short-van.jpg', 'Realtouch: gone from every frame'],
         ['Hazelnut-short-aiscope.mp4', 'p-short-aiscope.jpg', 'AIScope: what the picture actually holds'],
         ['Hazelnut-short-eco.mp4', 'p-short-eco.jpg', 'Eco Mode: a smaller ask'],
+        ['Hazelnut-short-magictext.mp4', 'p-short-magictext.jpg', 'Magic Text: the words in the picture'],
       ]
         .filter(([file]) => fs.existsSync(path.join(DIST, file)))
         .map(([file, poster, caption]) => `<figure><video controls preload="none" poster="${dataUri(poster, 'image/jpeg')}" src="${esc(file)}"></video><figcaption>${esc(caption)}</figcaption></figure>`)

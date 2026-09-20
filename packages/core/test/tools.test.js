@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TOOLS, TOOL_ORDER, LOCAL_TOOLS, costOf, needsAi, availability } from '../tools.js';
+import { TRANSFORMS, transformPrompt } from '../transforms.js';
 
 test('every advertised tool exists and is ordered', () => {
   // The six the app shipped with, still in the toolbar and still first in
@@ -8,8 +9,8 @@ test('every advertised tool exists and is ordered', () => {
   for (const id of ['draw', 'magic-draw', 'realtouch', 'gif-animate', 'expand', 'aiscope']) {
     assert.ok(TOOL_ORDER.includes(id), `${id} left the toolbar`);
   }
-  assert.equal(TOOL_ORDER.length, 21);
-  assert.equal(new Set(TOOL_ORDER).size, 21, 'a tool is listed twice');
+  assert.equal(TOOL_ORDER.length, 22);
+  assert.equal(new Set(TOOL_ORDER).size, 22, 'a tool is listed twice');
   for (const id of TOOL_ORDER) assert.ok(TOOLS[id], `${id} is missing`);
   for (const id of Object.keys(TOOLS)) assert.ok(TOOL_ORDER.includes(id), `${id} is not in the order`);
 });
@@ -17,7 +18,7 @@ test('every advertised tool exists and is ordered', () => {
 test('the toolbox is half local, half model — and the shortcuts are unique', () => {
   const ai = TOOL_ORDER.filter((id) => TOOLS[id].ai);
   assert.equal(LOCAL_TOOLS.length, 11);
-  assert.equal(ai.length, 10);
+  assert.equal(ai.length, 11);
   assert.equal(LOCAL_TOOLS.length + ai.length, TOOL_ORDER.length);
 
   const keys = TOOL_ORDER.map((id) => TOOLS[id].shortcut);
@@ -106,4 +107,23 @@ test('trial and pro unlock everything', () => {
 test('an unknown tool is refused rather than priced', () => {
   assert.throws(() => costOf('nope'), /Unknown tool/);
   assert.equal(availability('nope', 'pro').allowed, false);
+});
+
+test('Magic Text replaces the lettering and nothing else', () => {
+  assert.equal(TOOLS['magic-text'].cost, 12);
+  assert.equal(costOf('magic-text'), 12);
+  assert.equal(costOf('magic-text', { eco: true }), 4);
+  assert.equal(needsAi('magic-text'), true);
+
+  const prompt = transformPrompt('magic-text', { words: 'CLOSED FOR THE WINTER' });
+  assert.match(prompt, /CLOSED FOR THE WINTER/);
+  assert.match(prompt, /magenta/i);
+  assert.match(prompt, /character for character/i);
+  assert.match(prompt, /Nothing outside the magenta changes/);
+
+  // It is a masked edit, and it is useless without words: both are refused
+  // before anything is charged.
+  const spec = TRANSFORMS['magic-text'];
+  assert.equal(spec.needsMask, true);
+  assert.equal(spec.requires.key, 'words');
 });

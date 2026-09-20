@@ -263,6 +263,11 @@ export class Engine {
     const spec = TRANSFORMS[toolId];
     if (!spec) throw new Error(`Unknown transform: ${toolId}`);
     if (spec.needsMask && !mask) throw new Error('Paint over what you want changed first.');
+    // Some edits are meaningless without their field — Magic Text with no
+    // words would spend twelve credits to put the same sign back.
+    if (spec.requires && !String(params[spec.requires.key] || '').trim()) {
+      throw new Error(spec.requires.message);
+    }
     const priced = { ...params, eco };
     this.#gate(toolId, priced);
 

@@ -7,7 +7,7 @@ Five products, one codebase:
 
 | | What it is | Platforms | Price |
 |---|---|---|---|
-| **Hazelnut** | The full editor: twenty-one tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
+| **Hazelnut** | The full editor: twenty-two tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
 | **Hazelnut Squirreal** | The same editor, pointed at moving pictures. Sketch a frame, say how it moves, get a clip | Windows, Mac | $29.99 / month |
 | **Hazelnut Mini** | A chat bar that removes things, and twelve tools above it — six of them free | Windows, Mac, **Android** | $9.99 / month — half of Hazelnut |
 | **Hazelnut Free** | Hazelnut with **no AI**. The eleven tools that run locally, forever, at no cost | Windows, Mac | Free |
@@ -18,8 +18,10 @@ credits. When it ends the editor does not lock: it becomes Hazelnut Free.
 
 **Eco Mode** is in all three apps. It asks the model for less — pictures sent at
 1,024px, Realtouch's location lookup skipped, half the GIF keyframes, shorter
-clips — which is less electricity and less water drawn by the datacentre that
-serves it, and 40% off the price. The results are worse, and every dialog says
+clips, and Magic Text sent a crop around the words rather than the whole
+photograph — which is less electricity and less water drawn by the datacentre
+that serves it, and 40% off the price (Magic Text, which gives up the most,
+drops from 12 credits to 4). The results are worse, and every dialog says
 so. There is no figure in litres anywhere in the app: that number depends on the
 datacentre and the grid, neither of which is visible from your machine.
 
@@ -60,7 +62,25 @@ frames — each is one edit to a photograph that already exists.
 | **Upscale** | Twice the size, with the detail rebuilt. | 8 credits |
 | **Restore** | Scratches, creases, fading and damp on a scanned print. | 8 credits |
 
-Eleven of the twenty-one never call a model. That half is what Hazelnut Free
+### And a twenty-second: Magic Text
+
+| Tool | What it does | Cost |
+|---|---|---|
+| **Magic Text** | Paint over the lettering in the photograph, type what it should say instead, press Generate. | 12 credits · 4 in Eco Mode |
+
+It is a masked edit like Erase, pointed at words rather than at something you
+want gone: the new lettering is set in the typeface that is already there, on
+the same baseline, at the same angle, under the same light, and fitted to the
+space rather than allowed to run off the sign. Nothing outside the mask changes.
+It refuses to run without both a mask and words, so it cannot spend 12 credits
+putting the same sign back.
+
+In Eco Mode it is sent a crop around the mask instead of the whole photograph —
+a much smaller request, which is why it costs 4 rather than the 8 the flat
+discount would give. The model is then matching a typeface it can only see a few
+centimetres of, and the dialog says so before you spend anything.
+
+Eleven of the twenty-two never call a model. That half is what Hazelnut Free
 keeps, and what **Hazelnut for the Web** ships:
 
 ```sh
@@ -69,7 +89,7 @@ cd dist/web && python3 -m http.server 8080     # then open http://localhost:8080
 ```
 
 The browser build is fixed to the `web` edition: the eleven local tools work,
-the ten that need a model are locked and say so, and nothing is uploaded —
+the eleven that need a model are locked and say so, and nothing is uploaded —
 there is no key and no account.
 
 Magic Draw's price moves inside its band with how much of the canvas you painted,

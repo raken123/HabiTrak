@@ -124,7 +124,7 @@ export function videoCostOf(toolId, params = {}) {
     : toolId === 'realtouch' ? estimateVideoRealtouch(params)
     : toolId === 'aiscope' ? (params.learn ? tool.learnCost : 0)
     : typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
-  return params.eco ? ecoCost(full) : full;
+  return params.eco ? ecoCost(full, toolId) : full;
 }
 
 export function videoNeedsAi(toolId, params = {}) {

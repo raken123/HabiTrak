@@ -114,6 +114,20 @@ export class Doc extends EventTarget {
     return layer;
   }
 
+  /**
+   * The same thing for a result that only covers part of the picture: Magic
+   * Text in Eco Mode sends a crop around the words and gets that crop back, so
+   * it lands on a new layer at the rectangle it came from rather than stretched
+   * across the whole canvas.
+   */
+  addImageLayerAt(img, rect, name = 'Layer') {
+    const layer = this.addLayer(name);
+    layer.ctx.imageSmoothingQuality = 'high';
+    layer.ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+    this.touch();
+    return layer;
+  }
+
   duplicateLayer(id = this.activeId) {
     const source = this.layers.find((l) => l.id === id);
     if (!source) return null;

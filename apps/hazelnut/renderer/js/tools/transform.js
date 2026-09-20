@@ -1,7 +1,7 @@
-// The cheap edits: Upscale, Restore, Colourise, Background, Sky — and Erase,
-// which is the same thing with a mask.
+// The cheap edits: Upscale, Restore, Colourise, Background, Sky — and the two
+// that carry a mask, Erase and Magic Text.
 //
-// One picture in, one picture out, so all six share this factory: the same
+// One picture in, one picture out, so all seven share this factory: the same
 // quote, the same confirm, the same progress, the same "add it as a layer and
 // let the history remember it". The only differences are the instruction the
 // engine sends and the one field the user gets to fill in.
@@ -15,7 +15,8 @@ const MASK_COLOR = '#ff00d4';
 
 /**
  * @param {{id:string, name:string, icon:string, hint:string, verb:string,
- *          note?:string, field?:object, mask?:boolean}} spec
+ *          note?:string, field?:object, mask?:boolean, maskPrompt?:string,
+ *          cropToMask?:boolean, requires?:{key:string, message:string}}} spec
  */
 export function createTransformTool(spec) {
   const params = {};
@@ -38,6 +39,38 @@ export function createTransformTool(spec) {
     ensureMask(app);
     maskCtx.clearRect(0, 0, mask.width, mask.height);
     app.render();
+  };
+
+  /**
+   * The rectangle the mask actually covers, padded outwards so the model sees
+   * what surrounds the words as well as the words. Null when nothing is
+   * painted. Used by Magic Text in Eco Mode, which sends this crop instead of
+   * the whole photograph.
+   */
+  const maskBounds = (app, pad = 0.35) => {
+    if (!mask) return null;
+    const { width, height } = mask;
+    const data = maskCtx.getImageData(0, 0, width, height).data;
+    let x0 = width; let y0 = height; let x1 = -1; let y1 = -1;
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        if (data[(y * width + x) * 4 + 3] <= 24) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    if (x1 < 0) return null;
+    const padX = Math.max(24, Math.round((x1 - x0 + 1) * pad));
+    const padY = Math.max(24, Math.round((y1 - y0 + 1) * pad));
+    const x = Math.max(0, x0 - padX);
+    const y = Math.max(0, y0 - padY);
+    return {
+      x, y,
+      w: Math.min(width, x1 + 1 + padX) - x,
+      h: Math.min(height, y1 + 1 + padY) - y,
+    };
   };
 
   const maskHasContent = () => {
@@ -145,9 +178,14 @@ export function createTransformTool(spec) {
     if (spec.mask) {
       ensureMask(app);
       if (!maskHasContent()) {
-        toast(spec.name, 'Paint over what you want gone first.', { kind: 'error' });
+        toast(spec.name, spec.maskPrompt || 'Paint over what you want gone first.', { kind: 'error' });
         return;
       }
+    }
+
+    if (spec.requires && !String(params[spec.requires.key] || '').trim()) {
+      toast(spec.name, spec.requires.message, { kind: 'error' });
+      return;
     }
 
     const quote = await app.quote(spec.id);
@@ -161,13 +199,27 @@ export function createTransformTool(spec) {
     }))) return;
 
     const flat = app.doc.composite();
+
+    // Eco Mode on a crop-able tool sends only the region around the mask. That
+    // is a far smaller request than the whole picture — which is the point,
+    // and also the reason the result is a rougher match: the model is matching
+    // a typeface it can only see a few centimetres of.
+    const region = spec.cropToMask && app.eco ? maskBounds(app) : null;
+
+    const cut = (source) => {
+      if (!region) return source;
+      const canvas = makeCanvas(region.w, region.h);
+      ctx2d(canvas).drawImage(source, region.x, region.y, region.w, region.h, 0, 0, region.w, region.h);
+      return canvas;
+    };
+
     let marked = null;
     if (spec.mask) {
       const canvas = makeCanvas(app.doc.width, app.doc.height);
       const ctx = ctx2d(canvas);
       ctx.drawImage(flat, 0, 0);
       ctx.drawImage(mask, 0, 0);
-      marked = app.encode(canvas, 'image/png');
+      marked = app.encode(cut(canvas), 'image/png');
     }
 
     const job = busy.start({
@@ -177,7 +229,7 @@ export function createTransformTool(spec) {
     });
     try {
       const call = window.hazelnut.transform(spec.id, {
-        image: app.encode(flat, 'image/png'),
+        image: app.encode(cut(flat), 'image/png'),
         mask: marked,
         params: { ...params },
         eco: app.eco,
@@ -202,7 +254,8 @@ export function createTransformTool(spec) {
         app.viewport.setDocument(app.doc);
       }
 
-      app.doc.addImageLayer(img, spec.name);
+      if (region) app.doc.addImageLayerAt(img, region, spec.name);
+      else app.doc.addImageLayer(img, spec.name);
       app.history.push(spec.name, spec.icon);
       app.setCredits(balance);
       if (spec.mask) clearMask(app);
@@ -225,6 +278,20 @@ export const createEraseTool = () => createTransformTool({
   hint: 'Erase — paint over something small, then Erase.',
   note: 'Erase fills from the pixels around the mask. For something big, or something with a real place behind it, Realtouch looks the location up instead.',
   field: { key: 'hint', label: 'Hint', placeholder: 'optional — e.g. “there is a kerb behind it”' },
+});
+
+export const createMagicTextTool = () => createTransformTool({
+  id: 'magic-text',
+  name: 'Magic Text',
+  icon: 'text-magic',
+  verb: 'Generate',
+  mask: true,
+  cropToMask: true,
+  maskPrompt: 'Paint over the words you want changed first.',
+  hint: 'Magic Text — paint over the words, type the new ones, then Generate.',
+  note: 'The new words are set in the typeface that is already there, at the same angle and under the same light. Long replacements are tightened to fit rather than allowed to run off the sign.',
+  requires: { key: 'words', message: 'Type the words the sign should say.' },
+  field: { key: 'words', label: 'Say instead', placeholder: '“CLOSED FOR THE WINTER”' },
 });
 
 export const createUpscaleTool = () => createTransformTool({

@@ -4,7 +4,7 @@
 // Magic Draw, Realtouch and GIF Animate each buy something expensive — a
 // composition rendered from scratch, a search pass over the real world, a run
 // of frames. These do not. Each is a single edit to a photograph that already
-// exists, which is why they are priced at 3–8 credits rather than 20–600, and
+// exists, which is why they are priced at 3–12 credits rather than 20–600, and
 // why they can all share one engine call.
 //
 // Every prompt below says the same three things in its own way: change this,
@@ -34,6 +34,35 @@ export const TRANSFORMS = {
       'the surroundings do not imply. If the area is large or the background is',
       'complicated, fill it plainly rather than guessing at something specific.',
       hint ? `The person editing says: ${hint}` : null,
+    ],
+  },
+
+  'magic-text': {
+    needsMask: true,
+    requires: { key: 'words', message: 'Type the words the sign should say.' },
+    field: { key: 'words', label: 'Say instead', placeholder: 'e.g. “CLOSED FOR THE WINTER”' },
+    lines: ({ words }) => [
+      'The first image is the photograph with an area painted over in solid magenta.',
+      'The second is the same photograph, unmarked.',
+      '',
+      'Under the magenta there is lettering. Replace it so it reads exactly:',
+      '',
+      words,
+      '',
+      'Copy the lettering that is there: the typeface and its weight, the letter',
+      'spacing, the case, the colour and any outline or shadow, the angle and the',
+      'perspective of the surface, the light falling across it, and every mark the',
+      'original has taken on — the wear, the dirt, the reflections, the blur where',
+      'it is out of focus. Set the new words on the same baseline, centred the same',
+      'way, and sized so they sit in the same space: if the new text is longer,',
+      'tighten the spacing rather than spilling over the edge of the sign.',
+      '',
+      'Reproduce the words above character for character, including the',
+      'capitalisation and the punctuation. Do not correct the spelling, do not',
+      'translate, and do not add a word that was not given.',
+      '',
+      'Nothing outside the magenta changes — not the sign, not its frame, not what',
+      'is reflected in it, and not the rest of the photograph.',
     ],
   },
 

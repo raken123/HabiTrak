@@ -193,3 +193,29 @@ test('running out of credits is refused with a shortfall the UI can quote', asyn
     (err) => err.code === 'INSUFFICIENT_CREDITS' && err.cost === 20 && err.short === 15,
   );
 });
+
+test('Magic Text needs both a mask and words before it spends anything', async () => {
+  const client = new FakeClient();
+  const { engine, credits } = build({ client });
+  const before = credits.balance;
+
+  await assert.rejects(
+    engine.transform({ toolId: 'magic-text', image: PIXEL, params: { words: 'OPEN' } }),
+    /Paint over/,
+  );
+  await assert.rejects(
+    engine.transform({ toolId: 'magic-text', image: PIXEL, mask: PIXEL, params: { words: '   ' } }),
+    /Type the words/,
+  );
+  assert.equal(client.calls.length, 0, 'the model was asked for something');
+  assert.equal(credits.balance, before, 'credits were spent on a refused request');
+
+  const { result, charged } = await engine.transform({
+    toolId: 'magic-text', image: PIXEL, mask: PIXEL, params: { words: 'FRESH BREAD' },
+  });
+  assert.ok(result.image.startsWith('data:image/png;base64,'));
+  assert.equal(charged, 12);
+  assert.match(client.calls[0].prompt, /FRESH BREAD/);
+  // The marked copy goes first, because the prompt talks about "the first image".
+  assert.equal(client.calls[0].images.length, 2);
+});

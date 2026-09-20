@@ -53,7 +53,7 @@ export const PLANS = {
     yearlyUsd: 0,
     credits: 0,
     ai: false,
-    blurb: 'The full editor in a browser tab, limited to the half of the toolbox that needs no model: 11 of the 21 tools, no account, no key, and nothing leaves the page.',
+    blurb: 'The full editor in a browser tab, limited to the half of the toolbox that needs no model: 11 of the 22 tools, no account, no key, and nothing leaves the page.',
   },
   'hazelnut-trial': {
     id: 'hazelnut-trial',

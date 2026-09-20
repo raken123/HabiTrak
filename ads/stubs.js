@@ -12,6 +12,7 @@
 import { TOOLS, TOOL_ORDER as ORDER, costOf } from '/core/tools.js';
 import { VIDEO_TOOLS, VIDEO_TOOL_ORDER as VIDEO_ORDER, videoCostOf } from '/core/video-tools.js';
 import { PLANS as CORE_PLANS } from '/core/pricing.js';
+import { ECO_SUMMARY } from '/core/eco.js';
 
 import { demoPhoto } from './demo-image.js';
 import { streetScene } from './street-scene.js';
@@ -108,9 +109,27 @@ export function installHazelnutStub() {
      */
     // The cheap edits, in the same shape as the rest of the bridge: real
     // progress, and a promise the film never lets settle unless it says so.
-    transform: (_toolId, _opts, onProgress) => pending(onProgress, [
-      { after: 300, stage: 'render', message: 'Sending the picture…' },
-    ]),
+    //
+    // A film that needs to show a result sets `__AD_TRANSFORM` first and then
+    // hands one over through `__AD_JOB.finish`. What it hands over is drawn by
+    // the film itself — no model runs during a recording — and the film says so
+    // at the point it does it.
+    transform: (toolId, opts, onProgress) => {
+      if (!window.__AD_TRANSFORM) {
+        return pending(onProgress, [{ after: 300, stage: 'render', message: 'Sending the picture…' }]);
+      }
+      let resolve;
+      const promise = new Promise((r) => { resolve = r; });
+      promise.cancel = () => {};
+      window.__AD_JOB = {
+        progress: (message, stage = 'render') => onProgress?.({ stage, message }),
+        finish: (image, { charged = costOf(toolId, { eco: opts?.eco }) } = {}) => {
+          state.credits -= charged;
+          resolve({ result: { image, note: '' }, charged, balance: state.credits });
+        },
+      };
+      return promise;
+    },
     describe: (_opts, onProgress) => pending(onProgress, [
       { after: 300, stage: 'read', message: 'Reading the picture…' },
     ]),
@@ -134,7 +153,10 @@ export function installHazelnutStub() {
     openImage: async () => {
       // The film can hand over its own plate; otherwise the scene is picked by
       // the query string, as the earlier ads do.
-      if (window.__AD_PLATE) return { name: 'tomato-stem.jpg', path: 'tomato-stem.jpg', dataUrl: window.__AD_PLATE };
+      if (window.__AD_PLATE) {
+        const name = window.__AD_PLATE_NAME || 'tomato-stem.jpg';
+        return { name, path: name, dataUrl: window.__AD_PLATE };
+      }
       const scene = new URLSearchParams(location.search).get('scene');
       if (scene === 'desk') {
         return { name: 'desk.jpg', path: 'desk.jpg', dataUrl: deskScene({ pc: 'office' }).toDataURL('image/jpeg', 0.92) };
@@ -164,7 +186,7 @@ export function installMiniStub() {
     plan: PLANS['mini-pro'],
     credits: 300,
     eco: false,
-    ecoSummary: 'Eco Mode asks the model for less: a smaller picture, no location lookup, fewer frames. The results are worse, and cost fewer credits.',
+    ecoSummary: ECO_SUMMARY,
     costs,
     removalCost: costs.realtouch,
     plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },

@@ -46,6 +46,7 @@ see `docs/ARCHITECTURE.md`.
 | AIScope Learn | 15 |
 | Magic Draw | 5–20, quoted before you commit |
 | Realtouch | 20 |
+| Magic Text | 12 — **4** in Eco Mode, which is its own price rather than the flat discount |
 | GIF Animate | 600 for five seconds, pro-rated down to a floor of 60 |
 
 ### In Squirreal
@@ -89,13 +90,19 @@ Eco Mode asks for less of all of it:
 | Pictures sent | no more than **1,024px** on the longest side |
 | Realtouch | **no location lookup** — one model call instead of two |
 | GIF Animate | **half** the keyframes |
+| Magic Text | **a crop** around the mask instead of the whole photograph |
 | Squirreal | up to **4 seconds** at **12 fps** |
-| Price | **40% off** everything that needs the model |
+| Price | **40% off** everything that needs the model — except Magic Text, which gives up the most and drops from **12 to 4** |
 
 The results are worse, and the app says so at the point of use rather than
 once in a settings screen: every confirm dialog carries the line for that
 particular tool — *"Eco Mode: no location lookup, so the gap is filled from the
 pixels around it"* — and every price badge changes the moment the switch does.
+
+A tool may carry its own Eco price in `ECO_PRICES`, and one does. The rule is
+that a fixed Eco price can never exceed what the tool costs at full rate — Eco
+Mode must not become the expensive way to buy the same thing — and a test holds
+that for every entry.
 
 **There is no figure in litres anywhere in this app, and there will not be
 one.** How much water a request draws depends on the datacentre, the season and

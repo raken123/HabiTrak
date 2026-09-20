@@ -15,6 +15,7 @@ import {
 import {
   createEraseTool, createUpscaleTool, createRestoreTool,
   createColouriseTool, createBackgroundTool, createSkyTool,
+  createMagicTextTool,
 } from './transform.js';
 
 export function createTools() {
@@ -44,5 +45,9 @@ export function createTools() {
     background: createBackgroundTool(),
     sky: createSkyTool(),
     caption: createCaptionTool(),
+
+    // And the twenty-second: the same masked-transform machinery, pointed at
+    // the lettering in the picture rather than at the thing you want gone.
+    'magic-text': createMagicTextTool(),
   };
 }

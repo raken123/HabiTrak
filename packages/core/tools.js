@@ -131,6 +131,18 @@ export const TOOLS = {
     help: 'Click where the line should start and type. Size, colour and weight are yours; the text is drawn onto the layer when you apply it.',
   },
 
+  'magic-text': {
+    id: 'magic-text',
+    name: 'Magic Text',
+    shortcut: 'A',
+    icon: 'text-magic',
+    ai: true,
+    cost: 12,
+    group: 'paint',
+    tagline: 'Select the words in the picture. Type different ones.',
+    help: 'Paint over the lettering you want changed — a sign, a label, a screen, a price — type what it should say instead, and press Generate. The new words are rendered into the same place in the same typeface, at the same angle, with the same light on them. Twelve credits; four in Eco Mode, which sends only a crop around the words.',
+  },
+
   erase: {
     id: 'erase', name: 'Erase', shortcut: 'X', icon: 'eraser', ai: true, cost: 5, group: 'repair',
     tagline: 'Paint over something small and it goes. Five credits.',
@@ -169,7 +181,7 @@ export const TOOLS = {
 };
 
 export const TOOL_ORDER = [
-  'draw', 'text', 'magic-draw',
+  'draw', 'text', 'magic-text', 'magic-draw',
   'erase', 'realtouch', 'restore', 'background', 'sky',
   'levels', 'colour', 'sharpen', 'denoise', 'vignette', 'colourise', 'upscale',
   'gif-animate',
@@ -217,7 +229,7 @@ export function costOf(toolId, params = {}) {
     : typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
   // Eco Mode buys less work, so it costs less. The discount is applied last,
   // to whatever the tool would otherwise have charged.
-  return params.eco ? ecoCost(full) : full;
+  return params.eco ? ecoCost(full, toolId) : full;
 }
 
 /** Does this tool need a model call for the given parameters? */
