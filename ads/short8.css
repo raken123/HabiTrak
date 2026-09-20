@@ -1,0 +1,149 @@
+/* Additions for the Imagine short.
+   The pictures are square and the sheets are portrait, so this film needs
+   plates the earlier ones did not have. Nothing animates in CSS — the recorder
+   steps virtual time, so every moving value is set from JavaScript. */
+
+.sq {
+  position: absolute;
+  left: 50%; top: 430px;
+  width: 940px; height: 940px;
+  margin-left: -470px;
+  transform-origin: 50% 50%;
+  opacity: 0;
+}
+.sq canvas {
+  width: 100%; height: 100%; display: block;
+  border-radius: 12px;
+  box-shadow: 0 40px 90px rgba(0,0,0,.65);
+  background: #000;
+}
+
+/* Two plates, for the comparisons. */
+.pair {
+  position: absolute;
+  left: 50%; top: 560px;
+  width: 980px;
+  margin-left: -490px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  opacity: 0;
+}
+.pair figure { margin: 0; }
+.pair canvas {
+  width: 477px; height: 477px; display: block;
+  border-radius: 10px;
+  box-shadow: 0 26px 60px rgba(0,0,0,.6);
+  background: #000;
+}
+.pair figcaption {
+  margin-top: 16px;
+  font-size: 27px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+.pair figcaption b { color: var(--accent); font-weight: 400; }
+
+/* The worksheet. */
+.sheet {
+  position: absolute;
+  left: 50%; top: 380px;
+  width: 780px; height: 1014px;
+  margin-left: -390px;
+  opacity: 0;
+}
+.sheet canvas {
+  width: 100%; height: 100%; display: block;
+  border-radius: 8px;
+  box-shadow: 0 40px 90px rgba(0,0,0,.7);
+  background: #fff;
+}
+
+/* A ring around one line of the sheet, positioned from the real layout. */
+.callout {
+  position: absolute;
+  border: 6px solid var(--bad);
+  border-radius: 12px;
+  opacity: 0;
+  pointer-events: none;
+}
+.callout__tag {
+  position: absolute;
+  /* Above the ring, not below it — below is the next question, and covering a
+     second answer while pointing at the first one muddles the shot. */
+  right: -10px; bottom: 100%;
+  margin-bottom: 14px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 30px;
+  letter-spacing: .04em;
+  padding: 8px 18px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* The badge under a picture: which model drew it, and what it costs. */
+.chip {
+  position: absolute;
+  left: 50%; top: 1420px;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 20px;
+  padding: 16px 30px;
+  border-radius: 999px;
+  background: rgba(20,17,14,.82);
+  border: 1px solid rgba(224,137,74,.3);
+  opacity: 0;
+  white-space: nowrap;
+}
+.chip__name { font-family: var(--display); font-size: 40px; }
+.chip__price { font-size: 30px; color: var(--accent); }
+.chip__where { font-size: 24px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+/* The price table. */
+.prices {
+  position: absolute; inset: 0;
+  z-index: 4;
+  display: grid; place-content: center;
+  background: radial-gradient(70% 50% at 50% 40%, #241a12 0%, var(--ink) 74%);
+  opacity: 0;
+  padding: 0 80px;
+}
+.prices h2 {
+  font-family: var(--display); font-size: 74px; font-weight: 400;
+  text-align: center; margin-bottom: 64px;
+}
+.prow {
+  display: grid;
+  grid-template-columns: 1fr 260px 260px;
+  align-items: baseline;
+  gap: 18px;
+  padding: 30px 0;
+  border-top: 1px solid rgba(246,241,234,.14);
+}
+.prow--head { border-top: 0; }
+.prow--head span { font-size: 26px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+.prow__name { font-family: var(--display); font-size: 50px; }
+.prow__val { font-family: var(--display); font-size: 50px; text-align: right; }
+.prow__val.free { color: var(--accent); }
+.prices__note { margin-top: 48px; font-size: 28px; line-height: 1.5; color: var(--muted); text-align: center; }
+
+/* The closing facts. */
+.facts { margin-top: 40px; display: grid; gap: 20px; justify-items: center; }
+.facts div { font-size: 32px; color: var(--muted); }
+.facts b { color: var(--bone); font-weight: 400; }
+
+/* A plain full-frame statement. */
+.card {
+  position: absolute; inset: 0;
+  z-index: 4;
+  display: grid; place-content: center; justify-items: center;
+  padding: 0 110px;
+  text-align: center;
+  background: var(--ink);
+  opacity: 0;
+}
+.card h2 { font-family: var(--display); font-size: 92px; font-weight: 400; line-height: 1.08; text-wrap: balance; }
+.card p { margin-top: 36px; font-size: 36px; color: var(--muted); line-height: 1.45; text-wrap: balance; }
+.card em { font-style: normal; color: var(--accent); }

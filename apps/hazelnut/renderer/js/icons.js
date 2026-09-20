@@ -17,6 +17,8 @@ export const ICONS = {
   layers: svg('<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3.5 12.5 8.5 4.7 8.5-4.7"/>'),
   image: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="m4 17 5-4.5 3.5 3 3-2.5L20 17"/>'),
   wand: svg('<path d="m5 19 9-9"/><path d="m14.5 4.5 5 5-3 3-5-5 3-3Z"/><path d="M4 6h2M5 5v2M18 17h2M19 16v2"/>'),
+  // A frame with something appearing inside it.
+  imagine: svg('<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="m4.2 16.8 4.3-4.3 2.8 2.5 2.4-2.5 4.1 4.1"/><path d="M16.4 6.6l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5.5-1.3Z"/>'),
   // ── the fifteen ──────────────────────────────────────────────────────────
   crop: svg('<path d="M7 3v14h14"/><path d="M3 7h14v14"/>'),
   straighten: svg('<path d="M3 16.5 21 7.5"/><path d="M4 20h16"/><path d="M6.5 15.2l1.6 2.8M11 12.9l1.6 2.8M15.5 10.6l1.6 2.8"/>'),

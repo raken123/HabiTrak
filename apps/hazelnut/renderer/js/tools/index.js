@@ -1,3 +1,4 @@
+import { createImagineTool } from './imagine.js';
 import { createDrawTool } from './draw.js';
 import { createMagicDrawTool } from './magicdraw.js';
 import { createRealtouchTool } from './realtouch.js';
@@ -20,6 +21,10 @@ import {
 
 export function createTools() {
   return {
+    // The twenty-third, and the only one that makes a picture rather than
+    // changing one. It is also the only one that never leaves the machine.
+    imagine: createImagineTool(),
+
     // The six the app shipped with.
     draw: createDrawTool(),
     'magic-draw': createMagicDrawTool(),

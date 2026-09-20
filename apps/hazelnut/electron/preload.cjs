@@ -44,6 +44,11 @@ contextBridge.exposeInMainWorld('hazelnut', {
   saveApiKey: (key) => call('apikey:save', key),
 
   quote: (toolId, params) => call('tool:quote', toolId, params || {}),
+
+  // Imagine draws in the renderer, so only the two money calls cross the
+  // boundary: what would this cost, and charge me for the one I just drew.
+  imagineQuote: (model) => call('imagine:quote', { model }),
+  imagineCharge: (model) => call('imagine:charge', { model }),
   refund: (toolId, amount, note) => call('credits:refund', toolId, amount, note),
 
   magicDraw: (opts, onProgress) => job('tool:magic-draw', opts, onProgress),

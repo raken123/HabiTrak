@@ -9,7 +9,7 @@ import { License, LICENSE_DEFAULTS } from '../vendor/core/license.js';
 import { Credits, CREDIT_DEFAULTS } from '../vendor/core/credits.js';
 import { GeminiClient } from '../vendor/core/gemini.js';
 import { Engine } from '../vendor/core/engine.js';
-import { PLANS, TRIAL_DAYS } from '../vendor/core/pricing.js';
+import { PLANS } from '../vendor/core/pricing.js';
 import { costOf } from '../vendor/core/tools.js';
 import { ECO_SUMMARY } from '../vendor/core/eco.js';
 import { parseDataUrl } from '../vendor/core/imaging.js';
@@ -48,7 +48,6 @@ export function createWebBridge() {
     platform: 'web',
     version: '1.0.0',
     plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },
-    trialDays: TRIAL_DAYS,
     // Quoted from the registry rather than typed here, so Mini's toolbar and
     // Hazelnut's cannot disagree about what anything costs.
     eco,

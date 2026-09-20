@@ -26,7 +26,7 @@ import { VideoClient } from '@hazelnut/core/video.js';
 import { resolveApiKey, saveApiKey } from '@hazelnut/core/keystore.js';
 import { VideoEngine } from '@hazelnut/core/video-engine.js';
 import { VIDEO_TOOLS, VIDEO_TOOL_ORDER, videoCostOf } from '@hazelnut/core/video-tools.js';
-import { PLANS, TRIAL_DAYS, SQUIRREAL_TRIAL_CREDIT_GRANT } from '@hazelnut/core/pricing.js';
+import { PLANS, SQUIRREAL_TRIAL_CREDIT_GRANT } from '@hazelnut/core/pricing.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -263,7 +263,6 @@ function state() {
     version: app.getVersion(),
     tools: VIDEO_TOOL_ORDER.map((id) => VIDEO_TOOLS[id]),
     plans: PLANS,
-    trialDays: TRIAL_DAYS,
     trialCreditGrant: SQUIRREAL_TRIAL_CREDIT_GRANT,
     settings: store.get('settings', {}),
   };

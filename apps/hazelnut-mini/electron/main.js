@@ -15,7 +15,7 @@ import { Credits, CREDIT_DEFAULTS } from '@hazelnut/core/credits.js';
 import { GeminiClient } from '@hazelnut/core/gemini.js';
 import { resolveApiKey, saveApiKey } from '@hazelnut/core/keystore.js';
 import { Engine } from '@hazelnut/core/engine.js';
-import { PLANS, TRIAL_DAYS } from '@hazelnut/core/pricing.js';
+import { PLANS } from '@hazelnut/core/pricing.js';
 import { costOf } from '@hazelnut/core/tools.js';
 import { ECO_SUMMARY } from '@hazelnut/core/eco.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
@@ -132,7 +132,6 @@ function state() {
     platform: process.platform,
     version: app.getVersion(),
     plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },
-    trialDays: TRIAL_DAYS,
     // Quoted from the registry rather than typed here, so Mini's toolbar and
     // Hazelnut's cannot disagree about what anything costs.
     eco: ecoOn(),

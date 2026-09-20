@@ -16,7 +16,7 @@ import { GeminiClient } from '../../../packages/core/gemini.js';
 import { VideoClient } from '../../../packages/core/video.js';
 import { VideoEngine } from '../../../packages/core/video-engine.js';
 import { VIDEO_TOOLS, VIDEO_TOOL_ORDER, videoCostOf } from '../../../packages/core/video-tools.js';
-import { PLANS, TRIAL_DAYS, SQUIRREAL_TRIAL_CREDIT_GRANT } from '../../../packages/core/pricing.js';
+import { PLANS, SQUIRREAL_TRIAL_CREDIT_GRANT } from '../../../packages/core/pricing.js';
 
 const STATE_KEY = 'squirreal-state';
 const API_KEY = 'hazelnut-api-key';
@@ -64,7 +64,6 @@ export function installWebBridge() {
     version: '1.0.0',
     tools: VIDEO_TOOL_ORDER.map((id) => VIDEO_TOOLS[id]),
     plans: PLANS,
-    trialDays: TRIAL_DAYS,
     trialCreditGrant: SQUIRREAL_TRIAL_CREDIT_GRANT,
     settings: store.get('settings', {}),
   });

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hazelnut — Imagine short</title>
+<link rel="stylesheet" href="short.css" />
+<link rel="stylesheet" href="short8.css" />
+</head>
+<body>
+  <div class="film" id="film">
+
+    <div class="card" id="open">
+      <h2>Hazelnut makes the<br />picture now.</h2>
+      <p>Two models of our own. They run on your machine.</p>
+    </div>
+
+    <div class="sq" id="sq"><canvas id="sqc" width="1024" height="1024"></canvas></div>
+
+    <div class="pair" id="pair">
+      <figure><canvas id="pairA" width="1024" height="1024"></canvas><figcaption id="pairALab">Hazelnut 2.5</figcaption></figure>
+      <figure><canvas id="pairB" width="1024" height="1024"></canvas><figcaption id="pairBLab"><b>Hazelnut 5 Pro</b></figcaption></figure>
+    </div>
+
+    <div class="sheet" id="sheet">
+      <canvas id="sheetc" width="780" height="1014"></canvas>
+      <div class="callout" id="callout"><span class="callout__tag" id="callout-tag"></span></div>
+    </div>
+
+    <div class="chip" id="chip">
+      <span class="chip__name" id="chip-name"></span>
+      <span class="chip__price" id="chip-price"></span>
+      <span class="chip__where" id="chip-where"></span>
+    </div>
+
+    <div class="card" id="ask">
+      <h2>Ask 5&nbsp;Pro for a<br />worksheet.</h2>
+      <p>This is where the two editions stop being the same model.</p>
+    </div>
+
+    <div class="prices" id="prices">
+      <h2>What a picture costs</h2>
+      <div class="prow prow--head"><span>Model</span><span style="text-align:right">Trial</span><span style="text-align:right">Hazelnut</span></div>
+      <div class="prow"><div class="prow__name" id="p1n"></div><div class="prow__val" id="p1t"></div><div class="prow__val" id="p1p"></div></div>
+      <div class="prow"><div class="prow__name" id="p2n"></div><div class="prow__val" id="p2t"></div><div class="prow__val" id="p2p"></div></div>
+      <p class="prices__note" id="prices-note"></p>
+    </div>
+
+    <div class="card" id="end2">
+      <h2>The trial no longer<br />ends.</h2>
+      <div class="facts" id="facts"></div>
+    </div>
+
+    <div class="line line--top" id="line-top"><span id="line-top-text"></span></div>
+    <div class="line line--bottom" id="line-bottom"><span id="line-bottom-text"></span></div>
+
+    <div class="vignette"></div>
+  </div>
+  <script type="module" src="short8.js"></script>
+</body>
+</html>

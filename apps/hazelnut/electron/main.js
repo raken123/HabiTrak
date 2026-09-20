@@ -16,8 +16,9 @@ import { Credits, CREDIT_DEFAULTS } from '@hazelnut/core/credits.js';
 import { GeminiClient } from '@hazelnut/core/gemini.js';
 import { resolveApiKey, saveApiKey } from '@hazelnut/core/keystore.js';
 import { Engine } from '@hazelnut/core/engine.js';
-import { TOOLS, TOOL_ORDER } from '@hazelnut/core/tools.js';
-import { PLANS, TRIAL_DAYS, TRIAL_CREDIT_GRANT } from '@hazelnut/core/pricing.js';
+import { TOOLS, TOOL_ORDER, availability, costOf, isPartnerTool } from '@hazelnut/core/tools.js';
+import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '@hazelnut/core/models.js';
+import { PLANS, TRIAL_CREDIT_GRANT } from '@hazelnut/core/pricing.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -255,15 +256,75 @@ function state() {
     apiKeySource: client.keySource || null,
     platform: process.platform,
     version: app.getVersion(),
-    tools: TOOL_ORDER.map((id) => TOOLS[id]),
+    // The lock is worked out here rather than in the renderer, so there is one
+    // answer to "may I run this" and the page cannot talk itself into another.
+    tools: TOOL_ORDER.map((id) => {
+      const check = availability(id, license.edition());
+      return {
+        ...TOOLS[id],
+        partner: isPartnerTool(id),
+        locked: !check.allowed,
+        lockedMessage: check.message || null,
+      };
+    }),
+    models: modelsFor(license.edition()),
     plans: PLANS,
-    trialDays: TRIAL_DAYS,
     trialCreditGrant: TRIAL_CREDIT_GRANT,
     settings: store.get('settings', {}),
   };
 }
 
 handle('app:state', () => state());
+
+// ── Imagine ─────────────────────────────────────────────────────────────────
+//
+// The odd one out. Every other tool does its work in this process, because
+// every other tool needs a network call and an API key. Imagine draws on the
+// canvas, which only exists in the renderer — so the work happens there and
+// only the money happens here.
+//
+// That splits the usual "charge on success" rule across a process boundary, so
+// it is kept in the same order: the renderer quotes, draws, and only then asks
+// to be charged. A generation that fails, or that the user abandons, never
+// reaches `imagine:charge` and never costs anything.
+
+function imagineParams(model) {
+  const edition = license.edition();
+  return { params: { model: model || DEFAULT_MODEL, edition }, edition };
+}
+
+handle('imagine:quote', ({ model } = {}) => {
+  const { params, edition } = imagineParams(model);
+  const check = availability('imagine', edition, params);
+  const cost = costOf('imagine', params);
+  return {
+    model: params.model,
+    edition,
+    cost,
+    unlimited: cost === 0,
+    balance: credits.balance,
+    affordable: credits.balance >= cost,
+    allowed: check.allowed,
+    message: check.message || null,
+    maxEdge: modelMaxEdge(params.model, edition),
+    thinks: modelThinks(params.model, edition),
+  };
+});
+
+handle('imagine:charge', async ({ model } = {}) => {
+  const { params, edition } = imagineParams(model);
+  const check = availability('imagine', edition, params);
+  if (!check.allowed) {
+    const err = new Error(check.message || 'That model is not available on this edition.');
+    err.code = 'TOOL_LOCKED';
+    throw err;
+  }
+  // The picture already exists by the time this is called, so the work here is
+  // a formality that exists to reuse the ledger and the insufficient-credits
+  // error everything else in the app reports.
+  const out = await credits.charge('imagine', params, async () => ({ drawn: true }));
+  return { charged: out.charged, balance: out.balance };
+});
 
 handle('app:settings', (patch) => {
   const settings = { ...store.get('settings', {}), ...patch };

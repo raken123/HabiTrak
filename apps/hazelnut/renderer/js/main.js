@@ -13,6 +13,7 @@ import { Viewport } from './viewport.js';
 import { createTools } from './tools/index.js';
 import { Clip, attachClip } from './clip.js';
 import { ECO, ecoScale, ecoCost, ECO_SUMMARY, ECO_NOTES } from '../core/eco.js';
+import { DEFAULT_MODEL } from '../core/models.js';
 import { installTransport } from './transport.js';
 import {
   toast, toastError, modal, confirmDialog, openMenu, attachTooltip,
@@ -27,8 +28,8 @@ const SWATCHES = [
 
 /** Whichever product this build is. The dialogs read it rather than assume. */
 const productName = () => (app.isVideo ? 'Hazelnut Squirreal' : 'Hazelnut');
-const freeName = () => (app.server?.edition === 'web' ? 'Hazelnut for the Web'
-  : app.isVideo ? 'Squirreal Free' : 'Hazelnut Free');
+/** What the unpaid tier is called here. There is only one of them now. */
+const freeName = () => (app.server?.edition === 'web' ? 'Hazelnut for the Web' : 'the trial');
 
 const app = {
   doc: null,
@@ -83,11 +84,14 @@ async function boot() {
     await showWebWelcome();
   } else if (!app.server.trialStarted) {
     await showWelcome();
-  } else if (app.server.edition === 'free' && app.server.trialUsed) {
-    toast(freeName(), `Your trial has finished. The ${localCount()} tools that run on your machine keep working — the ones that need a model need a licence.`,
-      { timeout: 9000 });
+  } else if (app.server.edition === 'trial' && app.server.credits <= 0) {
+    // The trial has no end date, so this is the only thing that ever runs out.
+    toast('Out of credits', `Your opening credits are spent. The ${localCount()} tools that run on your machine keep working, and the trial itself does not expire.`,
+      { timeout: 9000, actions: [{ label: 'Plans', primary: true, onClick: showPlans }] });
   }
-  if (app.server.ai && !app.server.apiKeyConfigured) {
+  // Imagine runs here and needs no key, so this only matters if a partner tool
+  // is actually available to run.
+  if (app.server.partnerModels && !app.server.apiKeyConfigured) {
     toast('No API key yet', 'The AI tools need a Gemini key. Open Settings to add one.', {
       timeout: 12000,
       actions: [{ label: 'Settings', primary: true, onClick: showSettings }],
@@ -127,6 +131,13 @@ function priceBadge(tool) {
   // Eco price the moment it is pressed.
   const eco = (n) => (app.eco ? ecoCost(n, tool.id) : n);
   if (tool.id === 'aiscope') return String(eco(tool.learnCost ?? 15));
+  if (tool.id === 'imagine') {
+    // Imagine's price is per model, so the badge quotes the one the picker
+    // opens on rather than the bottom of a range that means nothing.
+    const model = (app.server.models || []).find((m) => m.id === DEFAULT_MODEL);
+    if (!model) return null;
+    return model.unlimited ? 'free' : String(model.price);
+  }
   if (!tool.ai) return null;
   return typeof tool.cost === 'number' ? String(eco(tool.cost)) : `${eco(tool.cost.min)}+`;
 }
@@ -139,9 +150,9 @@ function tooltipFor(tool) {
 }
 
 function editionAllows(tool) {
-  // AIScope is never fully locked: the zoom works on every edition.
-  if (!tool.ai || tool.id === 'aiscope') return true;
-  return app.server.ai;
+  // Worked out by the bridge from the real `availability`, so the page has no
+  // second opinion about what it is allowed to run.
+  return !tool.locked;
 }
 
 function selectTool(id) {
@@ -162,7 +173,9 @@ function selectTool(id) {
 
   const bar = $('#optionsbar');
   bar.replaceChildren(el('div', { class: 'optionsbar__title', html: `${icon(meta?.icon || 'brush')}<span>${meta?.name || id}</span>` }));
-  if (app.doc) {
+  // Imagine makes a document rather than needing one, so it is usable with
+  // nothing open.
+  if (app.doc || tool.needsDoc === false) {
     for (const node of [].concat(tool.options?.(app) || [])) bar.append(node);
     tool.onActivate?.(app);
   } else {
@@ -309,6 +322,19 @@ function setDocument(doc) {
  * Put a clip in the editor. The frames may arrive already decoded — which is
  * what the engine does when it has them — or as a video to be decoded here.
  */
+/**
+ * Imagine with nothing open: the picture becomes the document rather than
+ * being refused for want of one.
+ */
+app.openGenerated = (canvas, name = 'Imagine') => {
+  const doc = new Doc(canvas.width, canvas.height, { name });
+  setDocument(doc);
+  app.doc.addImageLayer(canvas, name);
+  app.history.push('Imagine', 'layers');
+  app.render();
+  return doc;
+};
+
 app.openClip = async (result, { name = 'Clip' } = {}) => {
   const clip = result.frames
     ? await Clip.fromFrames(result.frames, { fps: result.fps || 24 })
@@ -515,12 +541,11 @@ function updateStatus() {
 }
 
 function refreshChrome() {
-  const { edition, plan, credits, trialDaysLeft } = app.server;
+  const { edition, plan, credits } = app.server;
   const pill = $('#edition-pill');
   pill.dataset.edition = edition;
-  pill.textContent = edition === 'trial'
-    ? `Trial · ${trialDaysLeft}d left`
-    : plan.name;
+  // There is no countdown any more, because there is nothing counting down.
+  pill.textContent = edition === 'trial' ? 'Trial · no deadline' : plan.name;
 
   $('#credits-value').textContent = credits.toLocaleString('en-US');
   $('#credits-pill').classList.toggle('is-low', app.server.ai && credits < 60);
@@ -782,7 +807,9 @@ app.reportToolError = (err) => {
 
 /** How many of the tools in this build never call a model. */
 function localCount() {
-  return (app.server.tools || []).filter((t) => !t.ai).length;
+  // "Runs on your machine", not "costs nothing": Imagine is in this count and
+  // is charged for.
+  return (app.server.tools || []).filter((t) => !t.partner).length;
 }
 
 /**
@@ -816,13 +843,13 @@ async function showWelcome() {
     title: `Welcome to ${productName()}`,
     wide: true,
     body: el('div', {}, [
-      el('p', { text: `Every tool is unlocked for ${app.server.trialDays} days, with ${app.server.trialCreditGrant.toLocaleString('en-US')} AI credits to spend. No card, no account.` }),
-      el('p', { text: `When the trial ends ${productName()} does not stop working — it becomes ${freeName()}: the same editor, with the ${localCount()} tools that run on your machine, minus anything that needs a model.` }),
+      el('p', { text: `The trial has no deadline. It opens with ${app.server.trialCreditGrant.toLocaleString('en-US')} credits, which are never topped up, and it never expires. No card, no account.` }),
+      el('p', { text: `It includes the ${localCount()} tools that run on your machine — both of Hazelnut's own image models among them. The tools that send your picture to a partner model come with ${productName()} itself.` }),
       toolGuide(app.server.tools),
     ]),
     footer: (close) => [
       el('button', { class: 'btn', onClick: () => close(false), text: 'Not yet' }),
-      el('button', { class: 'btn btn--primary', onClick: () => close(true), text: `Start the ${app.server.trialDays}-day trial` }),
+      el('button', { class: 'btn btn--primary', onClick: () => close(true), text: 'Claim the credits' }),
     ],
   });
   if (start !== true) return;
@@ -830,7 +857,7 @@ async function showWelcome() {
     const status = await window.hazelnut.startTrial();
     app.server = { ...app.server, ...(await window.hazelnut.getState()) };
     refreshChrome();
-    toast('Trial started', `${status.trialDaysLeft} days, ${app.server.credits.toLocaleString('en-US')} credits.`, { kind: 'good' });
+    toast('Trial started', `${app.server.credits.toLocaleString('en-US')} credits, and no deadline.`, { kind: 'good' });
   } catch (err) {
     toastError(err);
   }
@@ -847,14 +874,14 @@ function showGuide() {
 
 function showUpgrade(tool, message) {
   modal({
-    title: tool ? `${tool.name} needs the AI` : 'This tool needs the AI',
+    title: tool ? `${tool.name} needs a partner model` : 'This tool needs a partner model',
     body: el('div', {}, [
-      el('p', { text: message || `${freeName()} runs everything that works locally. ${tool ? tool.name : 'This tool'} needs a model, so it is part of the paid app.` }),
+      el('p', { text: message || `${tool ? tool.name : 'This tool'} sends your picture to a model we do not run, and that call is what ${productName()} pays for.` }),
       el('div', {
         class: 'note',
-        text: `The ${localCount()} tools that run on your machine — drawing, cropping, straightening, `
-          + 'levels, colour, sharpening, denoising, vignetting, text, expanding and the AIScope zoom — '
-          + `stay available on ${freeName()}, forever, at no cost.`,
+        text: `The ${localCount()} tools that run on your machine stay available for ever, at no cost — `
+          + 'including Imagine, which draws a picture here without sending anything anywhere. '
+          + 'The trial does not expire; only its opening credits run out.',
       }),
     ]),
     footer: (close) => [
@@ -865,7 +892,7 @@ function showUpgrade(tool, message) {
 }
 
 function showPlans() {
-  const plans = ['hazelnut-free', 'hazelnut-pro', 'mini-pro'].map((id) => app.server.plans[id]);
+  const plans = ['hazelnut-trial', 'hazelnut-pro', 'mini-pro'].map((id) => app.server.plans[id]);
   const current = app.server.plan.id;
 
   modal({

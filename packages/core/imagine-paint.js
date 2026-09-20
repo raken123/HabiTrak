@@ -230,10 +230,27 @@ function blob(env, cx, cy, rx, ry, fill, rot = 0) {
   ctx.restore();
 }
 
+/**
+ * How big one unit of an object's local geometry is, as a fraction of the
+ * frame's short side. Exported so anything that needs to find a drawn object
+ * again afterwards — the advertising frames a close-up on a pair of hands —
+ * can do the arithmetic from the same number the painter used.
+ */
+export const LAYER_UNIT = 0.16;
+
+export function layerOrigin(plan, layer) {
+  const unit = Math.min(plan.width, plan.height);
+  return {
+    x: layer.x * plan.width,
+    y: layer.y * plan.height,
+    scale: layer.scale * unit * LAYER_UNIT,
+  };
+}
+
 function paintParts(env, parts, layer) {
   const x = layer.x * env.W;
   const y = layer.y * env.H;
-  const s = layer.scale * Math.min(env.W, env.H) * 0.16;
+  const s = layer.scale * Math.min(env.W, env.H) * LAYER_UNIT;
   env.ctx.save();
   env.ctx.translate(x, y);
   env.ctx.scale(s, s);
@@ -605,7 +622,99 @@ function handParts(env, cx, cy, skin, rand) {
 
 /* ── documents ───────────────────────────────────────────────────────────── */
 
+/**
+ * Where each question sits on the sheet.
+ *
+ * Exported because the advertising points at one of them — the division by
+ * zero that the trial's unthinking pass lets through — and a film that
+ * recomputed this layout for itself would drift out of step with the picture
+ * the moment either changed. One definition, two readers.
+ */
+export function documentRows(plan) {
+  const doc = plan.layers.find((l) => l.kind === 'document')?.doc;
+  if (!doc || !doc.questions.length) return [];
+  const W = plan.width;
+  const H = plan.height - (plan.unverified ? estimateBandHeight(plan) : 0);
+  const m = Math.min(W, H) * 0.08;
+  const unit = Math.min(W, H);
+  const startY = m * 3.1;
+  const step = (H - startY - m * 1.4) / doc.questions.length;
+  return doc.questions.map((q, i) => {
+    const y = startY + step * (i + 0.5);
+    return {
+      question: q,
+      index: i,
+      x: m * 1.3,
+      y: y - unit * 0.042,
+      width: W - m * 2.6,
+      height: unit * 0.058,
+      baseline: y,
+    };
+  });
+}
+
+/**
+ * The band's height without a context to measure with — used by
+ * `documentRows`, which callers outside the painter reach for. It assumes the
+ * wrap that `wrapLines` produces at this width; `warningBandHeight` measures it
+ * properly when a context is in hand, and the two are kept close by the
+ * document tests.
+ */
+function estimateBandHeight(plan) {
+  const unit = Math.min(plan.width, plan.height);
+  const pad = unit * 0.028;
+  const headSize = Math.max(9, unit * 0.028);
+  const bodySize = Math.max(8, unit * 0.023);
+  // Roughly half a character per pixel of body size, which is close enough for
+  // a layout reservation and always errs towards leaving more room.
+  const perLine = Math.max(12, Math.floor((plan.width - pad * 2) / (bodySize * 0.5)));
+  const lines = Math.max(1, Math.ceil(UNTHOUGHT_WARNING.length / perLine));
+  return pad * 2 + headSize * 1.25 + lines * bodySize * 1.28;
+}
+
+/**
+ * A sign is not a document on A4. It is a board on a wall with a few large
+ * words on it, and rendering it as a page of paper wasted most of the frame on
+ * white — which also made it useless as a demonstration of the one thing 2.5
+ * cannot do, because the lettering was too small to see failing.
+ */
+function paintSign(env, doc) {
+  const { ctx, W, H } = env;
+  const unit = Math.min(W, H);
+  const wall = ctx.createLinearGradient(0, 0, 0, H);
+  wall.addColorStop(0, '#49505a');
+  wall.addColorStop(1, '#333941');
+  ctx.fillStyle = wall;
+  ctx.fillRect(0, 0, W, H);
+
+  const bw = W * 0.84;
+  const bh = (H - env.reserve) * 0.5;
+  const bx = (W - bw) / 2;
+  const by = ((H - env.reserve) - bh) / 2;
+
+  env.part(env, { type: 'rect', x: bx + unit * 0.012, y: by + unit * 0.016, w: bw, h: bh, fill: 'rgba(0,0,0,0.35)', r: unit * 0.02 });
+  env.part(env, { type: 'rect', x: bx, y: by, w: bw, h: bh, fill: '#1f4a3c', r: unit * 0.02 });
+  env.part(env, {
+    type: 'rect', x: bx + unit * 0.022, y: by + unit * 0.022,
+    w: bw - unit * 0.044, h: bh - unit * 0.044, fill: 'rgba(255,255,255,0.05)', r: unit * 0.012,
+  });
+
+  const lines = doc.lines || [];
+  const titleY = by + bh * (lines.length ? 0.42 : 0.58);
+  text(env, {
+    x: W / 2, y: titleY, size: unit * 0.13, text: doc.title,
+    fill: '#f4f0e4', align: 'center', weight: 700, sans: true,
+  });
+  lines.forEach((line, i) => {
+    text(env, {
+      x: W / 2, y: by + bh * 0.66 + i * unit * 0.075, size: unit * 0.052,
+      text: line, fill: '#c9d6cc', align: 'center', sans: true,
+    });
+  });
+}
+
 function paintDocument(env, doc) {
+  if (doc.kind === 'sign') return paintSign(env, doc);
   const { ctx, W } = env;
   const H = env.H - env.reserve;
   const m = Math.min(W, H) * 0.08;

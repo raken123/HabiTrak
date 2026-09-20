@@ -13,8 +13,9 @@ import { License, LICENSE_DEFAULTS } from '../../../packages/core/license.js';
 import { Credits, CREDIT_DEFAULTS } from '../../../packages/core/credits.js';
 import { GeminiClient } from '../../../packages/core/gemini.js';
 import { Engine } from '../../../packages/core/engine.js';
-import { TOOLS, TOOL_ORDER } from '../../../packages/core/tools.js';
-import { PLANS, TRIAL_DAYS, TRIAL_CREDIT_GRANT } from '../../../packages/core/pricing.js';
+import { TOOLS, TOOL_ORDER, availability, costOf, isPartnerTool } from '../../../packages/core/tools.js';
+import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '../../../packages/core/models.js';
+import { PLANS, TRIAL_CREDIT_GRANT } from '../../../packages/core/pricing.js';
 
 const STATE_KEY = 'hazelnut-state';
 const API_KEY = 'hazelnut-api-key';
@@ -54,6 +55,17 @@ export function installWebBridge({ limited = false } = {}) {
   const client = new GeminiClient({ apiKey: readKey(), apiBase: API_BASE });
   const engine = new Engine({ client, credits, license });
 
+  // The browser build has no trial to start — it is fixed to the `web` edition
+  // — but it does have Imagine, and Imagine is metered. So it is granted the
+  // same opening credits the trial gets, once, the first time it is opened.
+  //
+  // Those credits live in localStorage and go when the site data goes, which
+  // makes them a soft limit rather than a real one. That is accepted rather
+  // than worked around: the only thing they meter is a generator running on the
+  // visitor's own processor, so there is no bill behind them to protect, and
+  // the alternative is an account, which this build exists not to have.
+  if (limited) credits.grant('web-grant', TRIAL_CREDIT_GRANT, 'Browser edition credits');
+
   const state = () => ({
     ...license.status(),
     credits: credits.balance,
@@ -63,9 +75,17 @@ export function installWebBridge({ limited = false } = {}) {
     platform: navigator.platform?.toLowerCase().includes('mac') ? 'darwin'
       : navigator.platform?.toLowerCase().includes('win') ? 'win32' : 'linux',
     version: '1.0.0',
-    tools: TOOL_ORDER.map((id) => TOOLS[id]),
+    tools: TOOL_ORDER.map((id) => {
+      const check = availability(id, license.edition());
+      return {
+        ...TOOLS[id],
+        partner: isPartnerTool(id),
+        locked: !check.allowed,
+        lockedMessage: check.message || null,
+      };
+    }),
+    models: modelsFor(license.edition()),
     plans: PLANS,
-    trialDays: TRIAL_DAYS,
     trialCreditGrant: TRIAL_CREDIT_GRANT,
     settings: store.get('settings', {}),
   });
@@ -117,6 +137,38 @@ export function installWebBridge({ limited = false } = {}) {
     },
 
     async quote(toolId, params) { return engine.quote(toolId, params || {}); },
+
+    async imagineQuote(model) {
+      const edition = license.edition();
+      const params = { model: model || DEFAULT_MODEL, edition };
+      const check = availability('imagine', edition, params);
+      const cost = costOf('imagine', params);
+      return {
+        model: params.model,
+        edition,
+        cost,
+        unlimited: cost === 0,
+        balance: credits.balance,
+        affordable: credits.balance >= cost,
+        allowed: check.allowed,
+        message: check.message || null,
+        maxEdge: modelMaxEdge(params.model, edition),
+        thinks: modelThinks(params.model, edition),
+      };
+    },
+
+    async imagineCharge(model) {
+      const edition = license.edition();
+      const params = { model: model || DEFAULT_MODEL, edition };
+      const check = availability('imagine', edition, params);
+      if (!check.allowed) {
+        const err = new Error(check.message || 'That model is not available on this edition.');
+        err.code = 'TOOL_LOCKED';
+        throw err;
+      }
+      const out = await credits.charge('imagine', params, async () => ({ drawn: true }));
+      return { charged: out.charged, balance: out.balance };
+    },
     async refund(toolId, amount, note) { return credits.refund(toolId, amount, note); },
 
     magicDraw: (opts, onProgress) => job((ctx) => engine.magicDraw({ ...opts, ...ctx }), onProgress),
