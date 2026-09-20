@@ -397,3 +397,24 @@ charges. Nothing in Mini is dearer because it is on a phone.
 
 Anything a tool needs to know is asked once, in one sheet, with the price on
 the button — so a run is one tap and one sheet, never two.
+
+---
+
+# Where Imagine is not
+
+Imagine is in Hazelnut and in the browser build. It is deliberately **not** in
+Mini or Squirreal, and both omissions are decisions rather than oversights.
+
+**Mini** is one chat bar that removes things, with a strip of twelve tools above
+it. A generator is a different job with a different shape — a prompt, a model
+choice, a size — and bolting it onto that strip would change what Mini is for
+rather than adding to it. Mini's unpaid tier also keeps its partner models, so
+unlike Hazelnut it does not need a local generator to have anything to offer.
+
+**Squirreal** works on clips. A still-image generator in a video app is either a
+frame factory nobody asked for, or it needs the picture held steady across a
+whole clip — which is a genuinely different piece of work from this one, not a
+port of it.
+
+Say the word if either should change; the planner and the painter are already
+platform-agnostic, and Mini's vendored core carries `models.js` today.

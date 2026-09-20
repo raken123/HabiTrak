@@ -9,8 +9,9 @@
 // The registries and the prices come from the core itself: a second copy here
 // would drift, and an ad that quotes a price the app does not charge is worse
 // than no ad. The harness serves the package at /core/.
-import { TOOLS, TOOL_ORDER as ORDER, costOf } from '/core/tools.js';
-import { VIDEO_TOOLS, VIDEO_TOOL_ORDER as VIDEO_ORDER, videoCostOf } from '/core/video-tools.js';
+import { TOOLS, TOOL_ORDER as ORDER, costOf, availability, isPartnerTool } from '/core/tools.js';
+import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '/core/models.js';
+import { VIDEO_TOOLS, VIDEO_TOOL_ORDER as VIDEO_ORDER, videoCostOf, videoAvailability } from '/core/video-tools.js';
 import { PLANS as CORE_PLANS } from '/core/pricing.js';
 import { ECO_SUMMARY } from '/core/eco.js';
 
@@ -21,8 +22,9 @@ import { carFrame } from './car-scene.js';
 
 
 const PLANS = {
-  'hazelnut-free': CORE_PLANS['hazelnut-free'],
+  'hazelnut-trial': CORE_PLANS['hazelnut-trial'],
   'hazelnut-pro': CORE_PLANS['hazelnut-pro'],
+  'hazelnut-web': CORE_PLANS['hazelnut-web'],
   'mini-pro': CORE_PLANS['mini-pro'],
 };
 
@@ -44,26 +46,35 @@ const pending = (onProgress, stages) => {
 };
 
 function baseState(edition) {
-  const ai = edition !== 'free';
+  // 'free' is gone. A film that asks for it gets the trial, which is what
+  // replaced it, rather than an undefined plan and a broken page.
+  const asked = edition === 'free' ? 'trial' : edition;
+  const plan = PLANS[asked === 'pro' ? 'hazelnut-pro' : asked === 'web' ? 'hazelnut-web' : 'hazelnut-trial'];
   return {
     product: 'hazelnut',
-    edition,
-    plan: edition === 'pro' ? PLANS['hazelnut-pro'] : edition === 'trial' ? { ...PLANS['hazelnut-pro'], name: 'Hazelnut Trial' } : PLANS['hazelnut-free'],
-    ai,
+    edition: asked,
+    plan,
+    ai: plan.ai,
+    partnerModels: plan.partnerModels,
     trialStarted: true,
-    trialUsed: edition === 'free',
-    trialDaysLeft: edition === 'trial' ? 7 : 0,
-    trialCreditGrant: 1200,
-    licensed: edition === 'pro',
-    credits: edition === 'free' ? 0 : 1200,
+    trialEndsAt: null,
+    trialCreditGrant: CORE_PLANS['hazelnut-trial'].credits,
+    licensed: asked === 'pro',
+    credits: asked === 'pro' ? 5000 : CORE_PLANS['hazelnut-trial'].credits,
     ledger: [],
     apiKeyConfigured: true,
     apiKeySource: 'this machine',
     platform: 'darwin',
     version: '1.0.0',
-    tools: ORDER.map((id) => TOOLS[id]),
+    // The lock has to come from the real gate here too. A film that showed a
+    // partner tool unlocked on the trial would be showing something the app
+    // does not do, which is the one thing these bridges exist to prevent.
+    tools: ORDER.map((id) => {
+      const check = availability(id, asked);
+      return { ...TOOLS[id], partner: isPartnerTool(id), locked: !check.allowed, lockedMessage: check.message || null };
+    }),
+    models: modelsFor(asked),
     plans: PLANS,
-    trialDays: 7,
     settings: {},
   };
 }
@@ -91,6 +102,33 @@ export function installHazelnutStub() {
       };
     },
     refund: async () => state.credits,
+
+    // Imagine is the one call these bridges do not have to stub away, because
+    // it never reaches a model we cannot run: the renderer draws the picture
+    // itself. So the film gets a real generation and a real charge.
+    imagineQuote: async (model) => {
+      const id = model || DEFAULT_MODEL;
+      const cost = costOf('imagine', { model: id, edition: state.edition });
+      const check = availability('imagine', state.edition, { model: id });
+      return {
+        model: id,
+        edition: state.edition,
+        cost,
+        unlimited: cost === 0,
+        balance: state.credits,
+        affordable: state.credits >= cost,
+        allowed: check.allowed,
+        message: check.message || null,
+        maxEdge: modelMaxEdge(id, state.edition),
+        thinks: modelThinks(id, state.edition),
+      };
+    },
+    imagineCharge: async (model) => {
+      const cost = costOf('imagine', { model: model || DEFAULT_MODEL, edition: state.edition });
+      state.credits = Math.max(0, state.credits - cost);
+      return { charged: cost, balance: state.credits };
+    },
+
     magicDraw: (_opts, onProgress) => pending(onProgress, [
       { after: 350, stage: 'render', message: 'Rendering your sketch…' },
     ]),
@@ -254,19 +292,23 @@ export function installSquirrealStub() {
   const state = {
     product: 'squirreal',
     edition: 'trial',
-    plan: { ...SQUIRREAL_PLANS['squirreal-pro'], name: 'Squirreal Trial' },
+    plan: CORE_PLANS['squirreal-trial'],
     ai: true,
-    trialStarted: true, trialUsed: false, trialDaysLeft: 7, trialCreditGrant: 900,
+    partnerModels: CORE_PLANS['squirreal-trial'].partnerModels,
+    trialStarted: true, trialEndsAt: null,
+    trialCreditGrant: CORE_PLANS['squirreal-trial'].credits,
     licensed: false,
-    credits: 900,
+    credits: CORE_PLANS['squirreal-trial'].credits,
     ledger: [],
     apiKeyConfigured: true,
     apiKeySource: 'this machine',
     platform: 'darwin',
     version: '1.0.0',
-    tools: VIDEO_ORDER.map((id) => VIDEO_TOOLS[id]),
+    tools: VIDEO_ORDER.map((id) => {
+      const check = videoAvailability(id, 'trial');
+      return { ...VIDEO_TOOLS[id], partner: Boolean(VIDEO_TOOLS[id].ai), locked: !check.allowed, lockedMessage: check.message || null };
+    }),
     plans: SQUIRREAL_PLANS,
-    trialDays: 7,
     settings: {},
   };
 
