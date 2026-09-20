@@ -84,12 +84,23 @@ export function paint(ctx, plan) {
 
 /* ── the two renderers ───────────────────────────────────────────────────── */
 
-/** Hazelnut 5 Pro. Draws the part it was given. */
+/**
+ * Hazelnut 5 Pro. Draws the part it was given.
+ *
+ * "Draws it" now includes shading it. A flat fill reads as clip art however
+ * sharp its edges are, so a filled shape is given a vertical gradient across
+ * its own bounding box — lighter at the top, darker at the bottom, as though
+ * there were a sky above it. It is a cheap trick and it is the difference
+ * between a picture that looks drawn and one that looks rendered.
+ *
+ * 2.5 does not get this, and could not use it: its blobs have no bounding box
+ * to shade across.
+ */
 function crispPart(env, part) {
   const { ctx } = env;
   ctx.save();
   if (part.alpha != null) ctx.globalAlpha = part.alpha;
-  ctx.fillStyle = part.fill || '#888';
+  ctx.fillStyle = part.flat ? (part.fill || '#888') : shadeFill(env, part);
   ctx.strokeStyle = part.stroke || part.fill || '#888';
 
   switch (part.type) {
@@ -238,6 +249,9 @@ function blob(env, cx, cy, rx, ry, fill, rot = 0) {
  */
 export const LAYER_UNIT = 0.16;
 
+/** Things in the air. They get no contact shadow. */
+const FLOATS = new Set(['balloon', 'bird']);
+
 export function layerOrigin(plan, layer) {
   const unit = Math.min(plan.width, plan.height);
   return {
@@ -251,11 +265,60 @@ function paintParts(env, parts, layer) {
   const x = layer.x * env.W;
   const y = layer.y * env.H;
   const s = layer.scale * Math.min(env.W, env.H) * LAYER_UNIT;
+
+  // Something standing on ground casts a shadow on it. Without one, every
+  // object in the picture looks pasted on — which is exactly what it is.
+  //
+  // Things that are not standing on it do not: a balloon's shadow would land
+  // somewhere the balloon is not, and over water it read as a reflection of
+  // something floating in mid-air.
+  if (env.model === 'crisp' && !FLOATS.has(layer.what)) {
+    const ctx = env.ctx;
+    ctx.save();
+    ctx.translate(x, y);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.95);
+    g.addColorStop(0, 'rgba(0,0,0,0.34)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(0, s * 0.04, s * 0.95, s * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   env.ctx.save();
   env.ctx.translate(x, y);
   env.ctx.scale(s, s);
   for (const part of parts) env.part(env, part);
   env.ctx.restore();
+}
+
+/**
+ * A vertical gradient across the part's own extent, from a little lighter than
+ * its colour to a little darker. Falls back to the flat colour when the shape
+ * has no height to shade across.
+ */
+function shadeFill(env, part) {
+  const fill = part.fill || '#888';
+  if (typeof fill !== 'string' || fill.startsWith('rgba')) return fill;
+  let top; let bottom;
+  if (part.type === 'ellipse') { top = part.cy - Math.abs(part.ry); bottom = part.cy + Math.abs(part.ry); }
+  else if (part.type === 'rect') { top = part.y; bottom = part.y + part.h; }
+  else if (part.type === 'poly') {
+    const ys = part.points.map((pt) => pt[1]);
+    top = Math.min(...ys); bottom = Math.max(...ys);
+  } else return fill;
+  if (!(bottom > top)) return fill;
+
+  try {
+    const g = env.ctx.createLinearGradient(0, top, 0, bottom);
+    g.addColorStop(0, shade(fill, 1.14));
+    g.addColorStop(0.55, fill);
+    g.addColorStop(1, shade(fill, 0.82));
+    return g;
+  } catch {
+    return fill;
+  }
 }
 
 /* ── text: the thing 2.5 cannot do ───────────────────────────────────────── */
@@ -773,11 +836,57 @@ function finish(env) {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   } else {
+    // A warm-to-cool grade across the frame, the way a lens and a sky give one.
+    const grade = ctx.createLinearGradient(0, 0, 0, H);
+    grade.addColorStop(0, 'rgba(255,238,210,0.10)');
+    grade.addColorStop(0.55, 'rgba(255,255,255,0)');
+    grade.addColorStop(1, 'rgba(20,30,60,0.12)');
+    ctx.fillStyle = grade;
+    ctx.fillRect(0, 0, W, H);
+
     const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.72);
     g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(1, 'rgba(0,0,0,0.20)');
+    g.addColorStop(1, 'rgba(0,0,0,0.22)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
+
+    grain(env);
+  }
+}
+
+/**
+ * Fine grain over the whole frame.
+ *
+ * Perfectly clean pixels are the strongest tell that nothing photographed
+ * this, so 5 Pro lays a little noise over its output. It is drawn through an
+ * ImageData buffer where one is available and skipped where it is not — the
+ * test harness's fake context has no getImageData, and a missing grain pass
+ * should not fail a render.
+ */
+function grain(env) {
+  const { ctx, W, H } = env;
+  if (typeof ctx.createImageData !== 'function' || typeof ctx.putImageData !== 'function') return;
+  try {
+    const tile = 256;
+    const data = ctx.createImageData(tile, tile);
+    const rand = mulberry32(env.plan.seed ^ 0x5bf03635);
+    for (let i = 0; i < data.data.length; i += 4) {
+      const v = (rand() - 0.5) * 30;
+      data.data[i] = 128 + v;
+      data.data[i + 1] = 128 + v;
+      data.data[i + 2] = 128 + v;
+      data.data[i + 3] = 20;
+    }
+    const patch = document.createElement('canvas');
+    patch.width = tile; patch.height = tile;
+    patch.getContext('2d').putImageData(data, 0, 0);
+    ctx.save();
+    ctx.globalCompositeOperation = 'overlay';
+    const pattern = ctx.createPattern(patch, 'repeat');
+    if (pattern) { ctx.fillStyle = pattern; ctx.fillRect(0, 0, W, H); }
+    ctx.restore();
+  } catch {
+    // No canvas to build the tile on (Node, or a stubbed context). Skip it.
   }
 }
 
