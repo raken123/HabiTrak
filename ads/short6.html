@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Hazelnut — Eco Mode short</title>
+<link rel="stylesheet" href="short.css" />
+<link rel="stylesheet" href="short2.css" />
+<link rel="stylesheet" href="short6.css" />
+</head>
+<body>
+  <div class="film" id="film">
+
+    <!-- the square -->
+    <div class="plate" id="plate"><canvas id="photo" width="1000" height="1250"></canvas></div>
+
+    <!-- the editor -->
+    <div class="app" id="app">
+      <div class="app__shell">
+        <div class="app__frame"><iframe id="hz" src="/hazelnut/index.html" width="1280" height="720" title="Hazelnut"></iframe></div>
+      </div>
+    </div>
+
+    <div class="line line--top" id="line-top"><span id="line-top-text"></span></div>
+    <div class="line line--bottom" id="line-bottom"><span id="line-bottom-text"></span></div>
+
+    <div class="end" id="end">
+      <img class="end__mark" id="end-mark" src="/icons/hazelnut/build/icon.png" alt="" />
+      <h1>Eco <b>Mode</b></h1>
+      <p class="end__line">Ask for less. Get less. Pay less.</p>
+      <div class="end__price">40%<span> fewer credits</span></div>
+      <div class="end__plat">Hazelnut · Squirreal · Mini</div>
+      <div class="end__engine" id="end-engine">No figure in litres. We cannot measure it from here.</div>
+    </div>
+
+    <div class="flash" id="flash"></div>
+    <div class="vignette"></div>
+  </div>
+  <script type="module" src="short6.js"></script>
+</body>
+</html>
