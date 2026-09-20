@@ -23,6 +23,9 @@ const WIDTH = Number(process.env.AD_WIDTH || 1280);
 const HEIGHT = Number(process.env.AD_HEIGHT || 720);
 const FPS = Number(process.env.AD_FPS || 24);
 const SCENE = process.env.AD_SCENE || 'scene.html';
+// Grain over a dark frame is expensive to encode: a night scene needs a higher
+// CRF than a daylit one to land at the same size.
+const CRF = process.env.AD_CRF || '20';
 const OUT = process.argv[2] || path.join(ROOT, 'dist', 'Hazelnut-ad.mp4');
 const MUSIC = process.env.AD_MUSIC || path.join(ROOT, '.build', 'bed.wav');
 
@@ -107,7 +110,7 @@ const args = [
   '-y', '-loglevel', 'error',
   '-f', 'image2pipe', '-framerate', String(FPS), '-i', 'pipe:0',
   ...(hasMusic ? ['-i', MUSIC] : []),
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', '20',
+  '-c:v', 'libx264', '-preset', 'slow', '-crf', CRF,
   '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
   ...(hasMusic ? ['-c:a', 'aac', '-b:a', '192k', '-shortest'] : []),
   OUT,
