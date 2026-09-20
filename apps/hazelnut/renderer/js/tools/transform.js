@@ -47,7 +47,7 @@ export function createTransformTool(spec) {
    * painted. Used by Magic Text in Eco Mode, which sends this crop instead of
    * the whole photograph.
    */
-  const maskBounds = (app, pad = 0.35) => {
+  const maskBounds = (pad = 0.35) => {
     if (!mask) return null;
     const { width, height } = mask;
     const data = maskCtx.getImageData(0, 0, width, height).data;
@@ -204,7 +204,7 @@ export function createTransformTool(spec) {
     // is a far smaller request than the whole picture — which is the point,
     // and also the reason the result is a rougher match: the model is matching
     // a typeface it can only see a few centimetres of.
-    const region = spec.cropToMask && app.eco ? maskBounds(app) : null;
+    const region = spec.cropToMask && app.eco ? maskBounds() : null;
 
     const cut = (source) => {
       if (!region) return source;

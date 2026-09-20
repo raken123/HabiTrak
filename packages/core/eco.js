@@ -99,9 +99,11 @@ export const ECO_NOTES = {
 };
 
 /** The one-line summary every app shows next to the switch. */
+// One line, shown in every app — so it may only claim what is true in all of
+// them. What a particular tool gives up (Magic Text's crop, Realtouch's lookup)
+// belongs in ECO_NOTES, next to the button that spends the credits.
 export const ECO_SUMMARY =
-  'Eco Mode asks the model for less: a smaller picture — sometimes only a crop '
-  + 'of it — no location lookup, fewer frames. Less work means less electricity '
-  + 'and less water drawn by the '
+  'Eco Mode asks the model for less: a smaller picture, no location lookup, '
+  + 'fewer frames. Less work means less electricity and less water drawn by the '
   + 'datacentre that serves it — we cannot measure how much from here, so we do '
   + 'not print a figure. The results are worse, and cost fewer credits.';
