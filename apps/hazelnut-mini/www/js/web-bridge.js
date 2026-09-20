@@ -11,16 +11,16 @@ import { GeminiClient } from '../vendor/core/gemini.js';
 import { Engine } from '../vendor/core/engine.js';
 import { PLANS, TRIAL_DAYS } from '../vendor/core/pricing.js';
 import { costOf } from '../vendor/core/tools.js';
+import { ECO_SUMMARY } from '../vendor/core/eco.js';
 import { parseDataUrl } from '../vendor/core/imaging.js';
 import { LocalStore } from './localstore.js';
 
 const KEY_STORAGE = 'hazelnut-mini-api-key';
 
+const PRICED = ['realtouch', 'restore', 'colourise', 'upscale', 'sky', 'background', 'caption'];
+
 /** What Mini's toolbar charges — the same numbers the engine will take. */
-const PRICES = Object.fromEntries(
-  ['realtouch', 'restore', 'colourise', 'upscale', 'sky', 'background', 'caption']
-    .map((id) => [id, costOf(id)]),
-);
+const pricesFor = (eco) => Object.fromEntries(PRICED.map((id) => [id, costOf(id, { eco })]));
 
 // Under the desktop launcher the page is served from loopback and Gemini is
 // reached through that same origin, so the browser never makes a cross-origin
@@ -29,7 +29,8 @@ const VIA_LAUNCHER = location.origin.startsWith('http://127.0.0.1');
 const API_BASE = VIA_LAUNCHER ? '/api/v1beta' : undefined;
 
 export function createWebBridge() {
-  const store = new LocalStore('hazelnut-mini-state', { ...LICENSE_DEFAULTS, ...CREDIT_DEFAULTS, product: 'mini' });
+  const store = new LocalStore('hazelnut-mini-state', { ...LICENSE_DEFAULTS, ...CREDIT_DEFAULTS, product: 'mini', eco: false });
+  let eco = Boolean(store.get('eco', false));
   const license = new License(store, { product: 'mini' });
   const credits = new Credits(store);
   const client = new GeminiClient({ apiKey: readKey(), ...(API_BASE ? { apiBase: API_BASE } : {}) });
@@ -50,8 +51,10 @@ export function createWebBridge() {
     trialDays: TRIAL_DAYS,
     // Quoted from the registry rather than typed here, so Mini's toolbar and
     // Hazelnut's cannot disagree about what anything costs.
-    costs: PRICES,
-    removalCost: PRICES.realtouch,
+    eco,
+    ecoSummary: ECO_SUMMARY,
+    costs: pricesFor(eco),
+    removalCost: costOf('realtouch', { eco }),
   });
 
   if (VIA_LAUNCHER) {
@@ -77,6 +80,13 @@ export function createWebBridge() {
     kind: VIA_LAUNCHER ? 'standalone' : 'web',
 
     async getState() { return state(); },
+
+    /** Eco Mode, remembered on the device. */
+    async setEco(next) {
+      eco = Boolean(next);
+      store.set('eco', eco);
+      return state();
+    },
 
     async startTrial() {
       const status = license.startTrial();
@@ -146,12 +156,12 @@ export function createWebBridge() {
       return true;
     },
 
-    remove: (opts, onProgress) => job((ctx) => engine.miniRemove({ ...opts, ...ctx }), onProgress),
+    remove: (opts, onProgress) => job((ctx) => engine.miniRemove({ ...opts, eco, ...ctx }), onProgress),
 
     // Mini's toolbar. The same engine call the desktop apps make, so the price
     // and the prompt are the same wherever you run it.
     transform: (toolId, opts, onProgress) =>
-      job((ctx) => engine.transform({ toolId, ...opts, ...ctx }), onProgress),
-    describe: (opts, onProgress) => job((ctx) => engine.describe({ ...opts, ...ctx }), onProgress),
+      job((ctx) => engine.transform({ toolId, ...opts, eco, ...ctx }), onProgress),
+    describe: (opts, onProgress) => job((ctx) => engine.describe({ ...opts, eco, ...ctx }), onProgress),
   };
 }

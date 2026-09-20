@@ -16,6 +16,13 @@ Five products, one codebase:
 Everyone starts on a **7-day trial** with every tool unlocked and 1,200 AI
 credits. When it ends the editor does not lock: it becomes Hazelnut Free.
 
+**Eco Mode** is in all three apps. It asks the model for less — pictures sent at
+1,024px, Realtouch's location lookup skipped, half the GIF keyframes, shorter
+clips — which is less electricity and less water drawn by the datacentre that
+serves it, and 40% off the price. The results are worse, and every dialog says
+so. There is no figure in litres anywhere in the app: that number depends on the
+datacentre and the grid, neither of which is visible from your machine.
+
 ---
 
 ## The tools

@@ -12,7 +12,7 @@ export function createCaptionTool() {
 
   return {
     id: 'caption',
-    hint: 'Caption — three credits for a caption, an alt text and keywords.',
+    hint: 'Caption — a caption, an alt text and keywords. Nothing is generated.',
 
     options(app) {
       const cost = el('span', { class: 'cost', id: 'caption-cost', text: '3' });
@@ -35,12 +35,14 @@ export function createCaptionTool() {
       cost: quote.cost,
       balance: quote.balance,
       note: 'Nothing is generated and nothing on the picture changes — this only reads it.',
+      ecoNote: app.ecoNote('caption'),
     }))) return;
 
     const job = busy.start({ title: 'Caption', message: 'Reading the picture…' });
     try {
       const call = window.hazelnut.describe({
-        image: app.doc.toDataURL('image/jpeg', 0.9),
+        image: app.encode(app.doc.composite(), 'image/jpeg', 0.9),
+        eco: app.eco,
       }, (p) => job.update(p.message));
       const { result, charged, balance } = await call;
       last = result;

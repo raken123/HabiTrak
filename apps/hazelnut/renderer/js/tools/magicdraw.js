@@ -8,6 +8,7 @@ import { el, loadImage } from '../dom.js';
 import { Brush } from './brush.js';
 import { field } from './draw.js';
 import { busy, confirmSpend, toast, toastError } from '../ui.js';
+import { ECO } from '../../core/eco.js';
 
 export function createMagicDrawTool() {
   const brush = new Brush({ size: 18, color: '#3d6fd6', hardness: 0.85, opacity: 1 });
@@ -55,15 +56,25 @@ export function createMagicDrawTool() {
         onClick: () => run(app),
       }, ['Submit', el('span', { class: 'cost', id: 'magic-cost', text: String(floor) })]);
 
+      // Eco Mode renders a shorter clip, so the slider stops where the engine
+      // stops: asking for eight and being handed four would be a lie told by
+      // the UI rather than a saving.
+      const maxSeconds = app.eco ? ECO.videoSeconds : 8;
+      if (seconds > maxSeconds) seconds = maxSeconds;
+
       const videoFields = app.isVideo ? [
         field('Seconds', el('input', {
-          type: 'range', min: 1, max: 8, step: 1, value: seconds,
+          type: 'range', min: 1, max: maxSeconds, step: 1, value: seconds,
           oninput: (e) => {
             seconds = +e.target.value;
             e.target.nextElementSibling.value = `${seconds}s`;
             requote(app);
           },
         }), el('output', { text: `${seconds}s` })),
+        ...(app.isVideo && app.eco ? [el('span', {
+          class: 'field',
+          text: `Eco Mode: up to ${ECO.videoSeconds}s`,
+        })] : []),
         el('div', { class: 'field' }, [
           el('label', { text: 'Movement' }),
           el('input', {
@@ -147,6 +158,7 @@ export function createMagicDrawTool() {
       note: app.isVideo
         ? `${seconds} second${seconds === 1 ? '' : 's'}. A clip takes longer to come back than a still.`
         : (promptText ? null : 'No description given — Hazelnut will work from the sketch alone.'),
+      ecoNote: app.ecoNote('magic-draw'),
     }))) return;
 
     const job = busy.start({
@@ -156,7 +168,8 @@ export function createMagicDrawTool() {
     });
     try {
       const call = window.hazelnut.magicDraw({
-        sketch: app.doc.toDataURL('image/png'),
+        sketch: app.encode(app.doc.composite(), 'image/png'),
+        eco: app.eco,
         prompt: promptText,
         style,
         metrics,

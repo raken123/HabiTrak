@@ -9,6 +9,7 @@
 // are implemented entirely in the renderer and never reach this file.
 
 import { availability, costOf } from './tools.js';
+import { ECO } from './eco.js';
 import { TRANSFORMS, transformPrompt, captionPrompt, CAPTION_SCHEMA } from './transforms.js';
 import { parseDataUrl, toDataUrl, imageSize, megapixels, base64ToBytes } from './imaging.js';
 import { framePlan } from './gif.js';
@@ -78,11 +79,12 @@ export class Engine {
   /**
    * @param {{sketch:string, prompt?:string, style?:string, metrics?:object, signal?:AbortSignal}} opts
    */
-  async magicDraw({ sketch, prompt = '', style = 'photograph', metrics = {}, signal } = {}) {
+  async magicDraw({ sketch, prompt = '', style = 'photograph', metrics = {}, eco = false, signal } = {}) {
     const params = {
       coveragePct: metrics.coveragePct ?? 0,
       colorCount: metrics.colorCount ?? 1,
       megapixels: metrics.megapixels ?? sizeOf(sketch).megapixels,
+      eco,
     };
     this.#gate('magic-draw', params);
 
@@ -106,31 +108,48 @@ export class Engine {
    * a recognisable location contributes real photographs of the same place
    * rather than a guess. The second paints the gap using what the first found.
    *
-   * @param {{image:string, marked:string, hint?:string, onProgress?:Function, signal?:AbortSignal}} opts
+   * In Eco Mode there is only the second pass: no lookup, no search, one model
+   * call instead of two. That is the largest saving in the app and the largest
+   * loss — on a recognisable place, what comes back is a plausible fill rather
+   * than what was actually there.
+   *
+   * @param {{image:string, marked:string, hint?:string, eco?:boolean,
+   *          onProgress?:Function, signal?:AbortSignal}} opts
    */
-  async realtouch({ image, marked, hint = '', onProgress = () => {}, signal } = {}) {
+  async realtouch({ image, marked, hint = '', eco = false, onProgress = () => {}, signal } = {}) {
     this.#gate('realtouch');
 
-    return this.credits.charge('realtouch', {}, async () => {
-      onProgress({ stage: 'examining', message: 'Looking up where this was taken…' });
-      const study = await this.client.analyze({
-        prompt: realtouchScenePrompt(),
-        images: [asPart(marked)],
-        search: true,
-        temperature: 0.2,
-        signal,
-      });
+    return this.credits.charge('realtouch', { eco }, async () => {
+      let scene = null;
+      let sources = [];
+
+      // ECO.grounding is the policy; `eco` is what the user asked for on this
+      // run. Both have to be true for the lookup to happen.
+      if (!eco || ECO.grounding) {
+        onProgress({ stage: 'examining', message: 'Looking up where this was taken…' });
+        const looked = await this.client.analyze({
+          prompt: realtouchScenePrompt(),
+          images: [asPart(marked)],
+          search: true,
+          temperature: 0.2,
+          signal,
+        });
+        scene = looked.text;
+        sources = looked.sources;
+      }
 
       onProgress({
         stage: 'rebuilding',
-        message: study.sources.length
-          ? `Found ${study.sources.length} reference${study.sources.length === 1 ? '' : 's'}. Rebuilding what was behind it…`
-          : 'Rebuilding what was behind it…',
-        sources: study.sources,
+        message: eco
+          ? 'Eco Mode: no lookup. Filling from what is around it…'
+          : sources.length
+            ? `Found ${sources.length} reference${sources.length === 1 ? '' : 's'}. Rebuilding what was behind it…`
+            : 'Rebuilding what was behind it…',
+        sources,
       });
 
       const result = await this.client.generateImage({
-        prompt: realtouchInpaintPrompt({ scene: study.text, userHint: hint }),
+        prompt: realtouchInpaintPrompt({ scene, userHint: hint }),
         images: [asPart(marked), asPart(image)],
         temperature: 0.4,
         signal,
@@ -138,8 +157,9 @@ export class Engine {
 
       return {
         image: toDataUrl(result.base64, result.mimeType),
-        scene: study.text,
-        sources: study.sources,
+        scene,
+        sources,
+        eco,
       };
     });
   }
@@ -157,15 +177,18 @@ export class Engine {
    *
    * @param {{image:string, motion:string, seconds?:number, fps?:number, onProgress?:Function, signal?:AbortSignal}} opts
    */
-  async gifAnimate({ image, motion, seconds = 5, fps = 8, onProgress = () => {}, signal } = {}) {
+  async gifAnimate({ image, motion, seconds = 5, fps = 8, eco = false, onProgress = () => {}, signal } = {}) {
     this.#gate('gif-animate');
     if (!motion || !motion.trim()) {
       throw new Error('GIF Animate needs a description of the motion.');
     }
     const plan = framePlan(seconds, fps);
-    const keyCount = Math.min(8, Math.max(3, Math.round(plan.seconds * 1.6)));
+    const full = Math.min(8, Math.max(3, Math.round(plan.seconds * 1.6)));
+    // Eco Mode generates half the keyframes and leaves more of the movement to
+    // the cross-fade: half the model calls, and visibly coarser motion.
+    const keyCount = eco ? Math.max(2, Math.round(full * ECO.keyframes)) : full;
 
-    return this.credits.charge('gif-animate', { seconds: plan.seconds, fps: plan.fps }, async () => {
+    return this.credits.charge('gif-animate', { seconds: plan.seconds, fps: plan.fps, eco }, async () => {
       const keyframes = [image];
       let previous = image;
 
@@ -201,10 +224,10 @@ export class Engine {
    *
    * @param {{crop:string, zoom:number, signal?:AbortSignal}} opts
    */
-  async aiscopeLearn({ crop, zoom = 80, cropPx = null, signal } = {}) {
+  async aiscopeLearn({ crop, zoom = 80, cropPx = null, eco = false, signal } = {}) {
     this.#gate('aiscope', { learn: true });
 
-    return this.credits.charge('aiscope', { learn: true }, async () => {
+    return this.credits.charge('aiscope', { learn: true, eco }, async () => {
       const study = await this.client.analyze({
         prompt: aiscopePrompt({ zoom, cropPx }),
         images: [asPart(crop)],
@@ -235,13 +258,14 @@ export class Engine {
    * @param {{toolId:string, image:string, mask?:string, params?:object,
    *          onProgress?:Function, signal?:AbortSignal}} opts
    */
-  async transform({ toolId, image, mask = null, params = {}, onProgress = () => {}, signal } = {}) {
+  async transform({ toolId, image, mask = null, params = {}, eco = false, onProgress = () => {}, signal } = {}) {
     const spec = TRANSFORMS[toolId];
     if (!spec) throw new Error(`Unknown transform: ${toolId}`);
     if (spec.needsMask && !mask) throw new Error('Paint over what you want changed first.');
-    this.#gate(toolId, params);
+    const priced = { ...params, eco };
+    this.#gate(toolId, priced);
 
-    return this.credits.charge(toolId, params, async () => {
+    return this.credits.charge(toolId, priced, async () => {
       onProgress({ stage: 'render', message: 'Sending the picture…' });
       const out = await this.client.generateImage({
         prompt: transformPrompt(toolId, params),
@@ -261,10 +285,10 @@ export class Engine {
    *
    * @param {{image:string, signal?:AbortSignal}} opts
    */
-  async describe({ image, signal } = {}) {
+  async describe({ image, eco = false, signal } = {}) {
     this.#gate('caption');
 
-    return this.credits.charge('caption', {}, async () => {
+    return this.credits.charge('caption', { eco }, async () => {
       const study = await this.client.analyze({
         prompt: captionPrompt(),
         images: [asPart(image)],
@@ -294,7 +318,7 @@ export class Engine {
    *
    * @param {{image:string, message:string, onProgress?:Function, signal?:AbortSignal}} opts
    */
-  async miniRemove({ image, message, onProgress = () => {}, signal } = {}) {
+  async miniRemove({ image, message, eco = false, onProgress = () => {}, signal } = {}) {
     this.#gate('realtouch');
 
     onProgress({ stage: 'reading', message: 'Reading your message…' });
@@ -315,26 +339,38 @@ export class Engine {
       };
     }
 
-    return this.credits.charge('realtouch', {}, async () => {
-      onProgress({ stage: 'examining', message: 'Looking up where this was taken…' });
-      const study = await this.client.analyze({
-        prompt: miniScenePrompt({ target: parsed.target }),
-        images: [asPart(image)],
-        search: true,
-        temperature: 0.2,
-        signal,
-      });
+    return this.credits.charge('realtouch', { eco }, async () => {
+      let scene = null;
+      let sources = [];
+
+      // Eco Mode skips the lookup, exactly as it does in Hazelnut: one model
+      // call instead of two, and a fill that owes everything to the pixels
+      // around the thing rather than to the place it was taken.
+      if (!eco || ECO.grounding) {
+        onProgress({ stage: 'examining', message: 'Looking up where this was taken…' });
+        const study = await this.client.analyze({
+          prompt: miniScenePrompt({ target: parsed.target }),
+          images: [asPart(image)],
+          search: true,
+          temperature: 0.2,
+          signal,
+        });
+        scene = study.text;
+        sources = study.sources;
+      }
 
       onProgress({
         stage: 'rebuilding',
-        message: study.sources.length
-          ? `Found ${study.sources.length} reference${study.sources.length === 1 ? '' : 's'}. Rebuilding what was behind it…`
-          : `Rebuilding what was behind ${parsed.target}…`,
-        sources: study.sources,
+        message: eco
+          ? `Eco Mode: no lookup. Filling in where ${parsed.target} was…`
+          : sources.length
+            ? `Found ${sources.length} reference${sources.length === 1 ? '' : 's'}. Rebuilding what was behind it…`
+            : `Rebuilding what was behind ${parsed.target}…`,
+        sources,
       });
 
       const result = await this.client.generateImage({
-        prompt: miniRemovePrompt({ target: parsed.target, scene: study.text }),
+        prompt: miniRemovePrompt({ target: parsed.target, scene }),
         images: [asPart(image)],
         temperature: 0.4,
         signal,
@@ -344,8 +380,9 @@ export class Engine {
         target: parsed.target,
         reply: parsed.reply || `Removed ${parsed.target}.`,
         image: toDataUrl(result.base64, result.mimeType),
-        scene: study.text,
-        sources: study.sources,
+        scene,
+        sources,
+        eco,
       };
     });
   }

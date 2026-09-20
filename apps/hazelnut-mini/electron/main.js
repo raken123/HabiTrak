@@ -17,6 +17,7 @@ import { resolveApiKey, saveApiKey } from '@hazelnut/core/keystore.js';
 import { Engine } from '@hazelnut/core/engine.js';
 import { PLANS, TRIAL_DAYS } from '@hazelnut/core/pricing.js';
 import { costOf } from '@hazelnut/core/tools.js';
+import { ECO_SUMMARY } from '@hazelnut/core/eco.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,11 +37,13 @@ let client;
 let engine;
 const jobs = new Map();
 
+const PRICED = ['realtouch', 'restore', 'colourise', 'upscale', 'sky', 'background', 'caption'];
+
 /** What Mini's toolbar charges — the same numbers the engine will take. */
-const PRICES = Object.fromEntries(
-  ['realtouch', 'restore', 'colourise', 'upscale', 'sky', 'background', 'caption']
-    .map((id) => [id, costOf(id)]),
-);
+const pricesFor = (eco) => Object.fromEntries(PRICED.map((id) => [id, costOf(id, { eco })]));
+
+/** Eco Mode, remembered between runs. */
+const ecoOn = () => Boolean(store.get('eco', false));
 
 function boot() {
   store = new Store({
@@ -132,8 +135,10 @@ function state() {
     trialDays: TRIAL_DAYS,
     // Quoted from the registry rather than typed here, so Mini's toolbar and
     // Hazelnut's cannot disagree about what anything costs.
-    costs: PRICES,
-    removalCost: PRICES.realtouch,
+    eco: ecoOn(),
+    ecoSummary: ECO_SUMMARY,
+    costs: pricesFor(ecoOn()),
+    removalCost: costOf('realtouch', { eco: ecoOn() }),
   };
 }
 
@@ -167,11 +172,16 @@ function run(jobId, fn) {
   }).finally(() => jobs.delete(jobId));
 }
 
-handle('mini:remove', (jobId, opts) => run(jobId, (ctx) => engine.miniRemove({ ...opts, ...ctx })));
+handle('mini:remove', (jobId, opts) => run(jobId, (ctx) => engine.miniRemove({ ...opts, eco: ecoOn(), ...ctx })));
 
 // Mini's toolbar: the same cheap edits as Hazelnut, at the same prices.
-handle('tool:transform', (jobId, opts) => run(jobId, (ctx) => engine.transform({ ...opts, ...ctx })));
-handle('tool:describe', (jobId, opts) => run(jobId, (ctx) => engine.describe({ ...opts, ...ctx })));
+handle('tool:transform', (jobId, opts) => run(jobId, (ctx) => engine.transform({ ...opts, eco: ecoOn(), ...ctx })));
+handle('tool:describe', (jobId, opts) => run(jobId, (ctx) => engine.describe({ ...opts, eco: ecoOn(), ...ctx })));
+
+handle('app:eco', (next) => {
+  store.set('eco', Boolean(next));
+  return state();
+});
 
 ipcMain.on('job:cancel', (_e, jobId) => { jobs.get(jobId)?.abort(); jobs.delete(jobId); });
 

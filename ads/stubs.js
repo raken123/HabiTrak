@@ -163,6 +163,8 @@ export function installMiniStub() {
     product: 'mini',
     plan: PLANS['mini-pro'],
     credits: 300,
+    eco: false,
+    ecoSummary: 'Eco Mode asks the model for less: a smaller picture, no location lookup, fewer frames. The results are worse, and cost fewer credits.',
     costs,
     removalCost: costs.realtouch,
     plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },
@@ -170,6 +172,14 @@ export function installMiniStub() {
   window.hazelnutMini = {
     kind: 'desktop',
     getState: async () => state,
+    setEco: async (next) => {
+      state.eco = Boolean(next);
+      state.costs = Object.fromEntries(
+        Object.keys(costs).map((id) => [id, costOf(id, { eco: state.eco })]),
+      );
+      state.removalCost = state.costs.realtouch;
+      return state;
+    },
     startTrial: async () => state,
     activate: async () => ({ ok: true, state }),
     saveApiKey: async () => ({ configured: true }),

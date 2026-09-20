@@ -74,3 +74,35 @@ app.
 
 Licence keys are `HZL-XXXXX-XXXXX-XXXXX-XXXXX` over an alphabet with no I, L, O
 or U, so nothing can be mistyped for 1, 0 or V.
+
+
+---
+
+## Eco Mode
+
+A generation is not free of the world. The datacentre that serves it burns
+electricity, and the machines doing it are cooled — in many places with water.
+Eco Mode asks for less of all of it:
+
+| | |
+|---|---|
+| Pictures sent | no more than **1,024px** on the longest side |
+| Realtouch | **no location lookup** — one model call instead of two |
+| GIF Animate | **half** the keyframes |
+| Squirreal | up to **4 seconds** at **12 fps** |
+| Price | **40% off** everything that needs the model |
+
+The results are worse, and the app says so at the point of use rather than
+once in a settings screen: every confirm dialog carries the line for that
+particular tool — *"Eco Mode: no location lookup, so the gap is filled from the
+pixels around it"* — and every price badge changes the moment the switch does.
+
+**There is no figure in litres anywhere in this app, and there will not be
+one.** How much water a request draws depends on the datacentre, the season and
+the grid behind it; none of that is visible from the machine Hazelnut is
+running on. An invented number would be worth less than nothing. What Hazelnut
+can tell you is the mechanism — fewer pixels, fewer passes, fewer frames — and
+it does.
+
+Eco Mode is hidden where it would be meaningless: on Hazelnut Free and in the
+browser build, nothing calls a model, so there is nothing to save.

@@ -120,6 +120,22 @@ body.is-mac .menubar { padding-left: 82px; }
 .pill--edition[data-edition="pro"]   { border-color: var(--good); color: var(--good); }
 .pill--credits.is-low { border-color: var(--danger); color: var(--danger); }
 
+.note--eco { border-left: 2px solid rgba(143, 201, 143, .6); }
+
+/* A checkbox and its label on one line — the shape a setting wants. */
+.row { display: flex; align-items: center; gap: 9px; margin: 10px 0; }
+.row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #8fc98f; }
+
+/* Eco Mode: off it is just another pill; on it is the one green thing in the
+   window, because it changes what every priced button will do. */
+.pill--eco { opacity: .72; }
+.pill--eco[aria-pressed="true"] {
+  opacity: 1;
+  color: #8fc98f;
+  border-color: rgba(143, 201, 143, .5);
+  background: rgba(143, 201, 143, .12);
+}
+
 /* ── options bar ─────────────────────────────────────────────────────────── */
 
 .optionsbar {

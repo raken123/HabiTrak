@@ -10,6 +10,7 @@
 // local too.
 
 import { videoAvailability, videoCostOf, MAX_CLIP_SECONDS } from './video-tools.js';
+import { ECO } from './eco.js';
 import { parseDataUrl, toDataUrl } from './imaging.js';
 import { LockedError } from './engine.js';
 import {
@@ -61,8 +62,9 @@ export class VideoEngine {
   }
 
   /** Clamp a requested length to what a single generation covers. */
-  static clampSeconds(seconds) {
-    return Math.min(MAX_CLIP_SECONDS, Math.max(1, Number(seconds) || 4));
+  static clampSeconds(seconds, eco = false) {
+    const cap = eco ? Math.min(MAX_CLIP_SECONDS, ECO.videoSeconds) : MAX_CLIP_SECONDS;
+    return Math.min(cap, Math.max(1, Number(seconds) || 4));
   }
 
   // -------------------------------------------------------------------------
@@ -76,14 +78,18 @@ export class VideoEngine {
    */
   async magicDraw({
     sketch, prompt = '', motion = '', seconds = 4, fps = 24,
-    style = 'live-action shot', metrics = {}, onProgress = () => {}, signal,
+    style = 'live-action shot', metrics = {}, eco = false, onProgress = () => {}, signal,
   } = {}) {
-    const length = VideoEngine.clampSeconds(seconds);
+    // Eco Mode renders a shorter clip at a lower rate: fewer frames to make,
+    // and a visibly choppier result.
+    const length = VideoEngine.clampSeconds(seconds, eco);
+    const rate = eco ? Math.min(fps, ECO.videoFps) : fps;
     const params = {
       seconds: length,
       coveragePct: metrics.coveragePct ?? 0,
       colorCount: metrics.colorCount ?? 1,
       megapixels: metrics.megapixels ?? 1,
+      eco,
     };
     this.#gate('magic-draw', params);
 
@@ -92,11 +98,11 @@ export class VideoEngine {
         prompt: videoMagicDrawPrompt({ userPrompt: prompt, motion, style, seconds: length }),
         images: [asPart(sketch)],
         seconds: length,
-        fps,
+        fps: rate,
         onProgress,
         signal,
       });
-      return { clip: toDataUrl(clip.base64, clip.mimeType), seconds: length, fps };
+      return { clip: toDataUrl(clip.base64, clip.mimeType), seconds: length, fps: rate, eco };
     });
   }
 
@@ -113,27 +119,32 @@ export class VideoEngine {
    *          hint?:string, onProgress?:Function, signal?:AbortSignal}} opts
    */
   async realtouch({
-    frame, marked, clip = null, seconds = 4, hint = '',
+    frame, marked, clip = null, seconds = 4, hint = '', eco = false,
     onProgress = () => {}, signal,
   } = {}) {
-    const length = VideoEngine.clampSeconds(seconds);
-    this.#gate('realtouch', { seconds: length });
+    const length = VideoEngine.clampSeconds(seconds, eco);
+    this.#gate('realtouch', { seconds: length, eco });
 
-    return this.credits.charge('realtouch', { seconds: length }, async () => {
-      onProgress({ stage: 'examining', message: 'Looking up where this was filmed…' });
-      const study = await this.client.analyze({
-        prompt: videoScenePrompt(),
-        images: [asPart(marked)],
-        search: true,
-        temperature: 0.2,
-        signal,
-      });
+    return this.credits.charge('realtouch', { seconds: length, eco }, async () => {
+      let study = { text: null, sources: [] };
+      if (!eco || ECO.grounding) {
+        onProgress({ stage: 'examining', message: 'Looking up where this was filmed…' });
+        study = await this.client.analyze({
+          prompt: videoScenePrompt(),
+          images: [asPart(marked)],
+          search: true,
+          temperature: 0.2,
+          signal,
+        });
+      }
 
       onProgress({
         stage: 'rebuilding',
-        message: study.sources.length
-          ? `Found ${study.sources.length} reference${study.sources.length === 1 ? '' : 's'}. Rebuilding it across every frame…`
-          : 'Rebuilding it across every frame…',
+        message: eco
+          ? 'Eco Mode: no lookup. Filling from around it, across every frame…'
+          : study.sources.length
+            ? `Found ${study.sources.length} reference${study.sources.length === 1 ? '' : 's'}. Rebuilding it across every frame…`
+            : 'Rebuilding it across every frame…',
         sources: study.sources,
       });
 
@@ -161,10 +172,10 @@ export class VideoEngine {
   // AIScope — the still tool, on whichever frame you are parked on
   // -------------------------------------------------------------------------
 
-  async aiscopeLearn({ crop, zoom = 80, cropPx = null, signal } = {}) {
+  async aiscopeLearn({ crop, zoom = 80, cropPx = null, eco = false, signal } = {}) {
     this.#gate('aiscope', { learn: true });
 
-    return this.credits.charge('aiscope', { learn: true }, async () => {
+    return this.credits.charge('aiscope', { learn: true, eco }, async () => {
       const study = await this.client.analyze({
         prompt: aiscopePrompt({ zoom, cropPx }),
         images: [asPart(crop)],

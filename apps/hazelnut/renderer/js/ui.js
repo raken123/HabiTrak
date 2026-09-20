@@ -95,11 +95,14 @@ export function confirmDialog({ title, message, confirmLabel = 'OK', danger = fa
  * The one dialog every paid tool goes through: what it costs, what is left,
  * and the chance to back out.
  */
-export function confirmSpend({ toolName, cost, balance, note }) {
+export function confirmSpend({ toolName, cost, balance, note, ecoNote = null }) {
   return modal({
     title: `Run ${toolName}?`,
     body: el('div', {}, [
       el('p', { text: `This will use ${cost} AI credit${cost === 1 ? '' : 's'}. You have ${balance}.` }),
+      // Eco Mode is cheaper because it buys less. What "less" costs this
+      // particular tool is said here, every time, rather than once in a setting.
+      ecoNote ? el('div', { class: 'note note--eco', text: `Eco Mode: ${ecoNote}` }) : null,
       note ? el('div', { class: 'note', text: note }) : null,
       el('p', {
         class: 'note',

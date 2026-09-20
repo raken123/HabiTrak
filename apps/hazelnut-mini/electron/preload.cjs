@@ -16,6 +16,7 @@ async function call(channel, ...args) {
 contextBridge.exposeInMainWorld('hazelnutMini', {
   kind: 'desktop',
   getState: () => call('app:state'),
+  setEco: (next) => call('app:eco', next),
   startTrial: () => call('trial:start'),
   activate: (key) => call('license:activate', key),
   saveApiKey: (key) => call('apikey:save', key),

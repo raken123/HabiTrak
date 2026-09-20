@@ -9,6 +9,8 @@
 // 'web' is the browser build: the local half of the toolbox, no key, no
 // account, nothing uploaded. It is an edition rather than a separate app so
 // every gate in here keeps working unchanged.
+import { ecoCost } from './eco.js';
+
 export const EDITIONS = ['free', 'trial', 'pro', 'web'];
 
 /** Tools flagged `ai: false` run entirely on the local canvas. Free keeps those. */
@@ -210,10 +212,13 @@ export function estimateGifAnimate({ seconds = 5, fps = 8 } = {}) {
 export function costOf(toolId, params = {}) {
   const tool = TOOLS[toolId];
   if (!tool) throw new Error(`Unknown tool: ${toolId}`);
-  if (toolId === 'magic-draw') return estimateMagicDraw(params);
-  if (toolId === 'gif-animate') return estimateGifAnimate(params);
-  if (toolId === 'aiscope') return params.learn ? tool.learnCost : 0;
-  return typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
+  const full = toolId === 'magic-draw' ? estimateMagicDraw(params)
+    : toolId === 'gif-animate' ? estimateGifAnimate(params)
+    : toolId === 'aiscope' ? (params.learn ? tool.learnCost : 0)
+    : typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
+  // Eco Mode buys less work, so it costs less. The discount is applied last,
+  // to whatever the tool would otherwise have charged.
+  return params.eco ? ecoCost(full) : full;
 }
 
 /** Does this tool need a model call for the given parameters? */

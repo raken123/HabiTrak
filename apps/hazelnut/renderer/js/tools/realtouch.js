@@ -147,9 +147,12 @@ export function createRealtouchTool() {
       toolName: 'Realtouch',
       cost: quote.cost,
       balance: quote.balance,
-      note: app.isVideo
-        ? 'Realtouch looks the location up online, then rebuilds the gap on every frame — the longest job in Squirreal.'
-        : 'Realtouch looks the location up online before it rebuilds the gap, so this one takes a little longer than the others.',
+      note: app.eco
+        ? null
+        : app.isVideo
+          ? 'Realtouch looks the location up online, then rebuilds the gap on every frame — the longest job in Squirreal.'
+          : 'Realtouch looks the location up online before it rebuilds the gap, so this one takes a little longer than the others.',
+      ecoNote: app.ecoNote('realtouch'),
     }))) return;
 
     // The flattened picture, and the same picture with the mask burned in.
@@ -164,15 +167,17 @@ export function createRealtouchTool() {
       // Squirreal removes the thing from the whole clip, so it is handed the
       // frame that was painted on, the mask, and the clip the frame came from.
       const call = window.hazelnut.realtouch(app.isVideo ? {
-        frame: flat.toDataURL('image/png'),
-        marked: marked.toDataURL('image/png'),
+        frame: app.encode(flat, 'image/png'),
+        marked: app.encode(marked, 'image/png'),
         clip: app.doc.clip?.source || null,
         seconds,
         hint,
+        eco: app.eco,
       } : {
-        image: flat.toDataURL('image/png'),
-        marked: marked.toDataURL('image/png'),
+        image: app.encode(flat, 'image/png'),
+        marked: app.encode(marked, 'image/png'),
         hint,
+        eco: app.eco,
       }, (p) => job.update(p.message));
       run.cancel = () => call.cancel();
 

@@ -114,12 +114,14 @@ export function createGifAnimateTool() {
       cost: quote.cost,
       balance: quote.balance,
       note: `${seconds}s at ${fps} fps. This is the most expensive tool in Hazelnut and takes a minute or two.`,
+      ecoNote: app.ecoNote('gif-animate'),
     }))) return;
 
     const job = busy.start({ title: 'GIF Animate', message: 'Starting…', onCancel: () => run.cancel?.() });
     try {
       const call = window.hazelnut.gifAnimate({
-        image: app.doc.toDataURL('image/png'),
+        image: app.encode(app.doc.composite(), 'image/png'),
+        eco: app.eco,
         motion,
         seconds,
         fps,

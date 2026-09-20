@@ -10,6 +10,7 @@
 //     work and costs nothing.
 
 import { EDITIONS } from './tools.js';
+import { ecoCost } from './eco.js';
 
 export { EDITIONS };
 
@@ -119,10 +120,11 @@ export function estimateVideoRealtouch({ seconds = 4 } = {}) {
 export function videoCostOf(toolId, params = {}) {
   const tool = VIDEO_TOOLS[toolId];
   if (!tool) throw new Error(`Unknown tool: ${toolId}`);
-  if (toolId === 'magic-draw') return estimateVideoMagicDraw(params);
-  if (toolId === 'realtouch') return estimateVideoRealtouch(params);
-  if (toolId === 'aiscope') return params.learn ? tool.learnCost : 0;
-  return typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
+  const full = toolId === 'magic-draw' ? estimateVideoMagicDraw(params)
+    : toolId === 'realtouch' ? estimateVideoRealtouch(params)
+    : toolId === 'aiscope' ? (params.learn ? tool.learnCost : 0)
+    : typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
+  return params.eco ? ecoCost(full) : full;
 }
 
 export function videoNeedsAi(toolId, params = {}) {

@@ -5,13 +5,14 @@
 // (quoting a price, gating on edition, reporting an error). Tools stay
 // self-contained; this is the only place that knows about all of them.
 
-import { $, $$, el, on, clamp, loadImage } from './dom.js';
+import { $, $$, el, on, clamp, loadImage, makeCanvas, ctx2d } from './dom.js';
 import { icon } from './icons.js';
 import { Doc } from './doc.js';
 import { History } from './history.js';
 import { Viewport } from './viewport.js';
 import { createTools } from './tools/index.js';
 import { Clip, attachClip } from './clip.js';
+import { ECO, ecoScale, ecoCost, ECO_SUMMARY, ECO_NOTES } from '../core/eco.js';
 import { installTransport } from './transport.js';
 import {
   toast, toastError, modal, confirmDialog, openMenu, attachTooltip,
@@ -31,6 +32,7 @@ const freeName = () => (app.server?.edition === 'web' ? 'Hazelnut for the Web'
 
 const app = {
   doc: null,
+  eco: false,         // Eco Mode: ask the model for less, pay less, get less
   history: null,
   viewport: null,
   tools: createTools(),
@@ -60,6 +62,9 @@ async function boot() {
     document.title = 'Hazelnut Squirreal';
     app.transport = installTransport(app);
   }
+
+  app.eco = Boolean(app.server.settings?.eco);
+  wireEco();
 
   buildToolbar();
   buildSwatches();
@@ -118,15 +123,19 @@ function buildToolbar() {
 }
 
 function priceBadge(tool) {
-  if (tool.id === 'aiscope') return '15';
+  // The badge follows Eco Mode, because the button under it will charge the
+  // Eco price the moment it is pressed.
+  const eco = (n) => (app.eco ? ecoCost(n) : n);
+  if (tool.id === 'aiscope') return String(eco(tool.learnCost ?? 15));
   if (!tool.ai) return null;
-  return typeof tool.cost === 'number' ? String(tool.cost) : `${tool.cost.min}+`;
+  return typeof tool.cost === 'number' ? String(eco(tool.cost)) : `${eco(tool.cost.min)}+`;
 }
 
 function tooltipFor(tool) {
   const locked = !editionAllows(tool);
+  const eco = app.eco && ECO_NOTES[tool.id] ? `<p>Eco Mode: ${ECO_NOTES[tool.id]}</p>` : '';
   return `<strong>${tool.name} <em>${tool.shortcut}</em></strong>${tool.tagline}
-    <p>${costLabel(tool)}${locked ? ` — locked on ${freeName()}` : ''}</p>`;
+    <p>${costLabel(tool)}${locked ? ` — locked on ${freeName()}` : ''}</p>${eco}`;
 }
 
 function editionAllows(tool) {
@@ -654,7 +663,53 @@ app.setBrushSize = (size) => {
   if (value) value.textContent = String(size);
 };
 
-app.quote = (toolId, params) => window.hazelnut.quote(toolId, params);
+// Eco Mode is part of every quote: the badge on a button has to say what that
+// button will actually charge.
+app.quote = (toolId, params) => window.hazelnut.quote(toolId, { ...params, eco: app.eco });
+
+/**
+ * A canvas, encoded for sending to the model — scaled down first when Eco Mode
+ * is on. This is where the saving actually happens: fewer pixels up, fewer
+ * pixels back, and a softer result.
+ */
+app.encode = (canvas, type = 'image/png', quality) => {
+  const scale = app.eco ? ecoScale(canvas.width, canvas.height) : 1;
+  if (scale >= 1) return canvas.toDataURL(type, quality);
+  const small = makeCanvas(Math.round(canvas.width * scale), Math.round(canvas.height * scale));
+  const ctx = ctx2d(small);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(canvas, 0, 0, small.width, small.height);
+  return small.toDataURL(type, quality);
+};
+
+/** What this tool gives up in Eco Mode, or nothing when it is off. */
+app.ecoNote = (toolId) => (app.eco ? ECO_NOTES[toolId] || null : null);
+
+function wireEco() {
+  const pill = $('#eco-pill');
+  // Nothing to save where nothing calls a model: the browser build and Free
+  // hide the switch rather than offering a saving they cannot make.
+  if (!app.server.ai) { pill.hidden = true; app.eco = false; return; }
+  const paint = () => {
+    pill.setAttribute('aria-pressed', String(app.eco));
+    document.body.classList.toggle('is-eco', app.eco);
+    pill.title = app.eco
+      ? 'Eco Mode is on — smaller pictures, no lookup, fewer frames, fewer credits'
+      : 'Eco Mode — ask the model for less work';
+  };
+  on(pill, 'click', async () => {
+    app.eco = !app.eco;
+    paint();
+    // The prices on every tool button change with it.
+    app.refreshOptions?.();
+    buildToolbar();
+    await window.hazelnut.saveSettings({ eco: app.eco });
+    toast('Eco Mode', app.eco ? ECO_SUMMARY : 'Eco Mode off. Full size, full passes, full price.', {
+      timeout: app.eco ? 11000 : 4000,
+    });
+  });
+  paint();
+}
 
 app.setCredits = async (balance) => {
   app.server.credits = balance;
@@ -906,6 +961,23 @@ function showSettings() {
         '.',
       ]),
       el('div', { class: 'note note--warn', text: 'Treat a key like a password. If one has ever been pasted into a chat, an issue tracker or a commit, revoke it and generate a new one.' }),
+
+      el('h4', { text: 'Eco Mode' }),
+      el('p', { text: ECO_SUMMARY }),
+      el('label', { class: 'row' }, [
+        el('input', {
+          type: 'checkbox', id: 'eco-toggle',
+          ...(app.eco ? { checked: true } : {}),
+          onChange: (e) => { if (e.target.checked !== app.eco) $('#eco-pill').click(); },
+        }),
+        el('span', { text: 'Ask the model for less work' }),
+      ]),
+      el('ul', { class: 'note' }, [
+        el('li', { text: `Pictures are sent at no more than ${ECO.maxEdge}px on the longest side.` }),
+        el('li', { text: 'Realtouch skips the location lookup — one model call instead of two.' }),
+        el('li', { text: 'GIF Animate generates half the keyframes; Squirreal renders shorter clips at a lower rate.' }),
+        el('li', { text: `Everything that needs the model costs ${Math.round((1 - ECO.discount) * 100)}% less.` }),
+      ]),
     ]),
     footer: (close) => [
       el('button', { class: 'btn', onClick: () => close(), text: 'Close' }),

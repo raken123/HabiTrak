@@ -20,6 +20,7 @@ const DIST = path.join(ROOT, 'dist');
 const { TOOLS: CORE_TOOLS, TOOL_ORDER, LOCAL_TOOLS, costOf } = await import(
   pathToFileURL(path.join(ROOT, 'packages/core/tools.js')).href
 );
+const { ECO } = await import(pathToFileURL(path.join(ROOT, 'packages/core/eco.js')).href);
 
 const dataUri = (file, mime) =>
   `data:${mime};base64,${fs.readFileSync(path.join(SITE, file)).toString('base64')}`;
@@ -136,6 +137,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
     <a class="brand" href="#top"><img src="${dataUri('icon.png', 'image/png')}" alt="" /> Hazelnut</a>
     <nav>
       <a href="#tools">Tools</a>
+      <a href="#eco">Eco Mode</a>
       <a href="#web">In a browser</a>
       <a href="#squirreal">Squirreal</a>
       <a href="#apps">The three apps</a>
@@ -176,6 +178,36 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
         <p>${line}</p>
       </div>`).join('\n      ')}
     </div>
+  </div>
+</section>
+
+<section id="eco">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Eco Mode</p>
+      <h2>Ask for less, and get less.</h2>
+      <p>A generation is not free of the world: the datacentre that serves it burns electricity, and the machines doing it are cooled — in many places with water. Eco Mode asks for less of all of it, and tells you exactly what that costs you.</p>
+    </div>
+    <div class="tools">
+      <div class="tool">
+        <div class="tool__top"><h3>What it cuts</h3><span class="cost cost--free">Less work</span></div>
+        <p>Pictures go up at no more than ${ECO.maxEdge}px on the longest side. Realtouch skips the location lookup — one model call instead of two. GIF Animate generates half the keyframes. Squirreal renders up to ${ECO.videoSeconds} seconds at ${ECO.videoFps} fps.</p>
+      </div>
+      <div class="tool">
+        <div class="tool__top"><h3>What it costs you</h3><span class="cost">Worse results</span></div>
+        <p>A gap filled from its surroundings instead of from photographs of the place is a worse gap. Half the keyframes is coarser motion. A smaller picture is a softer picture. Every tool says what it is giving up, in the dialog, every time.</p>
+      </div>
+      <div class="tool">
+        <div class="tool__top"><h3>What you pay</h3><span class="cost cost--free">${Math.round((1 - ECO.discount) * 100)}% less</span></div>
+        <p>Less work bought is less money owed: everything that needs the model is discounted while Eco Mode is on. Realtouch drops from ${costOf('realtouch')} credits to ${costOf('realtouch', { eco: true })}, GIF Animate from ${costOf('gif-animate')} to ${costOf('gif-animate', { eco: true })}.</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin-top:22px;max-width:640px">
+      What you will not find here is a figure in litres. How much water a request draws depends on the
+      datacentre, the season and the grid behind it, and none of that is visible from the machine Hazelnut runs
+      on. So Hazelnut states the mechanism — fewer pixels, fewer passes, fewer frames — and leaves the
+      arithmetic to people who can actually measure it.
+    </p>
   </div>
 </section>
 

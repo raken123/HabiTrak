@@ -97,12 +97,12 @@ export function createAIScopeTool() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, LEARN_SIZE, LEARN_SIZE);
     ctx.drawImage(app.doc.composite(), x, y, size, size, 0, 0, LEARN_SIZE, LEARN_SIZE);
-    return canvas.toDataURL('image/png');
+    return app.encode(canvas, 'image/png');
   }
 
   return {
     id: 'aiscope',
-    hint: 'AIScope — click a spot, then use the slider. Zooming is free; Learn costs 15.',
+    hint: 'AIScope — click a spot, then use the slider. Zooming is free; only Learn is charged.',
 
     options(host) {
       app = host;
@@ -212,6 +212,7 @@ export function createAIScopeTool() {
       note: inside
         ? `At ${Math.round(zoom).toLocaleString('en-US')}× the scope is inside the pixels themselves, so Learn reads a ${read} px square around the point instead of the sliver on screen.`
         : `Learn reads the ${read} px square the scope is showing.`,
+      ecoNote: host.ecoNote('aiscope'),
     }))) return;
 
     const job = busy.start({ title: 'AIScope', message: 'Studying the crop…' });
@@ -220,6 +221,7 @@ export function createAIScopeTool() {
         crop: learnCrop(),
         zoom,
         cropPx: Math.round(learnRegion().size),
+        eco: app.eco,
       }, (p) => job.update(p.message));
       const { result, charged, balance } = await call;
       host.setCredits(balance);

@@ -11,12 +11,14 @@
 import { createWebBridge } from './web-bridge.js';
 import { TOOLS } from './tools.js';
 import { local } from './local-tools.js';
+import { ECO_NOTES } from '../vendor/core/eco.js';
 
 const bridge = window.hazelnutMini || createWebBridge();
 
 const ui = {
   chat: document.getElementById('chat'),
   tools: document.getElementById('tools'),
+  eco: document.getElementById('eco-chip'),
   input: document.getElementById('composer-input'),
   send: document.getElementById('send'),
   attach: document.getElementById('attach'),
@@ -30,6 +32,7 @@ const app = {
   original: null,     // what was first attached, for "start over"
   busy: false,
   prices: {},         // tool id -> credits, quoted by the bridge
+  ecoWarned: false,   // Eco Mode's caveat is said once a session, not per run
 };
 
 // ---------------------------------------------------------------------------
@@ -39,9 +42,11 @@ const app = {
 (async function boot() {
   app.state = await bridge.getState();
   renderChip();
+  renderEco();
   buildTools();
   showEmptyState();
 
+  ui.eco.addEventListener('click', toggleEco);
   ui.attach.addEventListener('click', attachPhoto);
   ui.send.addEventListener('click', submit);
   ui.chip.addEventListener('click', showPlan);
@@ -150,6 +155,11 @@ async function submit() {
   if (app.state.credits < app.state.removalCost) {
     return showPlan(`A removal costs ${app.state.removalCost} credits and you have ${app.state.credits}.`);
   }
+  if (app.state.eco && !app.ecoWarned) {
+    // Once per session, not once per removal: it is a warning, not a nag.
+    app.ecoWarned = true;
+    say('Eco Mode: no location lookup on this one — it fills from what is around the thing. Cheaper, and worse where the place matters.');
+  }
 
   say(message, { me: true });
   ui.input.value = '';
@@ -207,6 +217,30 @@ function setBusy(busy) {
   ui.attach.disabled = busy;
   ui.input.disabled = busy;
   syncTools();
+}
+
+/**
+ * Eco Mode. The switch lives here rather than in a settings screen because it
+ * changes what the next tap will cost and how good the result will be, and
+ * both of those belong where the tapping happens.
+ */
+async function toggleEco() {
+  if (app.busy) return;
+  const next = !app.state.eco;
+  app.state = await bridge.setEco(next);
+  renderEco();
+  renderChip();
+  buildTools();
+  say(next
+    ? app.state.ecoSummary
+    : 'Eco Mode off. Full size, the location lookup back on, full price.');
+}
+
+function renderEco() {
+  // The six local tools cost nothing to run, so there is nothing for Eco Mode
+  // to save once the AI is gone: the switch goes with it.
+  ui.eco.hidden = !app.state.ai;
+  ui.eco.setAttribute('aria-pressed', String(Boolean(app.state.eco)));
 }
 
 function renderChip() {
@@ -287,8 +321,10 @@ async function canAfford(tool) {
 
 function askFor(tool, params) {
   const inputs = [];
+  const ecoNote = app.state.eco && tool.tool ? ECO_NOTES[tool.tool] : null;
   const body = el('div', {}, [
     el('div', { class: 'note', text: tool.blurb }),
+    ecoNote ? el('div', { class: 'note note--eco', text: `Eco Mode: ${ecoNote}` }) : null,
     ...(tool.sliders || []).map((slider) => {
       params[slider.key] = slider.value;
       const output = el('output', { text: `${slider.value}${slider.suffix || ''}` });
@@ -352,6 +388,9 @@ async function runModel(tool, params, { confirmed = false } = {}) {
     title: `Run ${tool.name}?`,
     body: el('div', {}, [
       el('div', { class: 'note', text: tool.blurb }),
+      app.state.eco && ECO_NOTES[tool.tool]
+        ? el('div', { class: 'note note--eco', text: `Eco Mode: ${ECO_NOTES[tool.tool]}` })
+        : null,
       el('p', { text: `This will use ${cost} credits. You have ${app.state.credits}.` }),
       el('div', { class: 'note', text: 'Credits are only taken if the result comes back. A failed run costs nothing.' }),
     ]),

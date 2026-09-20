@@ -157,6 +157,7 @@ export function createTransformTool(spec) {
       cost: quote.cost,
       balance: quote.balance,
       note: spec.note || null,
+      ecoNote: app.ecoNote(spec.id),
     }))) return;
 
     const flat = app.doc.composite();
@@ -166,7 +167,7 @@ export function createTransformTool(spec) {
       const ctx = ctx2d(canvas);
       ctx.drawImage(flat, 0, 0);
       ctx.drawImage(mask, 0, 0);
-      marked = canvas.toDataURL('image/png');
+      marked = app.encode(canvas, 'image/png');
     }
 
     const job = busy.start({
@@ -176,9 +177,10 @@ export function createTransformTool(spec) {
     });
     try {
       const call = window.hazelnut.transform(spec.id, {
-        image: flat.toDataURL('image/png'),
+        image: app.encode(flat, 'image/png'),
         mask: marked,
         params: { ...params },
+        eco: app.eco,
       }, (p) => job.update(p.message, p.total ? p.done / p.total : null));
       run.cancel = () => call.cancel();
 
@@ -220,7 +222,7 @@ export const createEraseTool = () => createTransformTool({
   icon: 'eraser',
   verb: 'Erase',
   mask: true,
-  hint: 'Erase — paint over something small, then Erase. Five credits.',
+  hint: 'Erase — paint over something small, then Erase.',
   note: 'Erase fills from the pixels around the mask. For something big, or something with a real place behind it, Realtouch looks the location up instead.',
   field: { key: 'hint', label: 'Hint', placeholder: 'optional — e.g. “there is a kerb behind it”' },
 });
@@ -230,7 +232,7 @@ export const createUpscaleTool = () => createTransformTool({
   name: 'Upscale',
   icon: 'upscale',
   verb: 'Upscale',
-  hint: 'Upscale — double the size, with the detail rebuilt. Eight credits.',
+  hint: 'Upscale — double the size, with the detail rebuilt.',
   note: 'The picture comes back at twice the width and height, and the document grows to match.',
   field: {
     key: 'detail', label: 'Detail', type: 'select',
@@ -243,7 +245,7 @@ export const createRestoreTool = () => createTransformTool({
   name: 'Restore',
   icon: 'restore',
   verb: 'Restore',
-  hint: 'Restore — scratches, creases, fading and damp. Eight credits.',
+  hint: 'Restore — scratches, creases, fading and damp.',
   field: { key: 'note', label: 'Note', placeholder: 'optional — e.g. “the crease runs through the roof”' },
 });
 
@@ -252,7 +254,7 @@ export const createColouriseTool = () => createTransformTool({
   name: 'Colourise',
   icon: 'palette',
   verb: 'Colourise',
-  hint: 'Colourise — colour for a black-and-white photograph. Six credits.',
+  hint: 'Colourise — colour for a black-and-white photograph.',
   note: 'This is an interpretation, not a recovery: the colour was never in the negative.',
   field: { key: 'era', label: 'Era', placeholder: 'optional — e.g. “a 1955 English seaside”' },
 });
@@ -262,7 +264,7 @@ export const createBackgroundTool = () => createTransformTool({
   name: 'Background',
   icon: 'cutout',
   verb: 'Separate',
-  hint: 'Background — cut the subject out, or put it somewhere else. Five credits.',
+  hint: 'Background — cut the subject out, or put it somewhere else.',
   field: { key: 'replacement', label: 'Replace with', placeholder: 'leave empty to cut out; or “a plain grey studio wall”' },
 });
 
@@ -271,6 +273,6 @@ export const createSkyTool = () => createTransformTool({
   name: 'Sky',
   icon: 'cloud',
   verb: 'Replace sky',
-  hint: 'Sky — a new sky, with the light underneath it changed to match. Six credits.',
+  hint: 'Sky — a new sky, with the light underneath it changed to match.',
   field: { key: 'want', label: 'Sky', placeholder: 'e.g. “a clear evening sky, low sun off to the left”' },
 });
