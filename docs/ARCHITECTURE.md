@@ -4,7 +4,10 @@
 packages/core/          the engine, shared by both apps
   pricing.js            plans and prices — Mini is half of Hazelnut, by arithmetic
   tools.js              the tool registry, the cost model, the edition gate
-  license.js            edition and the 7-day trial
+  license.js            edition and the trial that does not end
+  models.js             Hazelnut's own image models: prices, limits, who thinks
+  imagine-plan.js       prompt -> scene. Pure: no canvas, testable in Node
+  imagine-paint.js      scene -> pixels. Two renderers over one geometry
   credits.js            balances, the ledger, charge-on-success
   store.js              durable JSON state (Node)
   keystore.js           where the API key comes from (Node)
@@ -108,10 +111,46 @@ a module it is about to ship to the browser has picked up a Node import.
 Writes go through a temp file and a rename, so a crash cannot truncate a credit
 balance. A corrupt file is moved aside rather than blocking startup.
 
+## Why Imagine is split in two
+
+Everything else in `engine.js` is one method that gates, quotes, calls a model
+and charges. Imagine could not be, because its model runs on the user's canvas
+and there is no canvas in the Electron main process.
+
+So it is split along a different seam. `imagine-plan.js` turns a prompt into a
+scene and touches nothing — no canvas, no DOM — which is why the planner is
+tested in Node with no browser, including the arithmetic on a generated
+worksheet. `imagine-paint.js` takes that scene and a 2D context, and runs
+unchanged in the Electron renderer, in the browser build, and in the ad
+harness. That last one is why the Imagine film could show real output instead
+of a stand-in.
+
+The consequence is that the work happens in the renderer and only the money
+happens in the main process. Charge-on-success is preserved by keeping the same
+order across the boundary: the renderer quotes, draws, and only then asks to be
+charged. A generation that throws or is abandoned never reaches the charge.
+
+The two renderers share one geometry deliberately. Objects are written down
+once as plain parts, and the models are the two functions that draw a part —
+so Hazelnut 2.5's inability to write or draw hands falls out of *how* it draws
+rather than being applied to the result afterwards.
+
 ## The trial
 
-Seven days from the moment it is started, measured against the local clock. A
-clock that is wound back is noticed — the last seen timestamp is recorded on
-every check-in, and a jump backwards spends the trial rather than extending it.
-This is a deterrent, not a defence; a real licence server would be the answer,
+It does not end. There is no date to reach and no countdown to show; the only
+thing that runs out is the opening grant of credits, and when it does the
+twelve tools that run on the user's own machine carry on working.
+
+This used to be seven days measured against the local clock, with a check that
+noticed the clock being wound back and spent the trial rather than letting it
+be extended. That check has been **deleted**, not disabled: a trial with no end
+has nothing to steal, so the deterrent protected nothing and its false
+positives — which fell on people who travel — were pure cost.
+
+What the licence gates instead is the **partner models**: the eleven tools that
+send a picture to Gemini. That is a bill somebody has to pay, so it is what the
+money is attached to. Hazelnut's own image models run on every edition,
+including the browser build, because they run on the user's processor.
+
+Key validation is still shape-only. A real licence server would be the answer,
 and `License.activate()` is where that call belongs.

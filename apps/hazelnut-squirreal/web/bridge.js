@@ -15,7 +15,7 @@ import { Credits, CREDIT_DEFAULTS } from '../../../packages/core/credits.js';
 import { GeminiClient } from '../../../packages/core/gemini.js';
 import { VideoClient } from '../../../packages/core/video.js';
 import { VideoEngine } from '../../../packages/core/video-engine.js';
-import { VIDEO_TOOLS, VIDEO_TOOL_ORDER, videoCostOf } from '../../../packages/core/video-tools.js';
+import { VIDEO_TOOLS, VIDEO_TOOL_ORDER, videoCostOf, videoAvailability } from '../../../packages/core/video-tools.js';
 import { PLANS, SQUIRREAL_TRIAL_CREDIT_GRANT } from '../../../packages/core/pricing.js';
 
 const STATE_KEY = 'squirreal-state';
@@ -62,7 +62,12 @@ export function installWebBridge() {
     platform: navigator.platform?.toLowerCase().includes('mac') ? 'darwin'
       : navigator.platform?.toLowerCase().includes('win') ? 'win32' : 'linux',
     version: '1.0.0',
-    tools: VIDEO_TOOL_ORDER.map((id) => VIDEO_TOOLS[id]),
+    // Same shape Hazelnut's bridge sends: the lock is decided here, from the
+    // real gate, so the shared renderer never has to guess.
+    tools: VIDEO_TOOL_ORDER.map((id) => {
+      const check = videoAvailability(id, license.edition());
+      return { ...VIDEO_TOOLS[id], partner: Boolean(VIDEO_TOOLS[id].ai), locked: !check.allowed, lockedMessage: check.message || null };
+    }),
     plans: PLANS,
     trialCreditGrant: SQUIRREAL_TRIAL_CREDIT_GRANT,
     settings: store.get('settings', {}),

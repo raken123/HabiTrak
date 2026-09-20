@@ -6,15 +6,33 @@
 // before the user commits, so the confirm dialog can quote a real number
 // instead of a range.
 
-// 'web' is the browser build: the local half of the toolbox, no key, no
-// account, nothing uploaded. It is an edition rather than a separate app so
-// every gate in here keeps working unchanged.
-import { ecoCost } from './eco.js';
+import { ecoCost, ecoExempt } from './eco.js';
+import { DEFAULT_MODEL, modelAllowed, modelPrice } from './models.js';
 
-export const EDITIONS = ['free', 'trial', 'pro', 'web'];
+// 'web' is the browser build. 'free' was a third edition and has been removed
+// for good — see license.js for what replaced it.
+export const EDITIONS = ['trial', 'pro', 'web'];
 
-/** Tools flagged `ai: false` run entirely on the local canvas. Free keeps those. */
+/**
+ * Tools flagged `ai: false` run entirely on the local canvas and cost nothing.
+ * `partner: false` is a different claim: it means the tool uses a model, and
+ * that model is ours and runs here. Imagine is the only one.
+ */
 export const TOOLS = {
+  imagine: {
+    id: 'imagine',
+    name: 'Imagine',
+    shortcut: 'P',
+    icon: 'imagine',
+    ai: true,
+    // Ours, and it runs here. This is the flag that lets the trial and the
+    // browser build have it while the partner tools stay behind the licence.
+    partner: false,
+    cost: { min: 0, max: 350 },
+    group: 'create',
+    tagline: 'Describe a picture. Hazelnut draws it, on your machine.',
+    help: 'Type what you want and pick a model. Hazelnut 2.5 is soft and round and can write neither letters nor hands; Hazelnut 5 Pro can do both, and on Hazelnut it thinks the picture through before it draws. Neither uploads anything — the generator runs on your own processor, with no key and no account. What it costs depends on the model and the edition, and the button always says which.',
+  },
   draw: {
     id: 'draw',
     name: 'Draw',
@@ -182,6 +200,7 @@ export const TOOLS = {
 };
 
 export const TOOL_ORDER = [
+  'imagine',
   'draw', 'text', 'magic-text', 'magic-draw',
   'erase', 'realtouch', 'restore', 'background', 'sky',
   'levels', 'colour', 'sharpen', 'denoise', 'vignette', 'colourise', 'upscale',
@@ -190,8 +209,39 @@ export const TOOL_ORDER = [
   'aiscope', 'caption',
 ];
 
-/** The half that never calls a model — which is what the browser build ships. */
-export const LOCAL_TOOLS = TOOL_ORDER.filter((id) => !TOOLS[id].ai);
+/**
+ * Does this tool, with these parameters, send your picture to somebody else's
+ * model?
+ *
+ * Every model-backed tool does unless it says otherwise, so a new AI tool is a
+ * partner tool by default and has to opt out on purpose. Only Hazelnut's own
+ * generator has.
+ *
+ * The parameters matter, and getting that wrong is easy: AIScope is registered
+ * `ai: false` because its zoom is optical and local, but its Learn button is a
+ * partner call. Asking `TOOLS[id].ai` would let Learn run free on the trial.
+ * So the question is routed through `needsAi`, which is the one place that
+ * knows a tool can be local at one setting and not at another.
+ */
+export function isPartnerTool(toolId, params = {}) {
+  const tool = TOOLS[toolId];
+  if (!tool) return false;
+  if (tool.partner === false) return false;
+  return needsAi(toolId, params);
+}
+
+/**
+ * The tools that never leave the machine — which is what the browser build
+ * ships, and what the trial keeps forever.
+ *
+ * This is no longer the same set as "the ones that cost nothing": Imagine is
+ * in here and is charged for on the trial. Local and free stopped being the
+ * same thing when the generator arrived.
+ */
+export const LOCAL_TOOLS = TOOL_ORDER.filter((id) => !isPartnerTool(id));
+
+/** The ones that do leave. On Hazelnut, these are what the licence buys. */
+export const PARTNER_TOOLS = TOOL_ORDER.filter((id) => isPartnerTool(id));
 
 /**
  * Magic Draw costs 5–20 credits. The number depends on how much work the
@@ -224,13 +274,34 @@ export function estimateGifAnimate({ seconds = 5, fps = 8 } = {}) {
 export function costOf(toolId, params = {}) {
   const tool = TOOLS[toolId];
   if (!tool) throw new Error(`Unknown tool: ${toolId}`);
-  const full = toolId === 'magic-draw' ? estimateMagicDraw(params)
+  const full = toolId === 'imagine' ? imagineCost(params)
+    : toolId === 'magic-draw' ? estimateMagicDraw(params)
     : toolId === 'gif-animate' ? estimateGifAnimate(params)
     : toolId === 'aiscope' ? (params.learn ? tool.learnCost : 0)
     : typeof tool.cost === 'number' ? tool.cost : tool.cost.min;
   // Eco Mode buys less work, so it costs less. The discount is applied last,
-  // to whatever the tool would otherwise have charged.
-  return params.eco ? ecoCost(full, toolId) : full;
+  // to whatever the tool would otherwise have charged — except where there is
+  // no datacentre to spare, which is the whole of Eco Mode's argument.
+  return params.eco && !ecoExempt(toolId) ? ecoCost(full, toolId) : full;
+}
+
+/**
+ * Imagine is priced by model and edition, not by how hard the request is.
+ *
+ * That is a deliberate break from every other tool here. The rest are priced
+ * against work somebody else does — more pixels up, more frames back, a search
+ * pass — so the price tracks the size of the job. Imagine does its work on
+ * your processor, so the size of the job costs us nothing, and pricing it that
+ * way would be theatre. What you are paying for is which model you are allowed
+ * to run and how often, and that is exactly what this returns.
+ *
+ * Zero is a real price and means unlimited. A model that is not available on
+ * the edition also returns zero — `availability` is what refuses it, and
+ * quoting a price for something that will not run would be worse than useless.
+ */
+export function imagineCost({ model = DEFAULT_MODEL, edition = 'trial' } = {}) {
+  const price = modelPrice(model, edition);
+  return price == null ? 0 : price;
 }
 
 /** Does this tool need a model call for the given parameters? */
@@ -242,29 +313,53 @@ export function needsAi(toolId, params = {}) {
 }
 
 /**
- * Gate a tool behind the current edition. Free is the whole editor minus the
- * model: local tools stay, AI tools are visible but locked so people can see
- * what they are missing.
+ * Gate a tool behind the current edition.
+ *
+ * The line is no longer "does this need a model" — it is "whose model". A tool
+ * that runs on your machine is available on every edition, including the
+ * browser build and the trial that never ends. A tool that sends your picture
+ * to a partner is what the licence pays for.
+ *
+ * Locked tools stay visible. Somebody on the trial should be able to see what
+ * Realtouch is and decide it is worth paying for, which they cannot do if it
+ * is not on the screen.
  */
 export function availability(toolId, edition, params = {}) {
   const tool = TOOLS[toolId];
   if (!tool) return { allowed: false, reason: 'unknown-tool' };
-  if (!needsAi(toolId, params)) return { allowed: true };
-  if (edition === 'web') {
-    return {
-      allowed: false,
-      reason: 'web-half',
-      message: `${tool.name} needs the model. The browser edition is the local half of Hazelnut — ${LOCAL_TOOLS.length} of the ${TOOL_ORDER.length} tools. The desktop app has the rest.`,
-    };
-  }
-  if (edition === 'free') {
-    return {
-      allowed: false,
-      reason: 'no-ai-on-free',
-      message: `${tool.name} needs the AI. Hazelnut Free runs everything local — upgrade to bring it back.`,
-    };
-  }
   if (!EDITIONS.includes(edition)) return { allowed: false, reason: 'unlicensed' };
+  if (!needsAi(toolId, params)) return { allowed: true };
+
+  if (isPartnerTool(toolId, params)) {
+    if (edition === 'web') {
+      return {
+        allowed: false,
+        reason: 'web-half',
+        message: `${tool.name} sends the picture to a partner model, and the browser edition never sends anything anywhere. It is the local part of Hazelnut — ${LOCAL_TOOLS.length} of the ${TOOL_ORDER.length} tools, Imagine among them. The desktop app has the rest.`,
+      };
+    }
+    if (edition !== 'pro') {
+      return {
+        allowed: false,
+        reason: 'partner-needs-pro',
+        message: `${tool.name} calls a partner model, and those come with Hazelnut. The trial never expires and keeps every local tool and both of Hazelnut's own image models — what it does not include is somebody else's.`,
+      };
+    }
+    return { allowed: true };
+  }
+
+  // Hazelnut's own generator. Available everywhere; the model within it may
+  // still be gated, and the price differs by edition.
+  if (toolId === 'imagine') {
+    const model = params.model || DEFAULT_MODEL;
+    if (!modelAllowed(model, edition)) {
+      return {
+        allowed: false,
+        reason: 'model-needs-pro',
+        message: `That model does not run on this edition.`,
+      };
+    }
+  }
   return { allowed: true };
 }
 

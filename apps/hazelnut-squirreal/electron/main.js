@@ -25,7 +25,7 @@ import { GeminiClient } from '@hazelnut/core/gemini.js';
 import { VideoClient } from '@hazelnut/core/video.js';
 import { resolveApiKey, saveApiKey } from '@hazelnut/core/keystore.js';
 import { VideoEngine } from '@hazelnut/core/video-engine.js';
-import { VIDEO_TOOLS, VIDEO_TOOL_ORDER, videoCostOf } from '@hazelnut/core/video-tools.js';
+import { VIDEO_TOOLS, VIDEO_TOOL_ORDER, videoCostOf, videoAvailability } from '@hazelnut/core/video-tools.js';
 import { PLANS, SQUIRREAL_TRIAL_CREDIT_GRANT } from '@hazelnut/core/pricing.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
 
@@ -261,7 +261,12 @@ function state() {
     apiKeySource: client.keySource || null,
     platform: process.platform,
     version: app.getVersion(),
-    tools: VIDEO_TOOL_ORDER.map((id) => VIDEO_TOOLS[id]),
+    // Same shape Hazelnut's bridge sends: the lock is decided here, from the
+    // real gate, so the shared renderer never has to guess.
+    tools: VIDEO_TOOL_ORDER.map((id) => {
+      const check = videoAvailability(id, license.edition());
+      return { ...VIDEO_TOOLS[id], partner: Boolean(VIDEO_TOOLS[id].ai), locked: !check.allowed, lockedMessage: check.message || null };
+    }),
     plans: PLANS,
     trialCreditGrant: SQUIRREAL_TRIAL_CREDIT_GRANT,
     settings: store.get('settings', {}),

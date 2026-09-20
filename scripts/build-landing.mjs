@@ -41,7 +41,7 @@ function fileInfo(name) {
 
 const DOWNLOADS = [
   { os: 'src', icon: 'WEB', title: 'Hazelnut for the Web', file: 'Hazelnut-web.html',
-    meta: 'Any browser · one file · the eleven local tools, no key, nothing uploaded' },
+    meta: 'Any browser · one file · the twelve local tools including Imagine, no key, nothing uploaded' },
   { os: 'win', icon: 'WIN', title: 'Hazelnut for Windows', file: 'Hazelnut.exe',
     meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
   { os: 'win', icon: 'WIN', title: 'Hazelnut Squirreal for Windows', file: 'HazelnutSquirreal.exe',
@@ -90,12 +90,12 @@ const TOOLS = TOOL_ORDER.map((id) => [
 ]);
 
 const PLANS = [
-  { name: 'Hazelnut Free', price: 'Free', per: '', lead: false,
-    blurb: 'What is left when the model is taken away — which is most of the editor.',
-    points: ['All eleven local tools', 'Layers, history, the whole workspace', 'No expiry, no account', 'Windows, Mac — and the browser'] },
+  { name: 'Hazelnut Trial', price: 'Free', per: 'for ever', lead: false,
+    blurb: 'No deadline and no card. Every tool that runs on your own machine, including both of our image models.',
+    points: ['The twelve local tools, for ever', 'Both image models — 2.5 and 5 Pro', '700 credits, once, never topped up', 'Windows, Mac — and the browser'] },
   { name: 'Hazelnut', price: '$19.99', per: '/ month', lead: true,
-    blurb: 'The full app. Twenty-one tools, and a monthly allowance of credits.',
-    points: ['Every tool unlocked', '5,000 credits a month', 'A thousand Erases, or 250 Realtouches', 'Windows and Mac'] },
+    blurb: 'The full app. Twenty-three tools, the partner models included, and Hazelnut 2.5 unlimited.',
+    points: ['Every tool unlocked', '5,000 credits a month', 'Hazelnut 2.5 unlimited; 5 Pro at 120', 'Windows and Mac'] },
   { name: 'Hazelnut Squirreal', price: '$29.99', per: '/ month', lead: false,
     blurb: 'The same editor, pointed at moving pictures. A generation is a clip, so it costs more — and the allowance is sized for that, not shrunk.',
     points: ['3,000 credits a month', 'About 40 short clips, or 20 removals', 'Turning a clip into a GIF is free', 'Windows and Mac'] },
@@ -153,12 +153,12 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
   <div class="wrap hero__in">
     <p class="eyebrow">Windows · Mac · Android</p>
     <h1>An advanced AI<br />photo generator.</h1>
-    <p class="lede">Twenty-one tools in a workspace built like a photo editor should be. Eleven of them never touch a model, so they keep working for ever — free, and in a browser tab. And the core six, pointed at video, in <a href="#squirreal">Squirreal</a>.</p>
+    <p class="lede">Twenty-three tools in a workspace built like a photo editor should be. Twelve of them never leave your machine — including our own image generator — so they keep working for ever, free, and in a browser tab. And the core six, pointed at video, in <a href="#squirreal">Squirreal</a>.</p>
     <div class="cta" id="cta">
       <a class="btn btn--primary" href="#downloads" id="cta-primary">Download Hazelnut <small id="cta-os"></small></a>
       <a class="btn" href="#film">Watch the 3-minute film</a>
     </div>
-    <p class="trial-note"><b>Free for 7 days</b>, every tool unlocked, 1,200 credits, no card. Then it becomes Hazelnut Free rather than locking.</p>
+    <p class="trial-note"><b>Free, with no deadline.</b> 700 credits, once, no card. The twelve tools that run on your machine — and both of our own image models — never stop working.</p>
   </div>
   <div class="wrap">
     <div class="shot"><img src="${dataUri('s-editor.jpg', 'image/jpeg')}" alt="The Hazelnut editor with a photograph open, AIScope magnifying a detail at 240×." width="1800" /></div>
@@ -247,15 +247,15 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <p class="eyebrow">Three apps</p>
       <h2>The whole editor, moving pictures, or just the one thing.</h2>
       <ul>
-        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-two tools. Windows and Mac.</li>
+        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-three tools. Windows and Mac.</li>
         <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the core six tools, pointed at clips instead of stills. Windows and Mac.</li>
         <li><b>Hazelnut Mini</b> is the remover behind a single chat bar, with a strip of twelve tools above it — Enhance, Rotate, Sharpen, Denoise, Vignette and Black &amp; white run on the phone itself and cost nothing; Caption, Background, Sky, Colourise, Restore and Upscale call the model at Hazelnut's prices. Windows, Mac and <b>Android</b>.</li>
-        <li><b>Hazelnut Free</b> is what the trial becomes. The same editor, minus anything that needs a model — the eleven tools that run locally stay, for ever.</li>
-        <li><b>Hazelnut for the Web</b> is the same editor in a browser tab, limited to that same local half. No download, no account, no key.</li>
+        <li><b>Hazelnut Free is gone.</b> It was what the trial became after seven days. The trial now has no end date instead, which keeps the same promise without the cliff: the twelve tools that run on your machine — Imagine among them — never stop, and only the opening credits run out.</li>
+        <li><b>Hazelnut for the Web</b> is the same editor in a browser tab, limited to that same local set — which now includes the generator. No download, no account, no key.</li>
       </ul>
       <div class="note" style="margin-top:26px">
         <h4>You bring the key</h4>
-        <p>The AI tools call Google’s Gemini API with your own API key, entered in Settings. It is stored on your machine and is sent nowhere but Google. The eleven local tools need no key at all.</p>
+        <p>The partner tools call Google’s Gemini API with your own API key, entered in Settings. It is stored on your machine and is sent nowhere but Google. The twelve local tools need no key at all — including <b>Imagine</b>, which is our own generator and draws on your processor rather than in anybody’s datacentre.</p>
       </div>
     </div>
     <div class="mini-shot"><img src="${dataUri('s-mini.jpg', 'image/jpeg')}" alt="Hazelnut Mini: a chat bar with a photo attached and the message “remove the litter bin by the path”." width="760" /></div>
@@ -275,7 +275,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
         <h3 style="font-family:var(--display);font-size:26px;margin-bottom:14px">What changes</h3>
         <ul>
           <li><b>A clip costs more than a frame</b>, so Magic Draw is priced 40–120 by length, and Realtouch is 150 for the whole clip rather than 20 for one picture.</li>
-          <li><b>GIF Animate stops being a generation.</b> The motion already exists, so turning a clip into a looping GIF is local work and free on every edition — including Squirreal Free.</li>
+          <li><b>GIF Animate stops being a generation.</b> The motion already exists, so turning a clip into a looping GIF is local work and free on every edition.</li>
           <li><b>Realtouch removes it from every frame</b>, not just the one you painted on: it looks the place up once, then holds that answer steady as the camera moves.</li>
           <li><b>Everything else is the editor you already know</b> — layers, history, Expand, AIScope, and the same confirm-before-you-spend rule.</li>
         </ul>
@@ -309,7 +309,9 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
       <p style="max-width:680px">Everything that changed this week — fifteen new tools, the browser build, tools in Mini, Eco Mode and Magic Text — told through five people who needed one of them. Landscape, and the longest thing here.</p>
     </div>
     <video controls preload="none" poster="${dataUri('p-recap.jpg', 'image/jpeg')}" src="Hazelnut-week-recap.mp4"></video>` : ''}
-    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of any model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on. The seven shorts below are the same rule: the editor in them is real, and whatever a model would have produced — the finished picture, the clip, the reading — is a placeholder standing in for it, not a model output.</p>
+    <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of a <em>partner</em> model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on, and whatever that model would have produced is a placeholder standing in for it.</p>
+    <p style="color:var(--muted);font-size:14px;max-width:640px"><b>The Imagine short is the exception, and the only one.</b> Hazelnut 2.5 and Hazelnut 5 Pro run on the machine, so the machine doing the recording could run them: every picture in that film is genuine output, generated live during the shoot. Nothing in it stands in for anything.</p>
+    <p style="color:var(--muted);font-size:14px;max-width:640px"><b>The older films are dated.</b> Everything they show the app doing, it still does — but they were recorded when the trial lasted seven days and lapsed into an edition called Hazelnut Free, and when the toolbox was twenty-two tools with eleven of them local. Free has since been removed, the trial no longer expires, and Imagine makes twenty-three. Where one of those films quotes seven days, eleven tools or Hazelnut Free, the prices and counts on this page are the current ones.</p>
     <div class="shorts">
       ${[
         ['Hazelnut-short-sofa.mp4', 'p-short-sofa.jpg', 'Mini looks the place up'],
@@ -319,6 +321,7 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
         ['Hazelnut-short-aiscope.mp4', 'p-short-aiscope.jpg', 'AIScope: what the picture actually holds'],
         ['Hazelnut-short-eco.mp4', 'p-short-eco.jpg', 'Eco Mode: a smaller ask'],
         ['Hazelnut-short-magictext.mp4', 'p-short-magictext.jpg', 'Magic Text: the words in the picture'],
+        ['Hazelnut-short-imagine.mp4', 'p-short-imagine.jpg', 'Imagine: our own two models'],
       ]
         .filter(([file]) => fs.existsSync(path.join(DIST, file)))
         .map(([file, poster, caption]) => `<figure><video controls preload="none" poster="${dataUri(poster, 'image/jpeg')}" src="${esc(file)}"></video><figcaption>${esc(caption)}</figcaption></figure>`)

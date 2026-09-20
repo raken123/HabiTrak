@@ -244,11 +244,13 @@ function renderEco() {
 }
 
 function renderChip() {
-  const { edition, plan, credits, trialDaysLeft, ai } = app.state;
+  const { edition, plan, credits } = app.state;
   ui.chip.dataset.edition = edition;
+  // No countdown: the trial has no end. The credits are the only number that
+  // moves, so they are the only one shown.
   ui.chip.textContent = edition === 'trial'
-    ? `Trial · ${trialDaysLeft}d · ${credits}`
-    : ai ? `${plan.name} · ${credits}` : 'Trial ended';
+    ? `Trial · ${credits}`
+    : `${plan.name} · ${credits}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -307,7 +309,7 @@ async function pickTool(tool) {
 /** The three reasons a paid tool cannot run, said plainly rather than tried. */
 async function canAfford(tool) {
   if (!app.state.ai) {
-    showPlan(`Your trial has finished. ${tool.name} needs a licence — the six tools that run on this device keep working.`);
+    showPlan(`${tool.name} needs a licence — the six tools that run on this device keep working.`);
     return false;
   }
   if (!app.state.apiKeyConfigured) { showApiKeySheet(); return false; }
@@ -473,19 +475,19 @@ async function showWelcome() {
   const start = await sheet({
     title: 'Hazelnut Mini',
     body: el('div', {}, [
-      el('p', { text: `A chat bar that removes things, and twelve tools above it. Free for ${app.state.trialDays} days, no card.` }),
+      el('p', { text: `A chat bar that removes things, and twelve tools above it. Free, with no deadline and no card — it opens with ${app.state.credits || 200} credits and they are never topped up.` }),
       el('p', { text: 'Six of the tools run on this device and stay free for ever, trial or no trial. The rest cost what they cost in Hazelnut — and Mini is half the price.' }),
     ]),
     actions: (close) => [
       el('button', { class: 'btn', text: 'Later', onClick: () => close(false) }),
-      el('button', { class: 'btn btn--primary', text: `Start ${app.state.trialDays}-day trial`, onClick: () => close(true) }),
+      el('button', { class: 'btn btn--primary', text: 'Claim the credits', onClick: () => close(true) }),
     ],
   });
   if (start !== true) return;
   await bridge.startTrial();
   app.state = await bridge.getState();
   renderChip();
-  say(`Trial started — ${app.state.credits} credits, ${app.state.trialDaysLeft} days.`);
+  say(`Trial started — ${app.state.credits} credits, and no deadline.`);
   if (!app.state.apiKeyConfigured) showApiKeySheet();
 }
 

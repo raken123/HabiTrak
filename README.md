@@ -1,20 +1,60 @@
 # Hazelnut
 
-**An advanced AI photo generator for Windows and Mac.** Free for 7 days, then it
-keeps working — without the AI — as Hazelnut Free.
+**An advanced AI photo generator for Windows and Mac.** Free for ever, with no
+deadline — and with two image models of our own that run on your machine.
 
-Five products, one codebase:
+Four products, one codebase:
 
 | | What it is | Platforms | Price |
 |---|---|---|---|
-| **Hazelnut** | The full editor: twenty-two tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
+| **Hazelnut** | The full editor: twenty-three tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
 | **Hazelnut Squirreal** | The same editor, pointed at moving pictures. Sketch a frame, say how it moves, get a clip | Windows, Mac | $29.99 / month |
 | **Hazelnut Mini** | A chat bar that removes things, and twelve tools above it — six of them free | Windows, Mac, **Android** | $9.99 / month — half of Hazelnut |
-| **Hazelnut Free** | Hazelnut with **no AI**. The eleven tools that run locally, forever, at no cost | Windows, Mac | Free |
-| **Hazelnut for the Web** | The same editor in a browser tab, fixed to that local half. No download, no account, no key | Any browser | Free |
+| **Hazelnut for the Web** | The same editor in a browser tab, fixed to the local set — Imagine included. No download, no account, no key | Any browser | Free |
 
-Everyone starts on a **7-day trial** with every tool unlocked and 1,200 AI
-credits. When it ends the editor does not lock: it becomes Hazelnut Free.
+Everyone starts on a **trial that never expires**. It has no deadline and no
+card, it opens with 700 credits that are never topped up, and it keeps the
+twelve tools that run on your machine — including both of Hazelnut's own image
+models. What it does not include is the **partner models**: the eleven tools
+that send your picture to Gemini. Those are what the licence pays for.
+
+> **Hazelnut Free has been removed.** It was the edition the seven-day trial
+> lapsed into: the whole editor, minus anything that needed a model. The
+> unlimited trial keeps that promise better — the local tools never stop, and
+> now the generator is among them — so Free is gone rather than sitting
+> alongside it.
+
+### Imagine — our own image models
+
+The twenty-third tool, and the first that makes a picture rather than changing
+one. There is no diffusion model in here and no weights to download: Hazelnut
+2.5 and Hazelnut 5 Pro are synthesisers that read a prompt, decide what is in
+the picture and draw it, on your own processor, with no key and no account.
+
+| | What it is | Trial | Hazelnut |
+|---|---|---|---|
+| **Hazelnut 2.5** | Soft, round and unmistakably generated. Cannot write; cannot draw hands | 25 credits | **Unlimited** |
+| **Hazelnut 5 Pro** | Real edges, real type, five fingers — and it thinks before it draws | 350 credits | 120 credits |
+
+Prices are per picture. The two failures in 2.5 are structural rather than
+styled: everything it draws is built from soft radial gradients, so a letter
+comes out as a letter-shaped mark and a hand comes out with six or seven
+fingers fused into a mitten.
+
+**5 Pro thinks only on Hazelnut**, and that is the difference worth
+understanding. The planning pass generates content and then checks it — a
+worksheet's arithmetic is solved, and anything that does not come out whole is
+rejected and drawn again. Without it the sheet is set beautifully and nothing is
+verified: divisions by zero, roots of negative numbers, and answers that were
+never computed. That is more dangerous than 2.5's gibberish, because it looks
+*more* correct while being less correct — so any picture that asserts something
+unchecked carries a **NOT CHECKED** band drawn into the image itself, not into
+the window around it.
+
+Eco Mode does not touch Imagine and does not discount it. Eco Mode's whole
+argument is that a smaller request burns less in somebody else's datacentre;
+there is no datacentre here, so there is no saving, and charging less for it
+would be claiming one nobody made.
 
 **Eco Mode** is in all three apps. It asks the model for less — pictures sent at
 1,024px, Realtouch's location lookup skipped, half the GIF keyframes, shorter
@@ -80,17 +120,18 @@ a much smaller request, which is why it costs 4 rather than the 8 the flat
 discount would give. The model is then matching a typeface it can only see a few
 centimetres of, and the dialog says so before you spend anything.
 
-Eleven of the twenty-two never call a model. That half is what Hazelnut Free
-keeps, and what **Hazelnut for the Web** ships:
+Twelve of the twenty-three never leave your machine. That set is what the trial
+keeps for ever, and what **Hazelnut for the Web** ships:
 
 ```sh
 node scripts/stage-payload.mjs hazelnut-web dist/web
 cd dist/web && python3 -m http.server 8080     # then open http://localhost:8080
 ```
 
-The browser build is fixed to the `web` edition: the eleven local tools work,
-the eleven that need a model are locked and say so, and nothing is uploaded —
-there is no key and no account.
+The browser build is fixed to the `web` edition: the twelve local tools work —
+Imagine among them, so a browser tab with no account can generate a picture —
+the eleven that call a partner model are locked and say so, and nothing is
+uploaded. There is no key and no account.
 
 Magic Draw's price moves inside its band with how much of the canvas you painted,
 how many colours you used and how large the output is — the Submit button quotes
@@ -161,7 +202,7 @@ Get one at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 > a commit should be treated as public and revoked. `.env` is git-ignored, and
 > nothing in this repository contains a key.
 
-The eleven local tools work with no key at all.
+The twelve local tools work with no key at all, Imagine included.
 
 ### Building installers
 
@@ -209,7 +250,7 @@ the page — only the fact that one is configured. More in
 npm test
 ```
 
-106 tests over the parts that can be tested without a screen: the credit and
+128 tests over the parts that can be tested without a screen: the credit and
 trial rules, the tool gating and pricing (Eco Mode included), the engine's
 orchestration against a fake model, the image header parsing, the video pricing
 and client, the local adjustments, and the GIF encoder —

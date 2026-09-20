@@ -1,12 +1,17 @@
 # The tools
 
-Twenty-two tools. Eleven of them never touch a model, which is why they survive
-into Hazelnut Free — and why they are exactly what the browser build ships.
+Twenty-three tools. Twelve of them never leave your machine, which is why the
+trial keeps them for ever — and why they are exactly what the browser build
+ships.
+
+The split used to be "does this need a model". It is now **whose** model:
+Imagine needs one and is still in the local twelve, because the model is ours
+and runs on your processor.
 
 The six below came first and are described in full. The fifteen that followed
-are listed after them: eight local and free, seven that call the model and cost
-between three and eight credits. Magic Text came last and has a section of its
-own.
+are listed after them: eight local and free, seven that call a partner model and
+cost between three and eight credits. Magic Text and Imagine came last and have
+sections of their own.
 
 Everything below describes Hazelnut. **Hazelnut Squirreal** has the original
 six, pointed at clips: the prices change (a generation is a clip, not a frame),
@@ -112,18 +117,29 @@ versus interpolation. The card stays in the panel for the rest of the session.
 
 ## What each edition can run
 
-| Tool | Free | Trial | Full |
+| Tool | Web | Trial | Hazelnut |
 |---|:--:|:--:|:--:|
 | Draw | ✅ | ✅ | ✅ |
 | Expand | ✅ | ✅ | ✅ |
 | AIScope — zoom | ✅ | ✅ | ✅ |
-| AIScope — Learn | — | ✅ | ✅ |
-| Magic Draw | — | ✅ | ✅ |
-| Realtouch | — | ✅ | ✅ |
-| GIF Animate | — | ✅ | ✅ |
+| **Imagine — 2.5** | ✅ | ✅ 25 | ✅ unlimited |
+| **Imagine — 5 Pro** | ✅ | ✅ 350 | ✅ 120 |
+| AIScope — Learn | — | — | ✅ |
+| Magic Draw | — | — | ✅ |
+| Realtouch | — | — | ✅ |
+| GIF Animate | — | — | ✅ |
 
-Locked tools stay visible in the toolbar with a padlock, so Free is a version of
-the app rather than a nag screen.
+There is no Free column any more, because there is no Free edition; see
+`docs/PRICING.md`. The trial is what replaced it and does not expire.
+
+Note the row that is easy to get wrong: **AIScope's Learn is a partner call**
+even though AIScope is registered `ai: false`, because its zoom is optical and
+local. The gate routes that question through `needsAi` rather than reading the
+flag, which is the difference between Learn being locked on the trial and
+running free on it.
+
+Locked tools stay visible in the toolbar with a padlock, so the trial is a
+version of the app rather than a nag screen.
 
 ---
 
@@ -245,6 +261,92 @@ photograph was taken, looks the place up with Google Search grounding, and
 reasons about what is physically behind the object before it paints. Use Erase
 for wires, litter, spots and strangers in the distance; use Realtouch when what
 is behind the thing is a real place that can be looked up.
+
+---
+
+# Imagine — our own two models
+
+Describe a picture; Hazelnut draws it. The twenty-third tool, the first that
+makes a picture instead of changing one, and the only one that never touches
+the network.
+
+It is worth being precise about what this is, because "image AI" has come to
+mean one specific thing and this is not it. There is no diffusion model here
+and no weights to download. Hazelnut 2.5 and Hazelnut 5 Pro are **synthesisers**:
+they read the prompt, decide what is in the picture, and draw it with a canvas.
+`imagine-plan.js` decides, `imagine-paint.js` draws, and you can read both in an
+afternoon.
+
+What you give up is obvious and large — they can only draw things somebody
+taught them to draw, and the tool reports the words it did not understand rather
+than dropping them silently. What you get is that they are free of the two costs
+that make the rest of the toolbox expensive: somebody else's datacentre, and
+your pictures leaving your machine. No key, no account, no upload. It is the one
+tool that does not go through the app's API-key check, because it needs none.
+
+## One geometry, two renderers
+
+Every object is written down once, as plain parts: ellipses, rectangles,
+polygons, strokes, runs of text. Neither model has its own tree. **The models
+are the two functions that turn a part into pixels.**
+
+- **Hazelnut 5 Pro** draws the part. A rectangle is a rectangle.
+- **Hazelnut 2.5** approximates it with a cluster of soft radial gradients.
+
+So 2.5's weaknesses are structural rather than a filter applied afterwards.
+There is no code path in 2.5 that puts down a hard edge, which is why:
+
+- **It cannot write.** A letter drawn as a cluster of blobs is not a letter. It
+  produces letter-shaped marks with the rhythm and the line breaks of real text
+  and none of the letters — deterministically, so the same string always gives
+  the same wrong marks rather than reshuffling its gibberish on every redraw.
+- **It cannot do hands.** It puts six or seven fingers on one, and drawn this
+  way they merge into a mitten. `fingerCount` is exported so the test suite can
+  hold the app to that over hundreds of seeds, rather than somebody squinting at
+  a screenshot.
+
+Both models plan a picture identically, which is what makes a side-by-side
+comparison of them fair: same prompt, same seed, same scene, and every visible
+difference is the renderer.
+
+## The thinking pass, and why it is held back
+
+**Hazelnut 5 Pro thinks only on Hazelnut.** The planning pass generates content
+and then checks it: a worksheet's arithmetic is solved, and anything that does
+not come out whole is rejected and generated again. Every answer on the sheet is
+computed rather than guessed.
+
+Without it, the sheet is built to look right and nothing is verified. That is
+not a stub standing in for the real behaviour — it *is* the behaviour of an
+unthinking generator: immaculate typography wrapped around content nobody
+checked, including divisions by zero and square roots of negative numbers
+sitting in a primary-school worksheet.
+
+This is the most dangerous thing in the app, because it looks **more** correct
+than 2.5 while being **less** correct — nobody is fooled by 2.5's gibberish. So
+a picture that asserts something unchecked carries a `NOT CHECKED` band drawn
+**into the image**, sized to its own text, rather than into the window around
+it. The screenshot is what gets sent to somebody else, so the screenshot has to
+carry the warning.
+
+The band follows the picture, not the model: a drawing of a hillside from the
+same model on the same edition asserts nothing and gets no band. A warning
+printed on everything is a warning nobody reads.
+
+## Prices, and Eco Mode
+
+| Model | Trial | Hazelnut |
+|---|---|---|
+| Hazelnut 2.5 | 25 credits | **Unlimited** |
+| Hazelnut 5 Pro | 350 credits | 120 credits |
+
+Per picture. The trial also caps the longest edge at 1,024px against Hazelnut's
+2,048px, and the tool says so in the toast when a request is clamped.
+
+**Eco Mode does nothing here and the price does not change.** Eco Mode exists
+because a request burns electricity and water in a datacentre somebody else
+runs. Imagine has no datacentre, so there is no saving to pass on, and
+discounting it would be claiming one that nobody made.
 
 ---
 
