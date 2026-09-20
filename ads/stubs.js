@@ -282,7 +282,7 @@ export function installMiniStub() {
 
 
 const SQUIRREAL_PLANS = {
-  'squirreal-free': CORE_PLANS['squirreal-free'],
+  'squirreal-trial': CORE_PLANS['squirreal-trial'],
   'squirreal-pro': CORE_PLANS['squirreal-pro'],
   'hazelnut-pro': CORE_PLANS['hazelnut-pro'],
   'mini-pro': CORE_PLANS['mini-pro'],

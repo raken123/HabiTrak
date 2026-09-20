@@ -909,7 +909,7 @@ function showPlans() {
     title: 'Plans & credits',
     wide: true,
     body: el('div', {}, [
-      el('p', { text: `You are on ${app.server.plan.name}${app.server.edition === 'trial' ? ` — ${app.server.trialDaysLeft} days left` : ''}. Balance: ${app.server.credits.toLocaleString('en-US')} credits.` }),
+      el('p', { text: `You are on ${app.server.plan.name}${app.server.edition === 'trial' ? ' — no deadline' : ''}. Balance: ${app.server.credits.toLocaleString('en-US')} credits.` }),
       el('div', { class: 'plans' }, plans.map((plan) => el('div', { class: `plan${plan.id === current ? ' is-current' : ''}` }, [
         plan.id === current ? el('span', { class: 'plan__tag', text: 'Current' }) : null,
         el('h4', { text: plan.name }),
