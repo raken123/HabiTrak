@@ -1,28 +1,40 @@
 // Edition and trial handling.
 //
-// Three editions, one lifecycle:
+// Two editions, one step between them:
 //
-//   install ──► trial (7 days, everything unlocked)
-//                 │
-//                 ├── activate a licence ──► pro
-//                 └── 7 days elapse ───────► free  (Hazelnut, minus the AI)
+//   install ──► trial ──── activate a licence ────► pro
+//               (forever)
 //
-// Nobody is ever locked out of the app. When the trial lapses the editor keeps
-// working; the tools that need a model are what stop.
+// There used to be a third. Hazelnut Free was what you fell into when the
+// seven-day trial ran out: the whole editor, minus everything that needed a
+// model. It existed to keep the promise that nobody is ever locked out of
+// their own pictures.
+//
+// The trial now keeps that promise better, so Free is gone and is not coming
+// back. It does not expire. It carries a fixed grant of credits that is never
+// topped up, and when those are spent the local tools carry on exactly as they
+// always did — which is precisely what Free was. What the trial adds is that
+// Hazelnut's own image models run on it, because they run on your machine and
+// cost us nothing to let you have.
+//
+// What the trial does not get is the partner models. Every tool that sends a
+// picture to Gemini is Hazelnut proper, because every one of those calls is a
+// bill somebody has to pay.
+//
+// Removing the deadline also removed the only reason this file ever watched
+// the system clock. A trial measured against a local clock can be extended by
+// winding that clock back, so there used to be a check here that noticed time
+// going backwards and treated the trial as spent. A trial with no end has
+// nothing to steal, so the check — and the false positives it gave people who
+// travel — is deleted rather than disabled.
 
-import { TRIAL_DAYS, TRIAL_CREDIT_GRANT, planFor } from './pricing.js';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { TRIAL_CREDIT_GRANT, planFor } from './pricing.js';
 
 export const LICENSE_DEFAULTS = {
   installedAt: null,
   trialStartedAt: null,
   licenseKey: null,
   product: 'hazelnut',
-  // Set when the clock is caught going backwards, so a rolled-back system
-  // clock buys one extra trial and not an unlimited supply of them.
-  clockTamperedAt: null,
-  lastSeenAt: null,
 };
 
 export class License {
@@ -36,30 +48,18 @@ export class License {
     this.now = now;
     this.product = product;
     // A build that is one edition and can never be another — the browser one,
-    // which has no trial to start and no licence to activate.
+    // which has no licence to activate.
     this.fixedEdition = fixedEdition;
     if (!this.store.get('installedAt')) {
       this.store.update({ installedAt: this.now(), product });
     }
-    this.#checkClock();
   }
 
   /**
-   * A trial that is measured against the local clock can be extended by
-   * winding that clock back. We cannot stop it, but we can notice: if we ever
-   * see a timestamp earlier than the last one we recorded, the trial is
-   * treated as spent.
+   * Record that the trial has begun, so the opening credit grant can be handed
+   * out exactly once. Idempotent, and no longer load-bearing for the edition:
+   * an install that never calls this is on the trial anyway.
    */
-  #checkClock() {
-    const now = this.now();
-    const lastSeen = this.store.get('lastSeenAt');
-    if (lastSeen && now < lastSeen - 5 * 60 * 1000) {
-      this.store.update({ clockTamperedAt: lastSeen });
-    }
-    this.store.set('lastSeenAt', Math.max(now, lastSeen || 0));
-  }
-
-  /** Begin the 7-day trial. Idempotent — calling it twice does not restart it. */
   startTrial() {
     if (this.store.get('trialStartedAt')) return this.status();
     this.store.update({ trialStartedAt: this.now() });
@@ -85,41 +85,25 @@ export class License {
     return this.status();
   }
 
-  /** Milliseconds left in the trial. Zero once it has run out. */
-  trialRemainingMs() {
-    const started = this.store.get('trialStartedAt');
-    if (!started) return TRIAL_DAYS * DAY_MS;
-    if (this.store.get('clockTamperedAt')) return 0;
-    return Math.max(0, started + TRIAL_DAYS * DAY_MS - this.now());
-  }
-
-  trialDaysLeft() {
-    return Math.ceil(this.trialRemainingMs() / DAY_MS);
-  }
-
-  /** 'pro' | 'trial' | 'free' — the single value every gate is decided on. */
+  /** 'pro' | 'trial' — the single value every gate is decided on. */
   edition() {
     if (this.fixedEdition) return this.fixedEdition;
-    if (this.store.get('licenseKey')) return 'pro';
-    if (!this.store.get('trialStartedAt')) return 'free';
-    return this.trialRemainingMs() > 0 ? 'trial' : 'free';
+    return this.store.get('licenseKey') ? 'pro' : 'trial';
   }
 
   status() {
     const edition = this.edition();
     const plan = planFor(this.product, edition);
-    const remaining = this.trialRemainingMs();
     return {
       product: this.product,
       edition,
       plan,
       ai: plan.ai,
+      /** The partner models — everything that leaves the machine. Pro only. */
+      partnerModels: plan.partnerModels,
       trialStarted: Boolean(this.store.get('trialStartedAt')),
-      trialUsed: Boolean(this.store.get('trialStartedAt')) && remaining <= 0,
-      trialDaysLeft: edition === 'trial' ? this.trialDaysLeft() : 0,
-      trialEndsAt: this.store.get('trialStartedAt')
-        ? this.store.get('trialStartedAt') + TRIAL_DAYS * DAY_MS
-        : null,
+      /** Kept, and always null: there is no date on which the trial stops. */
+      trialEndsAt: null,
       trialCreditGrant: TRIAL_CREDIT_GRANT,
       licensed: Boolean(this.store.get('licenseKey')),
     };

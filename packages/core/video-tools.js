@@ -138,13 +138,10 @@ export function videoAvailability(toolId, edition, params = {}) {
   const tool = VIDEO_TOOLS[toolId];
   if (!tool) return { allowed: false, reason: 'unknown-tool' };
   if (!videoNeedsAi(toolId, params)) return { allowed: true };
-  if (edition === 'free') {
-    return {
-      allowed: false,
-      reason: 'no-ai-on-free',
-      message: `${tool.name} needs the AI. Squirreal Free runs everything local — upgrade to bring it back.`,
-    };
-  }
   if (!EDITIONS.includes(edition)) return { allowed: false, reason: 'unlicensed' };
+  // Squirreal Free is gone with the rest of Free. Unlike Hazelnut, Squirreal
+  // keeps its partner models on the trial: every one of its AI tools is a
+  // video model, so withholding them would leave a trial of the GIF encoder.
+  // What limits the trial here is the credit grant, and nothing else.
   return { allowed: true };
 }

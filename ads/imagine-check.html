@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  A contact sheet for the generator: every prompt drawn by both models, so a
+  change to imagine-plan.js or imagine-paint.js can be eyeballed in one
+  screenshot instead of one picture at a time. Not part of any film.
+-->
+<meta charset="utf-8">
+<title>Imagine — contact sheet</title>
+<style>
+  body { margin: 0; background: #14151a; color: #e8e6e1;
+         font: 13px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; padding: 18px; }
+  h1 { font-size: 15px; margin: 0 0 14px; letter-spacing: .04em; text-transform: uppercase; color: #9aa0a8; }
+  table { border-collapse: collapse; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #8d939b; padding: 0 0 8px; font-weight: 600; }
+  td { padding: 0 10px 18px 0; vertical-align: top; }
+  .prompt { width: 150px; color: #c8ccd2; font-size: 12px; padding-right: 14px; }
+  canvas { display: block; border-radius: 4px; background: #000; }
+  .cap { font-size: 10px; color: #757b83; margin-top: 4px; }
+</style>
+<h1>Imagine — contact sheet</h1>
+<table id="sheet"></table>
+<script type="module">
+  import { planImage } from '/core/imagine-plan.js';
+  import { paint } from '/core/imagine-paint.js';
+
+  const SIZE = 300;
+  const COLUMNS = [
+    { label: 'Hazelnut 2.5', model: 'hazelnut-2.5', edition: 'trial' },
+    { label: '5 Pro — trial', model: 'hazelnut-5-pro', edition: 'trial' },
+    { label: '5 Pro — Hazelnut', model: 'hazelnut-5-pro', edition: 'pro' },
+  ];
+  const PROMPTS = [
+    'a mountain lake at sunset',
+    'three red balloons over the sea',
+    'a cottage in the snow',
+    'a city skyline at night',
+    'a cat in a field of flowers',
+    'a person waving, hands showing',
+    'a maths homework sheet',
+    'a sign that says "OPEN"',
+  ];
+
+  const table = document.getElementById('sheet');
+  const head = document.createElement('tr');
+  head.innerHTML = '<th></th>' + COLUMNS.map((c) => `<th>${c.label}</th>`).join('');
+  table.append(head);
+
+  for (const prompt of PROMPTS) {
+    const row = document.createElement('tr');
+    const label = document.createElement('td');
+    label.className = 'prompt';
+    label.textContent = prompt;
+    row.append(label);
+
+    for (const col of COLUMNS) {
+      const cell = document.createElement('td');
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE; canvas.height = SIZE;
+      const plan = planImage({ prompt, model: col.model, edition: col.edition, width: SIZE, height: SIZE });
+      paint(canvas.getContext('2d'), plan);
+      const cap = document.createElement('div');
+      cap.className = 'cap';
+      cap.textContent = `${plan.thought ? 'thought' : 'not thought'}${plan.warnings.length ? ' · ' + plan.warnings[0].slice(0, 44) : ''}`;
+      cell.append(canvas, cap);
+      row.append(cell);
+    }
+    table.append(row);
+  }
+  window.__READY = true;
+</script>

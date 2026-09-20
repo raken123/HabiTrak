@@ -58,6 +58,25 @@ export const ECO_PRICES = {
 };
 
 /**
+ * Tools Eco Mode leaves alone entirely — neither discounted nor degraded.
+ *
+ * Imagine is the only one, and the reason is the argument at the top of this
+ * file. Eco Mode exists because a request burns electricity and water in a
+ * datacentre somebody else runs. Imagine has no datacentre: it draws on your
+ * processor, and the power it draws is the power your machine draws, which is
+ * yours to account for and was never ours to discount.
+ *
+ * So switching Eco Mode on does not make a generation cheaper. Charging less
+ * for it would be claiming a saving that nobody made, which is the one thing
+ * this file exists to refuse.
+ */
+export const ECO_EXEMPT = new Set(['imagine']);
+
+export function ecoExempt(toolId) {
+  return ECO_EXEMPT.has(toolId);
+}
+
+/**
  * The Eco price of a tool. Never free and never rounded down into a lie: a
  * request still costs something, so the floor is one credit.
  *
@@ -84,6 +103,7 @@ export function ecoScale(width, height) {
 
 /** What each tool actually gives up. Shown wherever Eco Mode is offered. */
 export const ECO_NOTES = {
+  imagine: 'Eco Mode does nothing here, and the price does not change. Imagine runs on your machine, so there is no datacentre to ask less of — the electricity is the electricity your own computer draws, which Eco Mode has no business taking credit for.',
   'magic-text': 'Only a crop around the words goes up, not the whole picture: the new lettering is matched to what is immediately around it, so the typeface, the wear and the reflections are approximations. On a plain sign it holds; on anything ornate it will not.',
   'magic-draw': 'The sketch goes up smaller, so the picture comes back smaller and softer.',
   realtouch: 'No location lookup: the gap is filled from the pixels around it, the way Erase does it. On a recognisable place, that is a real loss.',
