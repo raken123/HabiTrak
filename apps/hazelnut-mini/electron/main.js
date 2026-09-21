@@ -16,7 +16,8 @@ import { GeminiClient } from '@hazelnut/core/gemini.js';
 import { resolveApiKey, saveApiKey } from '@hazelnut/core/keystore.js';
 import { Engine } from '@hazelnut/core/engine.js';
 import { PLANS } from '@hazelnut/core/pricing.js';
-import { costOf } from '@hazelnut/core/tools.js';
+import { costOf, availability } from '@hazelnut/core/tools.js';
+import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '@hazelnut/core/models.js';
 import { ECO_SUMMARY } from '@hazelnut/core/eco.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
 
@@ -138,8 +139,46 @@ function state() {
     ecoSummary: ECO_SUMMARY,
     costs: pricesFor(ecoOn()),
     removalCost: costOf('realtouch', { eco: ecoOn() }),
+    models: modelsFor(license.edition()),
   };
 }
+
+// Imagine draws in the page, so only the money crosses the boundary — and in
+// the same order everything else uses: quote, draw, then charge.
+function imagineParams(model) {
+  const edition = license.edition();
+  return { params: { model: model || DEFAULT_MODEL, edition }, edition };
+}
+
+handle('imagine:quote', ({ model } = {}) => {
+  const { params, edition } = imagineParams(model);
+  const check = availability('imagine', edition, params);
+  const cost = costOf('imagine', params);
+  return {
+    model: params.model,
+    edition,
+    cost,
+    unlimited: cost === 0,
+    balance: credits.balance,
+    affordable: credits.balance >= cost,
+    allowed: check.allowed,
+    message: check.message || null,
+    maxEdge: modelMaxEdge(params.model, edition),
+    thinks: modelThinks(params.model, edition),
+  };
+});
+
+handle('imagine:charge', async ({ model } = {}) => {
+  const { params, edition } = imagineParams(model);
+  const check = availability('imagine', edition, params);
+  if (!check.allowed) {
+    const err = new Error(check.message || 'That model is not available on this edition.');
+    err.code = 'TOOL_LOCKED';
+    throw err;
+  }
+  const out = await credits.charge('imagine', params, async () => ({ drawn: true }));
+  return { charged: out.charged, balance: out.balance };
+});
 
 handle('app:state', () => state());
 handle('trial:start', () => {

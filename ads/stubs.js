@@ -22,6 +22,8 @@ import { carFrame } from './car-scene.js';
 
 
 const PLANS = {
+  'mini-trial': CORE_PLANS['mini-trial'],
+  'mini-pro': CORE_PLANS['mini-pro'],
   'hazelnut-trial': CORE_PLANS['hazelnut-trial'],
   'hazelnut-pro': CORE_PLANS['hazelnut-pro'],
   'hazelnut-web': CORE_PLANS['hazelnut-web'],
@@ -236,15 +238,42 @@ export function installMiniStub() {
   const state = {
     ...baseState('trial'),
     product: 'mini',
-    plan: PLANS['mini-pro'],
-    credits: 300,
+    plan: PLANS['mini-trial'],
+    partnerModels: PLANS['mini-trial'].partnerModels,
+    credits: PLANS['mini-trial'].credits,
+    trialCreditGrant: PLANS['mini-trial'].credits,
     eco: false,
     ecoSummary: ECO_SUMMARY,
     costs,
     removalCost: costs.realtouch,
+    models: modelsFor('trial'),
     plans: { mini: PLANS['mini-pro'], full: PLANS['hazelnut-pro'] },
   };
   window.hazelnutMini = {
+    // As in Hazelnut's stub: Imagine is the one call that does not have to be
+    // stubbed away, because the page draws the picture itself.
+    imagineQuote: async (model) => {
+      const id = model || DEFAULT_MODEL;
+      const cost = costOf('imagine', { model: id, edition: state.edition });
+      const check = availability('imagine', state.edition, { model: id });
+      return {
+        model: id,
+        edition: state.edition,
+        cost,
+        unlimited: cost === 0,
+        balance: state.credits,
+        affordable: state.credits >= cost,
+        allowed: check.allowed,
+        message: check.message || null,
+        maxEdge: modelMaxEdge(id, state.edition),
+        thinks: modelThinks(id, state.edition),
+      };
+    },
+    imagineCharge: async (model) => {
+      const cost = costOf('imagine', { model: model || DEFAULT_MODEL, edition: state.edition });
+      state.credits = Math.max(0, state.credits - cost);
+      return { charged: cost, balance: state.credits };
+    },
     kind: 'desktop',
     getState: async () => state,
     setEco: async (next) => {

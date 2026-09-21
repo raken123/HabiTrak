@@ -100,8 +100,8 @@ const PLANS = [
     blurb: 'The same editor, pointed at moving pictures. A generation is a clip, so it costs more — and the allowance is sized for that, not shrunk.',
     points: ['3,000 credits a month', 'About 40 short clips, or 20 removals', 'Turning a clip into a GIF is free', 'Windows and Mac'] },
   { name: 'Hazelnut Mini', price: '$9.99', per: '/ month', lead: false,
-    blurb: 'The remover behind one chat bar, with twelve tools above it. Exactly half the price.',
-    points: ['1,500 credits a month', 'About 75 removals, or 500 Captions', 'Six tools that run on the phone, free', 'Windows, Mac and Android'] },
+    blurb: 'The remover behind one chat bar, with thirteen tools above it — Imagine among them. Exactly half the price.',
+    points: ['1,500 credits a month', 'About 75 removals, or 500 Captions', 'Six free tools plus Imagine, on the phone', 'Windows, Mac and Android'] },
 ];
 
 // Squirreal's prices for the same six tools. A clip is not a frame, and two of
@@ -249,7 +249,7 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
       <ul>
         <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-three tools. Windows and Mac.</li>
         <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the core six tools, pointed at clips instead of stills. Windows and Mac.</li>
-        <li><b>Hazelnut Mini</b> is the remover behind a single chat bar, with a strip of twelve tools above it — Enhance, Rotate, Sharpen, Denoise, Vignette and Black &amp; white run on the phone itself and cost nothing; Caption, Background, Sky, Colourise, Restore and Upscale call the model at Hazelnut's prices. Windows, Mac and <b>Android</b>.</li>
+        <li><b>Hazelnut Mini</b> is the remover behind a single chat bar, with a strip of thirteen tools above it — Enhance, Rotate, Sharpen, Denoise, Vignette and Black &amp; white run on the phone itself and cost nothing; <b>Imagine</b> runs there too and draws a picture from a sentence without uploading anything; Caption, Background, Sky, Colourise, Restore and Upscale call a partner model at Hazelnut's prices. Windows, Mac and <b>Android</b>.</li>
         <li><b>Hazelnut Free is gone.</b> It was what the trial became after seven days. The trial now has no end date instead, which keeps the same promise without the cliff: the twelve tools that run on your machine — Imagine among them — never stop, and only the opening credits run out.</li>
         <li><b>Hazelnut for the Web</b> is the same editor in a browser tab, limited to that same local set — which now includes the generator. No download, no account, no key.</li>
       </ul>

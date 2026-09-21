@@ -120,14 +120,26 @@ test('Mini reports Mini pricing, at half of Hazelnut', () => {
   assert.equal(status.plan.monthlyUsd, 9.99);
 });
 
-test('Mini and Squirreal keep their partner models on the trial', () => {
-  // They have no local AI to fall back on, so withholding it would leave a
-  // trial of nothing. This is a deliberate exception to Hazelnut's rule.
-  for (const product of ['mini', 'squirreal']) {
-    const { license } = clockedLicense(1_700_000_000_000, product);
-    license.startTrial();
-    assert.equal(license.status().partnerModels, true, `${product} lost its trial`);
-  }
+test('Mini is on Hazelnut\'s trial exactly, now that it has a model of its own', () => {
+  // Mini used to keep its partner models on the trial, because withholding
+  // them would have left a trial of nothing to try. Imagine ended that, so the
+  // exception went with it.
+  const { license } = clockedLicense(1_700_000_000_000, 'mini');
+  license.startTrial();
+  const status = license.status();
+  assert.equal(status.partnerModels, false, 'Mini still has the old exception');
+  assert.equal(status.trialEndsAt, null);
+  assert.equal(status.plan.credits, PLANS['hazelnut-trial'].credits,
+    'Mini and Hazelnut should open with the same grant');
+});
+
+test('Squirreal keeps the exception, because nothing has changed for it', () => {
+  // Every AI tool Squirreal has is a video model somebody else runs, and it
+  // has no local generator. Withholding them would leave a trial of the GIF
+  // encoder, so the credit grant is what limits it.
+  const { license } = clockedLicense(1_700_000_000_000, 'squirreal');
+  license.startTrial();
+  assert.equal(license.status().partnerModels, true, 'Squirreal lost its trial');
 });
 
 test('the browser build is one edition and stays there', () => {

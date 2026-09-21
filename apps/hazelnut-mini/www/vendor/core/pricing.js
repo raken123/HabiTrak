@@ -87,21 +87,25 @@ export const PLANS = {
     blurb: 'Every tool, the partner models included, Hazelnut 2.5 unlimited, and a monthly credit allowance.',
   },
 
-  // Mini and Squirreal keep their partner models on the trial. Hazelnut can
-  // withhold them because it has a dozen tools and a generator that work
-  // without one; these two do not — Mini *is* the remover and Squirreal *is*
-  // the video model, so a trial without partner access would be a trial of
-  // nothing. They lose Free and the deadline like everything else.
+  // Mini used to keep its partner models on the trial, as a documented
+  // exception: it was one remover and a strip of local adjustments, so
+  // withholding them would have left a trial of nothing to try.
+  //
+  // Imagine ended that. Mini now has a model of its own that runs on the
+  // phone, so the exception has lost the thing that justified it and Mini's
+  // trial is Hazelnut's trial exactly: no deadline, the same opening grant,
+  // every tool that runs on the device — and the partner models behind the
+  // licence.
   'mini-trial': {
     id: 'mini-trial',
     product: 'mini',
     name: 'Hazelnut Mini Trial',
     monthlyUsd: 0,
     yearlyUsd: 0,
-    credits: 200,
+    credits: TRIAL_CREDIT_GRANT,
     ai: true,
-    partnerModels: true,
-    blurb: 'The remover, free forever, until the opening credits run out.',
+    partnerModels: false,
+    blurb: 'Free forever, no card, no deadline. The tools that run on the phone, and both of Hazelnut’s own image models. The remover comes with Mini itself.',
   },
   'mini-pro': {
     id: 'mini-pro',
@@ -114,6 +118,9 @@ export const PLANS = {
     partnerModels: true,
     blurb: 'One chat bar that removes things. Half the price of Hazelnut.',
   },
+  // Squirreal keeps the exception, because nothing has changed for it: every
+  // AI tool it has is a video model somebody else runs, and it has no local
+  // generator to fall back on. What limits its trial is the credit grant.
   'squirreal-trial': {
     id: 'squirreal-trial',
     product: 'squirreal',

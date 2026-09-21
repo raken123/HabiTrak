@@ -6,11 +6,27 @@
 // sentences worth typing.
 //
 // Six of them run on the phone and are free on every edition, trial or not.
-// The other six call the model at the same prices Hazelnut charges: nothing
-// here is a Mini-only price, and nothing here is dearer because it is on a
-// phone.
+// The other six call a partner model at the same prices Hazelnut charges:
+// nothing here is a Mini-only price, and nothing here is dearer because it is
+// on a phone.
+//
+// Imagine is the thirteenth and sits apart from both groups. It needs a model
+// and is charged for, and the model is ours and runs on the phone — so it is
+// the only chip here that costs credits without anything leaving the device,
+// and the only one that works with no photograph attached, because it makes
+// one.
 
 export const TOOLS = [
+  // ── ours, on the device, and charged for ────────────────────────────────
+  {
+    id: 'imagine',
+    name: 'Imagine',
+    imagine: true,
+    generates: true,
+    icon: 'M3 4.5h18v15H3z|m4.2 16.8 4.3-4.3 2.8 2.5 2.4-2.5 4.1 4.1|M16.4 6.6l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5.5-1.3Z',
+    blurb: 'Describe a picture and Hazelnut draws it, here on the phone. No key, no account, nothing uploaded.',
+  },
+
   // ── free, on the device ──────────────────────────────────────────────────
   {
     id: 'enhance',

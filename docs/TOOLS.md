@@ -400,21 +400,31 @@ the button — so a run is one tap and one sheet, never two.
 
 ---
 
-# Where Imagine is not
+# Imagine on the phone
 
-Imagine is in Hazelnut and in the browser build. It is deliberately **not** in
-Mini or Squirreal, and both omissions are decisions rather than oversights.
+Imagine is in Hazelnut, in the browser build, and in **Hazelnut Mini** — where
+it is the thirteenth chip and the only one that works with no photograph
+attached, because it makes one. The picture it draws becomes the working photo,
+so the rest of the strip can be pointed straight at it: imagine a scene, then
+Enhance it, crop it, or send it to Restore.
 
-**Mini** is one chat bar that removes things, with a strip of twelve tools above
-it. A generator is a different job with a different shape — a prompt, a model
-choice, a size — and bolting it onto that strip would change what Mini is for
-rather than adding to it. Mini's unpaid tier also keeps its partner models, so
-unlike Hazelnut it does not need a local generator to have anything to offer.
+It is the only chip in Mini that costs credits without anything leaving the
+device. That is worth stating plainly on a phone, where "an AI feature" usually
+means an upload: the planner and the painter run in the WebView, on the
+handset's own processor, with no key and no account.
+
+Adding it changed Mini's trial. Mini used to keep its partner models on the
+trial as a documented exception — it was one remover and a strip of local
+adjustments, so withholding them would have left a trial of nothing to try.
+Imagine ended that, and Mini's trial is now Hazelnut's trial exactly: no
+deadline, the same opening grant, everything that runs on the device, and the
+partner models behind the licence.
+
+## Where Imagine still is not
 
 **Squirreal** works on clips. A still-image generator in a video app is either a
 frame factory nobody asked for, or it needs the picture held steady across a
 whole clip — which is a genuinely different piece of work from this one, not a
-port of it.
-
-Say the word if either should change; the planner and the painter are already
-platform-agnostic, and Mini's vendored core carries `models.js` today.
+port of it. Squirreal therefore keeps the trial exception Mini has lost: every
+AI tool it has is a video model somebody else runs, so its credit grant is the
+only thing limiting its trial.

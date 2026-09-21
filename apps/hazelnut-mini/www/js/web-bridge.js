@@ -10,7 +10,8 @@ import { Credits, CREDIT_DEFAULTS } from '../vendor/core/credits.js';
 import { GeminiClient } from '../vendor/core/gemini.js';
 import { Engine } from '../vendor/core/engine.js';
 import { PLANS } from '../vendor/core/pricing.js';
-import { costOf } from '../vendor/core/tools.js';
+import { costOf, availability } from '../vendor/core/tools.js';
+import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '../vendor/core/models.js';
 import { ECO_SUMMARY } from '../vendor/core/eco.js';
 import { parseDataUrl } from '../vendor/core/imaging.js';
 import { LocalStore } from './localstore.js';
@@ -54,6 +55,7 @@ export function createWebBridge() {
     ecoSummary: ECO_SUMMARY,
     costs: pricesFor(eco),
     removalCost: costOf('realtouch', { eco }),
+    models: modelsFor(license.edition()),
   });
 
   if (VIA_LAUNCHER) {
@@ -153,6 +155,42 @@ export function createWebBridge() {
     openExternal(url) {
       window.open(url, '_blank', 'noopener');
       return true;
+    },
+
+
+    // Imagine. The picture is drawn by the page, so only the money comes
+    // through the bridge — and in the same order the rest of the app uses:
+    // quote, draw, then charge. A generation that is abandoned costs nothing.
+    async imagineQuote(model) {
+      const edition = license.edition();
+      const params = { model: model || DEFAULT_MODEL, edition };
+      const check = availability('imagine', edition, params);
+      const cost = costOf('imagine', params);
+      return {
+        model: params.model,
+        edition,
+        cost,
+        unlimited: cost === 0,
+        balance: credits.balance,
+        affordable: credits.balance >= cost,
+        allowed: check.allowed,
+        message: check.message || null,
+        maxEdge: modelMaxEdge(params.model, edition),
+        thinks: modelThinks(params.model, edition),
+      };
+    },
+
+    async imagineCharge(model) {
+      const edition = license.edition();
+      const params = { model: model || DEFAULT_MODEL, edition };
+      const check = availability('imagine', edition, params);
+      if (!check.allowed) {
+        const err = new Error(check.message || 'That model is not available on this edition.');
+        err.code = 'TOOL_LOCKED';
+        throw err;
+      }
+      const out = await credits.charge('imagine', params, async () => ({ drawn: true }));
+      return { charged: out.charged, balance: out.balance };
     },
 
     remove: (opts, onProgress) => job((ctx) => engine.miniRemove({ ...opts, eco, ...ctx }), onProgress),

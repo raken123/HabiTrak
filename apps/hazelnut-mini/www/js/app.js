@@ -9,9 +9,12 @@
 // call the model at exactly the prices Hazelnut charges.
 
 import { createWebBridge } from './web-bridge.js';
-import { TOOLS } from './tools.js';
+import { TOOLS, byId } from './tools.js';
 import { local } from './local-tools.js';
 import { ECO_NOTES } from '../vendor/core/eco.js';
+import { planImage } from '../vendor/core/imagine-plan.js';
+import { paint } from '../vendor/core/imagine-paint.js';
+import { IMAGE_MODELS, DEFAULT_MODEL } from '../vendor/core/models.js';
 
 const bridge = window.hazelnutMini || createWebBridge();
 
@@ -55,7 +58,9 @@ const app = {
   });
 
   if (!app.state.trialStarted) showWelcome();
-  else if (!app.state.apiKeyConfigured && app.state.ai) showApiKeySheet();
+  // Only nag about a key if there is something that needs one. Imagine does
+  // not, and on the trial it is the only model-backed tool available.
+  else if (!app.state.apiKeyConfigured && app.state.partnerModels) showApiKeySheet();
 })();
 
 // ---------------------------------------------------------------------------
@@ -117,8 +122,10 @@ function showPhoto(dataUrl, { caption, actions = [] } = {}) {
 function showEmptyState() {
   ui.chat.replaceChildren(el('div', { class: 'empty' }, [
     el('h1', { text: 'Remove anything' }),
-    el('p', { text: 'Add a photo, then say what should go — “the car behind her”, “the sign”, “that guy in the background”. Or use the tools: six of them run on this device and cost nothing.' }),
+    el('p', { text: 'Add a photo, then say what should go — “the car behind her”, “the sign”, “that guy in the background”. Six of the tools run on this device and cost nothing.' }),
+    el('p', { text: 'No photograph? Imagine draws one, here on the phone.' }),
     el('button', { class: 'btn btn--primary', text: 'Choose a photo', onClick: attachPhoto }),
+    el('button', { class: 'btn', text: 'Imagine one', onClick: () => runImagine(byId('imagine')) }),
   ]));
 }
 
@@ -237,9 +244,11 @@ async function toggleEco() {
 }
 
 function renderEco() {
-  // The six local tools cost nothing to run, so there is nothing for Eco Mode
-  // to save once the AI is gone: the switch goes with it.
-  ui.eco.hidden = !app.state.ai;
+  // Eco Mode buys less work from somebody else's datacentre. Without the
+  // partner models there is no datacentre in the picture: the local tools cost
+  // nothing to run and Imagine is exempt because it runs on this phone. So the
+  // switch is hidden rather than offering a saving it cannot make.
+  ui.eco.hidden = !app.state.partnerModels;
   ui.eco.setAttribute('aria-pressed', String(Boolean(app.state.eco)));
 }
 
@@ -261,12 +270,31 @@ const svg = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${
   paths.split('|').map((d) => `<path d="${d}"/>`).join('')}</svg>`;
 
-const priceOf = (tool) => (tool.local ? 0 : app.state.costs?.[tool.tool] ?? 0);
+const priceOf = (tool) => {
+  if (tool.local) return 0;
+  // Imagine costs what the chosen model costs on this edition, not what the
+  // tool costs — there is no single number to put on the chip, so the chip
+  // shows the model the sheet opens on.
+  if (tool.imagine) return modelFor(imagineState.model)?.price ?? 0;
+  return app.state.costs?.[tool.tool] ?? 0;
+};
+
+/** Shapes Imagine will draw. The plan clamps these to the edition's ceiling. */
+const SHAPES = [
+  { id: 'square', label: 'Square', width: 1024, height: 1024 },
+  { id: 'portrait', label: 'Portrait', width: 832, height: 1216 },
+  { id: 'landscape', label: 'Landscape', width: 1216, height: 832 },
+];
+
+const imagineState = { prompt: '', model: DEFAULT_MODEL, shape: 'square' };
+const modelFor = (id) => (app.state?.models || []).find((m) => m.id === id);
 
 function buildTools() {
   ui.tools.replaceChildren(...TOOLS.map((tool) => {
     const cost = priceOf(tool);
-    const locked = !tool.local && !app.state.ai;
+    // Imagine is never locked by edition: it is ours and it runs here. What can
+    // stop it is running out of credits, which is a different message.
+    const locked = !tool.local && !tool.imagine && !app.state.partnerModels;
     const chip = el('button', {
       class: `tool${locked ? ' tool--locked' : ''}`,
       type: 'button',
@@ -283,14 +311,22 @@ function buildTools() {
   syncTools();
 }
 
-/** The strip is dead until there is a photograph to point it at. */
+/**
+ * The strip is dead until there is a photograph to point it at — except for
+ * Imagine, which is how you get one when you have not brought your own.
+ */
 function syncTools() {
   const ready = Boolean(app.photo) && !app.busy;
-  for (const chip of ui.tools.children) chip.disabled = !ready;
+  TOOLS.forEach((tool, i) => {
+    const chip = ui.tools.children[i];
+    if (chip) chip.disabled = tool.generates ? app.busy : !ready;
+  });
 }
 
 async function pickTool(tool) {
-  if (!app.photo || app.busy) return;
+  if (app.busy) return;
+  if (tool.imagine) return runImagine(tool);
+  if (!app.photo) return;
   if (!tool.local && !(await canAfford(tool))) return;
 
   // Anything a tool needs to know is asked for once, up front, with the price
@@ -308,7 +344,7 @@ async function pickTool(tool) {
 
 /** The three reasons a paid tool cannot run, said plainly rather than tried. */
 async function canAfford(tool) {
-  if (!app.state.ai) {
+  if (!app.state.partnerModels) {
     showPlan(`${tool.name} needs a licence — the six tools that run on this device keep working.`);
     return false;
   }
@@ -362,6 +398,129 @@ function askFor(tool, params) {
       }),
     ],
   });
+}
+
+/**
+ * Imagine, on the phone.
+ *
+ * The odd one in this file: it needs no photograph, reaches no network, and
+ * does its work right here rather than through the engine. Only the charge
+ * goes through the bridge, and it goes after the picture exists — so a
+ * generation that is cancelled or that throws costs nothing.
+ */
+async function runImagine(tool) {
+  const models = app.state.models || [];
+  if (!models.length) { say('This build has no image models.', { error: true }); return; }
+  if (!modelFor(imagineState.model)) imagineState.model = models[0].id;
+
+  let runButton = null;
+  const note = el('div', { class: 'note', text: '' });
+  const buttonLabel = () => {
+    const model = modelFor(imagineState.model);
+    return model?.unlimited ? 'Draw it' : `Draw it · ${model?.price ?? 0} credits`;
+  };
+  const sync = () => {
+    const model = modelFor(imagineState.model);
+    note.textContent = model?.thinks
+      ? 'Thinks the picture through before drawing it, and checks anything it claims.'
+      : (model?.limits?.[0] || '');
+    if (runButton) runButton.textContent = buttonLabel();
+  };
+
+  const body = el('div', {}, [
+    el('div', { class: 'note', text: tool.blurb }),
+    el('label', {}, [
+      el('span', { text: 'Describe it' }),
+      el('input', {
+        type: 'text', autocomplete: 'off', placeholder: 'a cottage in the snow',
+        value: imagineState.prompt,
+        oninput: (e) => { imagineState.prompt = e.target.value; },
+      }),
+    ]),
+    el('label', {}, [
+      el('span', { text: 'Model' }),
+      el('select', { onchange: (e) => { imagineState.model = e.target.value; sync(); } },
+        models.map((m) => el('option', {
+          value: m.id,
+          selected: m.id === imagineState.model,
+          text: `${m.name} — ${m.priceLabel}`,
+        }))),
+    ]),
+    el('label', {}, [
+      el('span', { text: 'Shape' }),
+      el('select', { onchange: (e) => { imagineState.shape = e.target.value; } },
+        SHAPES.map((sh) => el('option', {
+          value: sh.id, selected: sh.id === imagineState.shape, text: sh.label,
+        }))),
+    ]),
+    note,
+  ]);
+  sync();
+
+  const go = await sheet({
+    title: 'Imagine',
+    body,
+    actions: (close) => {
+      runButton = el('button', { class: 'btn btn--primary', text: buttonLabel(), onClick: () => close(true) });
+      return [el('button', { class: 'btn', text: 'Cancel', onClick: () => close(false) }), runButton];
+    },
+  });
+  if (go !== true) return;
+
+  const prompt = imagineState.prompt.trim();
+  if (!prompt) { say('Describe the picture you want and I will draw it.'); return; }
+
+  const quote = await bridge.imagineQuote(imagineState.model);
+  if (!quote.allowed) { showPlan(quote.message || 'That model is not available on this edition.'); return; }
+  if (!quote.affordable) {
+    showPlan(`${IMAGE_MODELS[quote.model].name} costs ${quote.cost} credits and you have ${quote.balance}.`);
+    return;
+  }
+
+  setBusy(true);
+  const progress = thinking(`${IMAGE_MODELS[quote.model].name} is drawing…`);
+  try {
+    const shape = SHAPES.find((sh) => sh.id === imagineState.shape) || SHAPES[0];
+    const plan = planImage({
+      prompt,
+      model: quote.model,
+      edition: quote.edition,
+      width: shape.width,
+      height: shape.height,
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = plan.width;
+    canvas.height = plan.height;
+    paint(canvas.getContext('2d'), plan);
+    const image = canvas.toDataURL('image/png');
+
+    // Drawn. Only now is anything charged.
+    const { charged, balance } = await bridge.imagineCharge(quote.model);
+    progress.done();
+    app.state.credits = balance;
+    renderChip();
+
+    const previous = app.photo;
+    app.photo = image;
+    if (!app.original) app.original = image;
+    syncTools();
+
+    showPhoto(image, {
+      caption: `${IMAGE_MODELS[quote.model].name} · ${charged ? `${charged} credits used · ${balance} left` : 'unlimited on this edition'}`,
+      actions: photoActions(image, previous || image),
+    });
+
+    if (plan.clamped) say(`Drawn at ${plan.width}×${plan.height} — this edition caps the longest edge at ${quote.maxEdge}px.`);
+    if (plan.parsed.ignored.length) say(`I did not understand: ${plan.parsed.ignored.join(', ')}.`);
+    for (const warning of plan.warnings) say(warning, { error: true });
+    say('It is a photo now — the tools above work on it.');
+  } catch (err) {
+    progress.done();
+    reportError(err);
+  } finally {
+    setBusy(false);
+  }
 }
 
 async function runLocal(tool, params) {
@@ -475,8 +634,9 @@ async function showWelcome() {
   const start = await sheet({
     title: 'Hazelnut Mini',
     body: el('div', {}, [
-      el('p', { text: `A chat bar that removes things, and twelve tools above it. Free, with no deadline and no card — it opens with ${app.state.credits || 200} credits and they are never topped up.` }),
-      el('p', { text: 'Six of the tools run on this device and stay free for ever, trial or no trial. The rest cost what they cost in Hazelnut — and Mini is half the price.' }),
+      el('p', { text: `A chat bar that removes things, and thirteen tools above it. Free, with no deadline and no card — it opens with ${app.state.trialCreditGrant || 700} credits and they are never topped up.` }),
+      el('p', { text: 'Six of the tools run on this device and stay free for ever. Imagine runs here too — it is our own image model, so it needs no key and nothing leaves the phone — and it is charged by the picture.' }),
+      el('p', { text: 'The remover, and the tools that send your photo to a partner model, come with Mini itself.' }),
     ]),
     actions: (close) => [
       el('button', { class: 'btn', text: 'Later', onClick: () => close(false) }),

@@ -9,7 +9,7 @@
 | Hazelnut for the Web | $0 | $0 | 700, once | ✗ | Any browser |
 | Squirreal Trial | $0 | $0 | 500, once | ✓ | Windows, Mac |
 | Hazelnut Squirreal | $29.99 | $299.00 | 3,000 / month | ✓ | Windows, Mac |
-| Hazelnut Mini Trial | $0 | $0 | 200, once | ✓ | Windows, Mac, Android |
+| Hazelnut Mini Trial | $0 | $0 | 700, once | ✗ | Windows, Mac, Android |
 | Hazelnut Mini | $9.99 | $99.50 | 1,500 / month | ✓ | Windows, Mac, Android |
 
 The column that used to say "AI" now says **partner models**, because those are
@@ -18,9 +18,13 @@ run on the trial and in the browser, because they run on the user's machine and
 cost us nothing to give away. What the licence buys is the eleven tools that
 send a picture to somebody else's model, and the bill that comes with them.
 
-Mini and Squirreal are exceptions, deliberately: every AI tool either has is a
-partner model, so withholding them would leave a trial of nothing. There, the
-credit grant is the only limit.
+Squirreal is the one exception left, deliberately: every AI tool it has is a
+video model somebody else runs, so withholding them would leave a trial of the
+GIF encoder. There, the credit grant is the only limit.
+
+Mini used to be an exception for the same reason and is not any more. Imagine
+runs on the phone, so Mini's trial has something of its own to offer and is now
+Hazelnut's trial exactly — same grant, same rules.
 
 Mini's price is not a second number that can drift — `pricing.js` derives it as
 half of Hazelnut's, so changing the base changes both.

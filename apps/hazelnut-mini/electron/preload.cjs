@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('hazelnutMini', {
   saveImage: (dataUrl) => call('file:save', dataUrl),
   openExternal: (url) => call('shell:open-external', url),
 
+  imagineQuote: (model) => call('imagine:quote', { model }),
+  imagineCharge: (model) => call('imagine:charge', { model }),
+
   remove: (opts, onProgress) => job('mini:remove', opts, onProgress),
   transform: (toolId, opts, onProgress) => job('tool:transform', { toolId, ...opts }, onProgress),
   describe: (opts, onProgress) => job('tool:describe', opts, onProgress),

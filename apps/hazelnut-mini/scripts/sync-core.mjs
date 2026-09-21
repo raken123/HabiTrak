@@ -16,6 +16,7 @@ const OUT = path.join(HERE, '..', 'www', 'vendor', 'core');
 // Everything Mini's web bridge touches, directly or transitively.
 const MODULES = [
   'pricing.js', 'tools.js', 'models.js', 'license.js', 'credits.js',
+  'imagine-plan.js', 'imagine-paint.js',
   'gemini.js', 'engine.js', 'prompts.js', 'imaging.js', 'gif.js',
   // The cheap edits and the local adjustments: Mini runs the same kernels and
   // the same prompts as Hazelnut rather than a second implementation.
