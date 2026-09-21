@@ -15,7 +15,8 @@
     "dist:hazelnut": "npm run dist --workspace=hazelnut",
     "dist:squirreal": "npm run dist --workspace=hazelnut-squirreal",
     "dist:mini": "npm run dist --workspace=hazelnut-mini",
-    "check:imports": "node scripts/check-imports.mjs"
+    "check:imports": "node scripts/check-imports.mjs",
+    "dist:aab": "./scripts/build-aab.sh"
   },
   "engines": {
     "node": ">=20"

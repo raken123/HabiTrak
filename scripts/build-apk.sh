@@ -24,6 +24,11 @@ DIST="$ROOT/dist"
 APKTOOL_VERSION="${APKTOOL_VERSION:-2.9.3}"
 SIGNER_VERSION="${SIGNER_VERSION:-1.3.0}"
 
+# Kept in step with build-aab.sh on purpose: the .apk and the .aab should be
+# the same application, not two builds that drifted.
+MIN_SDK="${MIN_SDK:-21}"
+TARGET_SDK="${TARGET_SDK:-34}"
+
 mkdir -p "$TOOLS" "$DIST"
 
 fetch() {
@@ -69,8 +74,8 @@ mkdir -p "$PROJ/out"
   -I "$FRAMEWORK" \
   --manifest "$PROJ/AndroidManifest.xml" \
   -A "$PROJ/assets" \
-  --min-sdk-version 21 \
-  --target-sdk-version 28 \
+  --min-sdk-version "$MIN_SDK" \
+  --target-sdk-version "$TARGET_SDK" \
   --version-code 1 \
   --version-name "$(node -p "require('$ROOT/apps/hazelnut-mini/package.json').version")" \
   "$PROJ/out/res.zip"

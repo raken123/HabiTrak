@@ -157,7 +157,9 @@ async function submit() {
     say('Add a photo first — tap the picture button on the left.', { error: true });
     return;
   }
-  if (!app.state.ai) return showPlan('Your trial has finished. Hazelnut Mini needs a licence to keep removing things.');
+  if (!app.state.partnerModels) {
+    return showPlan('Removing sends your photo to a partner model, and that comes with Mini. The tools that run on this device — Imagine among them — keep working.');
+  }
   if (!app.state.apiKeyConfigured) return showApiKeySheet();
   if (app.state.credits < app.state.removalCost) {
     return showPlan(`A removal costs ${app.state.removalCost} credits and you have ${app.state.credits}.`);
@@ -648,7 +650,9 @@ async function showWelcome() {
   app.state = await bridge.getState();
   renderChip();
   say(`Trial started — ${app.state.credits} credits, and no deadline.`);
-  if (!app.state.apiKeyConfigured) showApiKeySheet();
+  say('Tap Imagine to draw something — it runs on this phone and needs no key.');
+  // Only ask for a key when something here actually needs one.
+  if (!app.state.apiKeyConfigured && app.state.partnerModels) showApiKeySheet();
 }
 
 function showApiKeySheet() {

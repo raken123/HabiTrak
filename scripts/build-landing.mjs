@@ -68,6 +68,8 @@ const DOWNLOADS = [
     meta: 'x86-64 · chmod +x and run' },
   { os: 'linux', icon: 'AND', title: 'Hazelnut Mini for Android', file: 'HazelnutMini.apk',
     meta: 'Android 5.0 and up · sideload — allow installs from your browser or files app' },
+  { os: 'linux', icon: 'AND', title: 'Hazelnut Mini — Play Store bundle', file: 'HazelnutMini.aab',
+    meta: 'Android App Bundle · for uploading to Google Play, not for sideloading — install the .apk above instead' },
   { os: 'src', icon: 'SRC', title: 'Source', file: 'Hazelnut-source.zip',
     meta: 'Every platform · npm install && npm start' },
 ];

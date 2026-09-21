@@ -207,6 +207,7 @@ The twelve local tools work with no key at all, Imagine included.
 ### Building installers
 
 ```bash
+npm run dist:aab        # dist/HazelnutMini.aab — the Play Store bundle
 npm run dist:hazelnut   # .exe (NSIS + portable) and .dmg
 npm run dist:squirreal  # the same for Squirreal
 npm run dist:mini       # the same for Mini
