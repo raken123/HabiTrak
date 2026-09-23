@@ -127,6 +127,18 @@ export function installWebBridge({ limited = false } = {}) {
       return { ...result, state: state() };
     },
 
+    async redeem(code) {
+      if (limited) {
+        return { ok: false, error: 'Offers are redeemed in the desktop app — this is the browser edition.', state: state() };
+      }
+      const result = license.redeem(code);
+      if (result.ok) {
+        const plan = license.status().plan;
+        credits.grant(`plan-${plan.id}-${new Date().toISOString().slice(0, 7)}`, plan.credits, `${plan.name} credits`);
+      }
+      return { ...result, state: state() };
+    },
+
     async deactivate() { return { ...license.deactivate(), state: state() }; },
 
     async saveApiKey(key) {

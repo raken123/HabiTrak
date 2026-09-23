@@ -14,6 +14,8 @@ import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '/core/model
 import { VIDEO_TOOLS, VIDEO_TOOL_ORDER as VIDEO_ORDER, videoCostOf, videoAvailability } from '/core/video-tools.js';
 import { PLANS as CORE_PLANS } from '/core/pricing.js';
 import { ECO_SUMMARY } from '/core/eco.js';
+import { offerBanner, isWellFormedAccessCode, normalizeAccessCode, activeOffer } from '/core/offers.js';
+import { isWellFormedKey } from '/core/license.js';
 
 import { demoPhoto } from './demo-image.js';
 import { streetScene } from './street-scene.js';
@@ -76,6 +78,10 @@ function baseState(edition) {
       return { ...TOOLS[id], partner: isPartnerTool(id), locked: !check.allowed, lockedMessage: check.message || null };
     }),
     models: modelsFor(asked),
+    // The offer comes from the core's own dates, so a film shot after it
+    // closes will not show a banner advertising it.
+    offer: asked === 'pro' ? null : offerBanner(CORE_PLANS['hazelnut-pro']),
+    redeemed: null,
     plans: PLANS,
     settings: {},
   };
@@ -92,6 +98,30 @@ export function installHazelnutStub() {
     activate: async () => ({ ok: true, state }),
     deactivate: async () => state,
     saveApiKey: async () => ({ configured: true }),
+
+    // The same shape check the real bridge runs, so a film cannot show a code
+    // being accepted that the app would refuse.
+    redeem: async (code) => {
+      const normalized = normalizeAccessCode(code);
+      // The same two-way check License.redeem runs: a film must not show a
+      // message the app would not give.
+      if (isWellFormedKey(normalized)) {
+        return { ok: false, error: 'That is a licence key, not an access code. Use “Enter a licence key”.', kind: 'licence-key', state };
+      }
+      if (!isWellFormedAccessCode(normalized)) {
+        return { ok: false, error: 'That does not look like an access code. They read FALL-XXXXX-XXXXX.', state };
+      }
+      const offer = activeOffer();
+      if (!offer) return { ok: false, error: 'There is no offer running.', kind: 'closed', state };
+      state.edition = 'pro';
+      state.plan = PLANS['hazelnut-pro'];
+      state.partnerModels = true;
+      state.ai = true;
+      state.credits = 5000;
+      state.offer = null;
+      state.redeemed = { id: offer.id, name: offer.name, redeemedAt: Date.now(), discountPct: offer.discountPct, price: offerBanner(CORE_PLANS['hazelnut-pro'])?.price };
+      return { ok: true, offer, state };
+    },
     quote: async (toolId, params = {}) => {
       const cost = costOf(toolId, params);
       return {

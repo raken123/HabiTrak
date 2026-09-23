@@ -21,6 +21,16 @@ const { TOOLS: CORE_TOOLS, TOOL_ORDER, LOCAL_TOOLS, costOf } = await import(
   pathToFileURL(path.join(ROOT, 'packages/core/tools.js')).href
 );
 const { ECO } = await import(pathToFileURL(path.join(ROOT, 'packages/core/eco.js')).href);
+const { PLANS: CORE_PLANS } = await import(pathToFileURL(path.join(ROOT, 'packages/core/pricing.js')).href);
+const { activeOffer, offerPrice, endsOn, daysLeft } = await import(
+  pathToFileURL(path.join(ROOT, 'packages/core/offers.js')).href
+);
+
+// The page is generated whenever the site is built, so "is there an offer on"
+// is answered at build time from the same dates the app reads. A page built
+// after the 14th has no ribbon on it and nobody has to remember to remove one.
+const OFFER = activeOffer();
+const OFFER_PRICE = OFFER ? offerPrice(CORE_PLANS['hazelnut-pro'], OFFER) : null;
 
 const dataUri = (file, mime) =>
   `data:${mime};base64,${fs.readFileSync(path.join(SITE, file)).toString('base64')}`;
@@ -95,7 +105,7 @@ const PLANS = [
   { name: 'Hazelnut Trial', price: 'Free', per: 'for ever', lead: false,
     blurb: 'No deadline and no card. Every tool that runs on your own machine, including both of our image models.',
     points: ['The twelve local tools, for ever', 'Both image models — 2.5 and 5 Pro', '700 credits, once, never topped up', 'Windows, Mac — and the browser'] },
-  { name: 'Hazelnut', price: '$19.99', per: '/ month', lead: true,
+  { name: 'Hazelnut', price: '$19.99', per: '/ month', lead: true, deal: OFFER_PRICE,
     blurb: 'The full app. Twenty-three tools, the partner models included, and Hazelnut 2.5 unlimited.',
     points: ['Every tool unlocked', '5,000 credits a month', 'Hazelnut 2.5 unlimited; 5 Pro at 120', 'Windows and Mac'] },
   { name: 'Hazelnut Squirreal', price: '$29.99', per: '/ month', lead: false,
@@ -133,6 +143,13 @@ ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
 </style>
 </head>
 <body>
+
+${OFFER ? `<aside class="ribbon">
+  <span class="ribbon__flash">${OFFER_PRICE.discountPct}% OFF</span>
+  <span><b>${esc(OFFER.name)}</b> — Hazelnut for <b>$${OFFER_PRICE.monthlyUsd.toFixed(2)}</b> a month
+    <s>$${OFFER_PRICE.wasMonthlyUsd.toFixed(2)}</s>, or $${OFFER_PRICE.yearlyUsd.toFixed(2)} a year.
+    Enter your access code in the app. ${daysLeft(OFFER) === 1 ? 'Last day' : `${daysLeft(OFFER)} days left`} — ends ${esc(endsOn(OFFER))}.</span>
+</aside>` : ''}
 
 <header class="top">
   <div class="wrap top__in">
@@ -336,14 +353,17 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
   <div class="wrap">
     <div class="head">
       <p class="eyebrow">Pricing</p>
-      <h2>Seven days free. Then it does not lock.</h2>
+      <h2>Free for ever. Then it still does not lock.</h2>
       <p>Mini is exactly half the price of Hazelnut — in the code as well as on this page, so the two can never drift apart.</p>
     </div>
     <div class="plans">
       ${PLANS.map((p) => `<div class="plan${p.lead ? ' plan--lead' : ''}">
         ${p.lead ? '<span class="tagpill">Most complete</span>' : ''}
         <h3>${esc(p.name)}</h3>
-        <div class="price">${esc(p.price)}<span> ${esc(p.per)}</span></div>
+        <div class="price">${p.deal
+          ? `<s>${esc(p.price)}</s> $${p.deal.monthlyUsd.toFixed(2)}`
+          : esc(p.price)}<span> ${esc(p.per)}</span></div>
+        ${p.deal ? `<p class="plan__deal">${p.deal.discountPct}% off until ${esc(endsOn(OFFER))} — access code required.</p>` : ''}
         <p style="color:var(--muted);font-size:15px">${esc(p.blurb)}</p>
         <ul>${p.points.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
       </div>`).join('\n      ')}

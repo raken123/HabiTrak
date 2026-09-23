@@ -69,6 +69,7 @@ async function boot() {
 
   buildToolbar();
   buildSwatches();
+  wireDeal();
   wireMenus();
   wirePanels();
   wireStage();
@@ -244,6 +245,7 @@ const MENUS = {
   help: () => [
     { label: 'Tool Guide', onClick: showGuide },
     { label: 'Plans & Credits', onClick: showPlans },
+    { label: 'Redeem an Access Code…', onClick: showRedeem },
     { label: 'Settings…', onClick: showSettings },
     '-',
     { label: app.isVideo ? 'About Squirreal' : 'About Hazelnut', onClick: showAbout },
@@ -558,6 +560,7 @@ function refreshChrome() {
   // Imagine runs there. Hiding the balance would hide the only thing that
   // moves.
   $('#credits-pill').hidden = false;
+  renderDeal();
   buildToolbar();
   $$('.tool').forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tool === app.currentToolId));
 }
@@ -901,6 +904,138 @@ function showUpgrade(tool, message) {
   });
 }
 
+/** A plan's price, struck through and replaced when an offer covers it. */
+function dealPrice(plan) {
+  const offer = app.server.offer;
+  const covered = offer && plan.id === 'hazelnut-pro';
+  if (plan.monthlyUsd === 0) return ['Free'];
+  if (!covered) return [`$${plan.monthlyUsd.toFixed(2)}`, el('small', { text: ' / month' })];
+  return [
+    el('span', { class: 'plan__was', text: `$${plan.monthlyUsd.toFixed(2)}` }),
+    `$${offer.price.monthlyUsd.toFixed(2)}`,
+    el('small', { text: ' / month' }),
+  ];
+}
+
+function dealNote(plan) {
+  const offer = app.server.offer;
+  if (!offer || plan.id !== 'hazelnut-pro') return null;
+  return el('div', {
+    class: 'plan__deal',
+    text: `${offer.price.discountPct}% off until ${offer.endsOn} — access code required.`,
+  });
+}
+
+/**
+ * The offer banner.
+ *
+ * Everything on it — the percentage, the price, the date, whether the last
+ * week has started — is computed in packages/core/offers.js and arrives on
+ * `app.server.offer`. Nothing about the deal is written here, so the strip
+ * cannot advertise a discount the app would not apply, and it disappears on
+ * the 14th without anybody remembering to take it down.
+ */
+function wireDeal() {
+  $('#deal-cta').addEventListener('click', showRedeem);
+  $('#deal-close').addEventListener('click', async () => {
+    const offer = app.server.offer;
+    $('#deal').hidden = true;
+    // Remembered, so hiding it means hidden — not hidden until the next launch.
+    if (offer) {
+      app.server.settings = await window.hazelnut.saveSettings({ dealDismissed: offer.id });
+    }
+  });
+}
+
+function renderDeal() {
+  const deal = $('#deal');
+  const offer = app.server.offer;
+  // No offer, already bought, or dismissed: nothing to say.
+  if (!offer || app.server.edition === 'pro' || app.server.settings?.dealDismissed === offer.id) {
+    deal.hidden = true;
+    return;
+  }
+
+  deal.hidden = false;
+  deal.classList.toggle('is-urgent', offer.urgent);
+  $('#deal-flash').textContent = `${offer.price.discountPct}% OFF`;
+  $('#deal-text').innerHTML =
+    `<b>${offer.name}</b> — Hazelnut for <b>$${offer.price.monthlyUsd.toFixed(2)}</b> a month `
+    + `<s>$${offer.price.wasMonthlyUsd.toFixed(2)}</s> · `
+    + `${offer.daysLeft === 1 ? 'last day' : `${offer.daysLeft} days left`}, ends ${offer.endsOn}`;
+}
+
+/**
+ * Redeeming a code.
+ *
+ * The check is a shape test, the same one `activate` runs, and the dialog says
+ * so rather than implying a code was verified against anything.
+ */
+function showRedeem() {
+  const offer = app.server.offer;
+  const redeemed = app.server.redeemed;
+
+  if (redeemed) {
+    return modal({
+      title: 'Already redeemed',
+      body: el('div', {}, [
+        el('p', { text: `${redeemed.name} was redeemed on this machine on ${new Date(redeemed.redeemedAt).toLocaleDateString()}. You are on ${app.server.plan.name}.` }),
+        el('p', { class: 'note', text: `It was ${redeemed.discountPct}% off: $${redeemed.price.monthlyUsd.toFixed(2)} a month instead of $${redeemed.price.wasMonthlyUsd.toFixed(2)}.` }),
+      ]),
+      footer: (close) => [el('button', { class: 'btn btn--primary', text: 'Close', onClick: close })],
+    });
+  }
+
+  if (!offer) {
+    return modal({
+      title: 'No offer is running',
+      body: el('p', { text: 'There is no deal on at the moment. A licence key still works — Help → Settings.' }),
+      footer: (close) => [el('button', { class: 'btn btn--primary', text: 'Close', onClick: close })],
+    });
+  }
+
+  const input = el('input', { type: 'text', placeholder: 'FALL-XXXXX-XXXXX', autocomplete: 'off', spellcheck: 'false' });
+  const error = el('p', { class: 'note note--error', text: '' });
+  error.hidden = true;
+
+  const submit = async (close) => {
+    error.hidden = true;
+    try {
+      const result = await window.hazelnut.redeem(input.value);
+      if (!result.ok) {
+        error.textContent = result.error;
+        error.hidden = false;
+        return;
+      }
+      app.server = { ...app.server, ...(await window.hazelnut.getState()) };
+      refreshChrome();
+      close();
+      toast(offer.name, `Redeemed. You are on ${app.server.plan.name} — ${app.server.credits.toLocaleString('en-US')} credits.`, { kind: 'good' });
+    } catch (err) {
+      error.textContent = err?.message || 'That code could not be redeemed.';
+      error.hidden = false;
+    }
+  };
+
+  modal({
+    title: offer.headline,
+    body: el('div', {}, [
+      el('p', { text: `${offer.blurb} Hazelnut is $${offer.price.monthlyUsd.toFixed(2)} a month instead of $${offer.price.wasMonthlyUsd.toFixed(2)}, or $${offer.price.yearlyUsd.toFixed(2)} a year.` }),
+      el('label', { class: 'field field--stack' }, [
+        el('span', { text: 'Access code' }),
+        input,
+      ]),
+      error,
+      el('p', { class: 'note', text: `The offer closes on ${offer.endsOn}. Redeem it before then and it stays yours — the date is on claiming it, not on keeping it.` }),
+      el('p', { class: 'note', text: 'The code is checked for shape on this machine. There is no redemption server yet, so a well-formed code is accepted — the same caveat that applies to licence keys.' }),
+    ]),
+    footer: (close) => [
+      el('button', { class: 'btn', text: 'Cancel', onClick: () => close() }),
+      el('button', { class: 'btn btn--primary', text: 'Redeem', onClick: () => submit(close) }),
+    ],
+  });
+}
+
 function showPlans() {
   const plans = ['hazelnut-trial', 'hazelnut-pro', 'mini-pro'].map((id) => app.server.plans[id]);
   const current = app.server.plan.id;
@@ -913,10 +1048,8 @@ function showPlans() {
       el('div', { class: 'plans' }, plans.map((plan) => el('div', { class: `plan${plan.id === current ? ' is-current' : ''}` }, [
         plan.id === current ? el('span', { class: 'plan__tag', text: 'Current' }) : null,
         el('h4', { text: plan.name }),
-        el('div', { class: 'price' }, [
-          plan.monthlyUsd === 0 ? 'Free' : `$${plan.monthlyUsd.toFixed(2)}`,
-          plan.monthlyUsd === 0 ? null : el('small', { text: ' / month' }),
-        ]),
+        el('div', { class: 'price' }, dealPrice(plan)),
+        dealNote(plan),
         el('p', { text: plan.blurb }),
         el('ul', {}, [
           el('li', { text: plan.ai ? `${plan.credits.toLocaleString('en-US')} credits a month` : 'No AI, no credits' }),

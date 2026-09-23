@@ -15,7 +15,7 @@ const OUT = path.join(HERE, '..', 'www', 'vendor', 'core');
 
 // Everything Mini's web bridge touches, directly or transitively.
 const MODULES = [
-  'pricing.js', 'tools.js', 'models.js', 'license.js', 'credits.js',
+  'pricing.js', 'tools.js', 'models.js', 'offers.js', 'license.js', 'credits.js',
   'imagine-plan.js', 'imagine-paint.js',
   'gemini.js', 'engine.js', 'prompts.js', 'imaging.js', 'gif.js',
   // The cheap edits and the local adjustments: Mini runs the same kernels and
@@ -49,4 +49,32 @@ for (const name of MODULES) {
   copied += 1;
 }
 
-console.log(`sync-core: copied ${copied} modules from ${path.relative(process.cwd(), src)} to www/vendor/core`);
+// The list above is maintained by hand, and a hand-maintained list of
+// dependencies goes stale silently: a module picks up a new import, the list
+// does not, and Mini ships a vendor directory that cannot resolve itself. That
+// has already happened twice — models.js and then offers.js. So rather than
+// trust the list, check it: every relative import in every copied file must
+// point at another file that was also copied.
+const missing = [];
+for (const name of MODULES) {
+  const body = fs.readFileSync(path.join(OUT, name), 'utf8');
+  // Every relative specifier in the file, however the clause was written.
+  // The first version of this required the import to sit on one line, which
+  // missed the multi-line `import { ... } from './offers.js'` it was added to
+  // catch — so it matches on the specifier alone.
+  const specifiers = [
+    ...body.matchAll(/from\s*['"](\.[^'"]+)['"]/g),
+    ...body.matchAll(/import\s*['"](\.[^'"]+)['"]/g),
+  ];
+  for (const match of specifiers) {
+    const target = path.basename(match[1]);
+    if (!MODULES.includes(target)) missing.push(`${name} imports ${match[1]}`);
+  }
+}
+if (missing.length) {
+  throw new Error(
+    `sync-core: the vendored copy would not resolve. Add the missing module(s) to MODULES:\n  ${missing.join('\n  ')}`,
+  );
+}
+
+console.log(`sync-core: copied ${copied} modules from ${path.relative(process.cwd(), src)} to www/vendor/core, imports closed`);

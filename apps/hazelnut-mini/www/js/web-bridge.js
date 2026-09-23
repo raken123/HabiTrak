@@ -103,6 +103,14 @@ export function createWebBridge() {
       return { ...result, state: state() };
     },
 
+    async redeem(code) {
+      const result = license.redeem(code);
+      if (result.ok) {
+        credits.grant(`mini-pro-${new Date().toISOString().slice(0, 7)}`, PLANS['mini-pro'].credits, 'Hazelnut Mini credits');
+      }
+      return { ...result, state: state() };
+    },
+
     async saveApiKey(key) {
       const trimmed = String(key || '').trim();
       try { localStorage.setItem(KEY_STORAGE, trimmed); } catch { /* private mode */ }

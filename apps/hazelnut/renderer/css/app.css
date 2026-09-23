@@ -517,3 +517,77 @@ body.is-squirreal {
   --accent: #d98a3c;
   --accent-deep: #a85f28;
 }
+
+
+/* ── the offer banner ──────────────────────────────────────────────────────
+   A strip under the menu bar, and only there while an offer is actually
+   running — `renderDeal` decides that from the core's own dates rather than
+   from anything written here. */
+
+.deal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 34px;
+  padding: 0 10px 0 12px;
+  background: linear-gradient(90deg, var(--accent-deep), #8a4a22 60%, #6d3a1b);
+  border-bottom: 1px solid #5a3218;
+  color: #fff3e6;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.deal__flash {
+  font-weight: 700;
+  letter-spacing: .06em;
+  background: #fff3e6;
+  color: #7a3f18;
+  padding: 2px 8px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.deal__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.deal__text b { color: #fff; font-weight: 600; }
+.deal__text s { opacity: .7; text-decoration-thickness: 1px; }
+
+.deal__cta {
+  flex: none;
+  font: inherit;
+  font-weight: 600;
+  color: #7a3f18;
+  background: #fff3e6;
+  border: 0;
+  border-radius: 3px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.deal__cta:hover { background: #fff; }
+
+.deal__close {
+  flex: none;
+  font-size: 17px;
+  line-height: 1;
+  color: #fff3e6;
+  background: none;
+  border: 0;
+  padding: 2px 6px;
+  cursor: pointer;
+  opacity: .7;
+}
+.deal__close:hover { opacity: 1; }
+
+/* The last week, and only then. */
+.deal.is-urgent .deal__flash { background: #fff; color: #9a2b2b; }
+
+/* The deal price in the Plans dialog. */
+.plan__was { color: var(--text-dim); text-decoration: line-through; font-size: 13px; margin-right: 6px; }
+.plan__deal { color: var(--accent); font-size: 12px; margin-top: 4px; }
+
+/* A stacked label inside a dialog — the options-bar `.field` is a row. */
+.field--stack { display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: 14px 0 10px; white-space: normal; }
+.field--stack > span { color: var(--text-dim); }
+.field--stack input[type="text"] { font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+
+.note--error { color: var(--danger); }

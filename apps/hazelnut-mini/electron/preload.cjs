@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('hazelnutMini', {
   setEco: (next) => call('app:eco', next),
   startTrial: () => call('trial:start'),
   activate: (key) => call('license:activate', key),
+  redeem: (code) => call('license:redeem', code),
   saveApiKey: (key) => call('apikey:save', key),
   openImage: () => call('file:open'),
   saveImage: (dataUrl) => call('file:save', dataUrl),

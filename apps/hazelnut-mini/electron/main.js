@@ -188,11 +188,19 @@ handle('trial:start', () => {
 });
 handle('license:activate', (key) => {
   const result = license.activate(key);
-  if (result.ok) {
-    credits.grant(`mini-pro-${new Date().toISOString().slice(0, 7)}`, PLANS['mini-pro'].credits, 'Hazelnut Mini credits');
-  }
+  if (result.ok) grantMiniCredits();
   return { ...result, state: state() };
 });
+
+handle('license:redeem', (code) => {
+  const result = license.redeem(code);
+  if (result.ok) grantMiniCredits();
+  return { ...result, state: state() };
+});
+
+function grantMiniCredits() {
+  credits.grant(`mini-pro-${new Date().toISOString().slice(0, 7)}`, PLANS['mini-pro'].credits, 'Hazelnut Mini credits');
+}
 handle('apikey:save', (key) => {
   const file = saveApiKey(key, { appName: APP_NAME });
   client.apiKey = String(key || '').trim() || null;

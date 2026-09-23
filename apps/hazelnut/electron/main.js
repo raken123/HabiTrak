@@ -341,12 +341,22 @@ handle('trial:start', () => {
 
 handle('license:activate', (key) => {
   const result = license.activate(key);
-  if (result.ok) {
-    const plan = license.status().plan;
-    credits.grant(`plan-${plan.id}-${new Date().toISOString().slice(0, 7)}`, plan.credits, `${plan.name} credits`);
-  }
+  if (result.ok) grantPlanCredits();
   return { ...result, state: state() };
 });
+
+// Redeeming an offer buys the same plan a licence key does, so it grants the
+// same credits by the same once-only key.
+handle('license:redeem', (code) => {
+  const result = license.redeem(code);
+  if (result.ok) grantPlanCredits();
+  return { ...result, state: state() };
+});
+
+function grantPlanCredits() {
+  const plan = license.status().plan;
+  credits.grant(`plan-${plan.id}-${new Date().toISOString().slice(0, 7)}`, plan.credits, `${plan.name} credits`);
+}
 
 handle('license:deactivate', () => ({ ...license.deactivate(), state: state() }));
 

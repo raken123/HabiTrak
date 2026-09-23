@@ -212,3 +212,38 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
 .shorts figure { margin: 0; display: grid; gap: 10px; }
 .shorts video { width: 100%; aspect-ratio: 9 / 16; border-radius: 12px; background: #000; display: block; }
 .shorts figcaption { color: var(--muted); font-size: 14px; text-align: center; }
+
+/* ── the offer ribbon ──────────────────────────────────────────────────────
+   Emitted only while a deal is actually running: build-landing.mjs asks
+   packages/core/offers.js, so a page built after the deadline has no ribbon
+   and nobody has to remember to take one down. */
+
+.ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 11px 20px;
+  background: linear-gradient(90deg, #b4642f, #8a4a22 55%, #6d3a1b);
+  color: #fff3e6;
+  font-size: 15px;
+  text-align: center;
+}
+.ribbon__flash {
+  font-weight: 700;
+  letter-spacing: .05em;
+  background: #fff3e6;
+  color: #7a3f18;
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.ribbon b { color: #fff; }
+.ribbon s { opacity: .72; }
+
+.plan__deal {
+  color: var(--accent, #e0894a);
+  font-size: 14px;
+  margin: -6px 0 10px;
+}
+.plan .price s { color: var(--muted, #9b8d80); font-size: .6em; margin-right: 8px; }

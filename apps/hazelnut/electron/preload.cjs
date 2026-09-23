@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('hazelnut', {
 
   startTrial: () => call('trial:start'),
   activate: (key) => call('license:activate', key),
+  redeem: (code) => call('license:redeem', code),
   deactivate: () => call('license:deactivate'),
   saveApiKey: (key) => call('apikey:save', key),
 

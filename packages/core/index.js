@@ -3,6 +3,7 @@
 export * from './pricing.js';
 export * from './tools.js';
 export * from './license.js';
+export * from './offers.js';
 export * from './credits.js';
 export * from './gemini.js';
 export * from './keystore.js';

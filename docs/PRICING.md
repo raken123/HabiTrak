@@ -84,6 +84,55 @@ localStorage and go when the site data goes, which makes them a soft limit
 rather than a real one — accepted rather than worked around, because the only
 thing they meter is a generator running on the visitor's own processor.
 
+## Offers
+
+An offer is a price and a deadline, and both are easy to get quietly wrong — a
+discount typed into a banner drifts from the one the app applies, and a
+deadline written as prose is still on the page in March. So an offer is
+declared once, in `packages/core/offers.js`, and the app's banner, the redeem
+dialog, the plan cards and the download page all read from it. None of them
+holds a copy of the percentage, the price or the date.
+
+### The fall deal
+
+**98% off Hazelnut**, closing **13 November 2026** (end of day, UTC). Hazelnut
+is $0.40 a month instead of $19.99, or $3.98 a year instead of $199 — both
+figures computed from the plan's own price and the offer's own percentage, so
+a change to either moves every number on every surface at once.
+
+It covers `hazelnut-pro` and nothing else. Mini and Squirreal are not in it,
+which the redemption path enforces rather than merely displays: a well-formed
+Hazelnut voucher typed into Mini is refused, because every other check —
+shape, deadline, not-already-redeemed — would otherwise pass it.
+
+### The deadline is on claiming, not on keeping
+
+Redeem the deal and it is yours. When the offer closes it stops being
+redeemable; it does not reach back and take the app away. A deadline that did
+that would make this a rental, and it is not sold as one. In the code: the
+date is checked in `License.redeem` and nowhere else, and `edition()` returns
+`pro` for a redeemed offer without consulting the clock.
+
+The banner does disappear on the 14th, everywhere, without anybody
+remembering to remove it — the app asks `activeOffer()` on each render, and the
+download page asks it at build time.
+
+### Access codes
+
+`FALL-XXXXX-XXXXX`, in the same unambiguous alphabet the licence keys use — no
+I, O or U, so nobody mistypes 1, 0 or V.
+
+An access code is not a licence key, and the two validators will not accept
+each other's input; a test holds them to that in both directions. Putting a
+voucher in the licence box gets "that is an offer access code, not a licence
+key", not "malformed", and vice versa.
+
+**The check is a shape test.** There is no redemption server here, so a
+well-formed code is accepted, exactly as `License.activate` accepts any
+well-formed key — see `docs/ARCHITECTURE.md`. A real redemption burns the code
+so it cannot be used twice, and `License.redeem` is where that call belongs.
+The dialog says so on screen rather than implying the code was verified.
+
 ## Credits
 
 | Tool | Cost |
