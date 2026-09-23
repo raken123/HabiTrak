@@ -994,6 +994,31 @@ function showRedeem() {
     });
   }
 
+  // The browser edition can show the offer but cannot take it: it is fixed to
+  // the `web` edition, so redeeming would change nothing. Better to say that
+  // before somebody types a code than after.
+  if (app.server.edition === 'web') {
+    return modal({
+      title: offer.headline,
+      body: el('div', {}, [
+        el('p', { text: `${offer.blurb} Hazelnut is $${offer.price.monthlyUsd.toFixed(2)} a month instead of $${offer.price.wasMonthlyUsd.toFixed(2)}, or $${offer.price.yearlyUsd.toFixed(2)} a year.` }),
+        el('p', { class: 'note', text: 'Codes are redeemed in the desktop app. This is the browser edition — it has no licence and no account, so there is nothing here for a code to unlock.' }),
+        el('p', { class: 'note', text: `The offer closes on ${offer.endsOn}.` }),
+      ]),
+      footer: (close) => [
+        el('button', { class: 'btn', text: 'Close', onClick: () => close() }),
+        el('button', {
+          class: 'btn btn--primary',
+          text: 'Get the desktop app',
+          onClick: () => {
+            close();
+            window.hazelnut.openExternal(new URL('../Hazelnut-downloads.html', location.href).href);
+          },
+        }),
+      ],
+    });
+  }
+
   const input = el('input', { type: 'text', placeholder: 'FALL-XXXXX-XXXXX', autocomplete: 'off', spellcheck: 'false' });
   const error = el('p', { class: 'note note--error', text: '' });
   error.hidden = true;
