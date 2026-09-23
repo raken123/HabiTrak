@@ -108,17 +108,40 @@ const entries = [...html.matchAll(/<script type="module" src="([^"]+)"><\/script
 if (!entries.length) throw new Error('no module scripts in index.html');
 for (const entry of entries) read(entry);
 
-const bundle = order().map((rel) => {
+// The same for images the code asks for by name. They are string literals in
+// the bundle — `HAZEL` in main.js is a plain map for exactly this reason —
+// so they can be swapped for the bytes before the bundle is written out.
+const inlineAsset = (href) => {
+  const file = path.join(SRC, href);
+  if (!fs.existsSync(file)) throw new Error(`the bundle points at ${href}, which is not in the payload`);
+  const type = href.endsWith('.webp') ? 'image/webp'
+    : href.endsWith('.png') ? 'image/png'
+    : href.endsWith('.svg') ? 'image/svg+xml'
+    : 'application/octet-stream';
+  return `data:${type};base64,${fs.readFileSync(file).toString('base64')}`;
+};
+
+const bundleRaw = order().map((rel) => {
   const mod = modules.get(rel);
   return `__m[${JSON.stringify(rel)}] = (function () {\n${mod.source}\n`
     + `return { ${mod.exports.join(', ')} };\n})();`;
 }).join('\n\n');
+
+// Swap the asset paths the code carries for the assets themselves.
+const bundle = bundleRaw.replace(/(['"])((?:img|assets)\/[^'"]+)\1/g,
+  (line, quote, href) => `${quote}${inlineAsset(href)}${quote}`);
 
 // Styles go inline too, so the file needs nothing beside it.
 html = html.replace(/<link rel="stylesheet" href="([^"]+)"\s*\/?>/g, (line, href) => {
   const css = fs.readFileSync(path.join(SRC, href.replace(/^\.?\//, '')), 'utf8');
   return `<style>\n${css}\n</style>`;
 });
+
+
+// Images next. A single file has nothing beside it, so an <img src="img/...">
+// would resolve to a file that is not there — the mascot would be a broken
+// icon in the one build where there is no way to fix it afterwards.
+html = html.replace(/src="((?:img|assets)\/[^"]+)"/g, (line, href) => `src="${inlineAsset(href)}"`);
 
 // Everything is inline now, and the page has no business on the network: the
 // policy says so rather than leaving the door open.

@@ -1,0 +1,61 @@
+# Hazel the Squirrel
+
+The mascot. She is the one holding the acorn.
+
+She turns up in three places in the app — over an empty canvas, in the welcome
+dialog, and beside the explanation when a tool is behind the licence — and on
+the download page, where she has a section of her own.
+
+## Where she comes from
+
+`site/mascot/hazel-sheet.webp` is the master: one character sheet with two
+dozen poses on it, supplied by the project owner. It is the only copy of the
+artwork in the repository, and everything else is cut from it by
+`npm run mascot`.
+
+## How the poses are cut
+
+The poses on the sheet touch — a tail here overlaps an ear there — so they
+cannot be found simply by looking for islands of opaque pixels. `POSES` in
+`scripts/build-mascot.mjs` names the eight worth having and boxes each one
+roughly, by eye, once.
+
+What is *not* done by eye is the edge. Inside each rough box the script labels
+the islands, takes the biggest to be Hazel, takes anything close enough to her
+to belong to her — the question mark over her head, the sparkles, the little
+sign — and tightens the box onto exactly that. So a box only has to be
+approximately right, and the sprite that comes out is trimmed to the drawing.
+
+One rule does the rest of the work: **anything but the main island that runs
+into the side of the box is somebody else's arm**. A neighbouring pose is
+always severed by the box edge, while Hazel's own props sit inside it. Without
+that rule half the sprites came out with a slice of the next squirrel in them.
+
+## The three ways she travels
+
+She is carried differently by each surface, and the sizes follow from that:
+
+| Where | Form | Why |
+|---|---|---|
+| `site/mascot/web/` | WebP, 440px | The download page inlines them at build time |
+| `apps/hazelnut/renderer/img/` | WebP, 280px | Served to the app over the `hazelnut://` scheme |
+| `apps/hazelnut-mini/www/js/hazel.js` | data URI, 200px | Generated; Mini's Android build ships two files and no image directory |
+
+The masters are PNG and full size. They are not what anybody is shown: a
+megabyte of squirrel on a download page is a worse download page.
+
+Two size traps worth knowing about, both of which cost bytes before they were
+noticed:
+
+- The single-file browser build inlines every asset path it can find, so an
+  unused entry in `HAZEL` in `main.js` is a hundred kilobytes nobody sees. That
+  map lists only the poses the app actually draws.
+- `MINI_POSES` in the mascot script is the same idea for the APK. Every pose in
+  it is bytes in the bundle whether it is drawn or not.
+
+## She is decoration
+
+Everywhere she appears she carries alt text describing the drawing — "Hazel the
+Squirrel, asleep with her tail curled over her" — and **nothing is ever said
+only by the picture**. Turn images off and every dialog, empty state and
+section still reads. She is there to be liked, not to carry meaning.

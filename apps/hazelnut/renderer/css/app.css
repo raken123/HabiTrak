@@ -591,3 +591,15 @@ body.is-squirreal {
 .field--stack input[type="text"] { font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 
 .note--error { color: var(--danger); }
+
+
+/* ── Hazel ─────────────────────────────────────────────────────────────────
+   The mascot. She is decoration, so every one of these carries alt text that
+   says what she is doing and nothing that matters is said only by her. */
+
+.hazel { display: block; height: auto; user-select: none; -webkit-user-drag: none; }
+.hazel--empty { width: 150px; margin-bottom: 2px; opacity: .92; }
+.modal-hazel { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; }
+.hazel--side { width: 118px; margin-top: 2px; }
+@media (max-width: 560px) { .modal-hazel { grid-template-columns: 1fr; } .hazel--side { display: none; } }
+.hazel--about { width: 132px; margin: 0 auto 10px; }

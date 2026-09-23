@@ -247,3 +247,22 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; j
   margin: -6px 0 10px;
 }
 .plan .price s { color: var(--muted, #9b8d80); font-size: .6em; margin-right: 8px; }
+
+/* ── Hazel ─────────────────────────────────────────────────────────────────
+   The mascot. Decoration throughout: every one of these has alt text that
+   describes the drawing, and nothing on this page is said only by her. */
+
+.brand__hazel { width: 30px; height: 30px; object-fit: contain; object-position: bottom; }
+
+.hazel-strip { display: flex; align-items: center; gap: 46px; flex-wrap: wrap; }
+.hazel-strip__portrait { width: 260px; height: auto; flex: none; }
+.hazel-strip h2 { margin: 6px 0 14px; }
+.hazel-strip p { max-width: 54ch; color: var(--muted, #9b8d80); }
+.hazel-strip__poses { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 26px; }
+.hazel-strip__poses img { width: 96px; height: auto; }
+
+@media (max-width: 700px) {
+  .hazel-strip { gap: 24px; justify-content: center; text-align: center; }
+  .hazel-strip__portrait { width: 190px; }
+  .hazel-strip__poses { justify-content: center; }
+}

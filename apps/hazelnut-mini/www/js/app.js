@@ -10,6 +10,7 @@
 
 import { createWebBridge } from './web-bridge.js';
 import { TOOLS, byId } from './tools.js';
+import { HAZEL } from './hazel.js';
 import { local } from './local-tools.js';
 import { ECO_NOTES } from '../vendor/core/eco.js';
 import { planImage } from '../vendor/core/imagine-plan.js';
@@ -121,6 +122,9 @@ function showPhoto(dataUrl, { caption, actions = [] } = {}) {
 
 function showEmptyState() {
   ui.chat.replaceChildren(el('div', { class: 'empty' }, [
+    // Hazel. Decoration — she is described for anyone who cannot see her, and
+    // nothing here is said only by the picture.
+    el('img', { class: 'hazel', src: HAZEL['hazel-camera'], alt: 'Hazel the Squirrel, holding a camera' }),
     el('h1', { text: 'Remove anything' }),
     el('p', { text: 'Add a photo, then say what should go — “the car behind her”, “the sign”, “that guy in the background”. Six of the tools run on this device and cost nothing.' }),
     el('p', { text: 'No photograph? Imagine draws one, here on the phone.' }),

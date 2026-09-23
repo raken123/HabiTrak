@@ -33,7 +33,7 @@ const ROOTS = {
 
 const TYPES = {
   '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webp': 'image/webp',
   '.json': 'application/json', '.icns': 'application/octet-stream',
   '.webm': 'video/webm', '.mp4': 'video/mp4',
 };

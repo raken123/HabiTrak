@@ -16,7 +16,8 @@
     "dist:squirreal": "npm run dist --workspace=hazelnut-squirreal",
     "dist:mini": "npm run dist --workspace=hazelnut-mini",
     "check:imports": "node scripts/check-imports.mjs",
-    "dist:aab": "./scripts/build-aab.sh"
+    "dist:aab": "./scripts/build-aab.sh",
+    "mascot": "node scripts/build-mascot.mjs"
   },
   "engines": {
     "node": ">=20"

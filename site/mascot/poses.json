@@ -1,0 +1,82 @@
+[
+  {
+    "name": "hazel",
+    "file": "hazel.png",
+    "about": "holding an acorn — the portrait",
+    "x": 44,
+    "y": 97,
+    "w": 426,
+    "h": 644,
+    "parts": 1
+  },
+  {
+    "name": "hazel-cheer",
+    "file": "hazel-cheer.png",
+    "about": "both arms up",
+    "x": 879,
+    "y": 27,
+    "w": 205,
+    "h": 244,
+    "parts": 3
+  },
+  {
+    "name": "hazel-think",
+    "file": "hazel-think.png",
+    "about": "a question mark over her head",
+    "x": 496,
+    "y": 289,
+    "w": 168,
+    "h": 226,
+    "parts": 2
+  },
+  {
+    "name": "hazel-sleep",
+    "file": "hazel-sleep.png",
+    "about": "asleep, with the z’s",
+    "x": 466,
+    "y": 577,
+    "w": 205,
+    "h": 182,
+    "parts": 3
+  },
+  {
+    "name": "hazel-idea",
+    "file": "hazel-idea.png",
+    "about": "a lightbulb and a raised finger",
+    "x": 1114,
+    "y": 551,
+    "w": 178,
+    "h": 205,
+    "parts": 2
+  },
+  {
+    "name": "hazel-oops",
+    "file": "hazel-oops.png",
+    "about": "holding a sign reading Oops!",
+    "x": 1350,
+    "y": 556,
+    "w": 175,
+    "h": 201,
+    "parts": 1
+  },
+  {
+    "name": "hazel-camera",
+    "file": "hazel-camera.png",
+    "about": "behind a camera",
+    "x": 1074,
+    "y": 772,
+    "w": 171,
+    "h": 198,
+    "parts": 3
+  },
+  {
+    "name": "hazel-laptop",
+    "file": "hazel-laptop.png",
+    "about": "at a laptop",
+    "x": 578,
+    "y": 779,
+    "w": 240,
+    "h": 188,
+    "parts": 1
+  }
+]

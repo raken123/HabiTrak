@@ -855,7 +855,7 @@ async function showWelcome() {
   const start = await modal({
     title: `Welcome to ${productName()}`,
     wide: true,
-    body: el('div', {}, [
+    body: withHazel('cheer', 'Hazel the Squirrel, both arms in the air', [
       el('p', { text: `The trial has no deadline. It opens with ${app.server.trialCreditGrant.toLocaleString('en-US')} credits, which are never topped up, and it never expires. No card, no account.` }),
       el('p', { text: `It includes the ${localCount()} tools that run on your machine — both of Hazelnut's own image models among them. The tools that send your picture to a partner model come with ${productName()} itself.` }),
       toolGuide(app.server.tools),
@@ -888,7 +888,7 @@ function showGuide() {
 function showUpgrade(tool, message) {
   modal({
     title: tool ? `${tool.name} needs a partner model` : 'This tool needs a partner model',
-    body: el('div', {}, [
+    body: withHazel('think', 'Hazel the Squirrel, with a question mark over her head', [
       el('p', { text: message || `${tool ? tool.name : 'This tool'} sends your picture to a model we do not run, and that call is what ${productName()} pays for.` }),
       el('div', {
         class: 'note',
@@ -902,6 +902,43 @@ function showUpgrade(tool, message) {
       el('button', { class: 'btn btn--primary', onClick: () => { close(); showPlans(); }, text: 'See plans' }),
     ],
   });
+}
+
+/**
+ * Hazel, the mascot.
+ *
+ * She is decoration and is marked up as such: real alt text describing the
+ * drawing, and never the only thing carrying a piece of information. Squirreal
+ * borrows her too — it is the same app with a playhead, and she is the same
+ * squirrel.
+ */
+// Only the poses the app actually draws. The single-file browser build
+// inlines every path it finds in here, so an unused entry is a hundred
+// kilobytes of squirrel nobody sees. The rest of the set is in
+// site/mascot/ and in the app's own img/ directory when one is wanted.
+const HAZEL = {
+  portrait: 'img/hazel.webp',
+  cheer: 'img/hazel-cheer.webp',
+  sleep: 'img/hazel-sleep.webp',
+  think: 'img/hazel-think.webp',
+};
+
+function hazel(pose, alt, variant = 'modal') {
+  return el('img', { class: `hazel hazel--${variant}`, src: HAZEL[pose], alt });
+}
+
+/**
+ * A dialog body with Hazel beside it.
+ *
+ * She sits in her own column rather than floating: a float flows underneath
+ * the bordered notes these dialogs use, and she ended up standing on top of
+ * the text.
+ */
+function withHazel(pose, alt, children) {
+  return el('div', { class: 'modal-hazel' }, [
+    el('div', {}, children),
+    hazel(pose, alt, 'side'),
+  ]);
 }
 
 /** A plan's price, struck through and replaced when an offer covers it. */
@@ -1212,6 +1249,7 @@ function showAbout() {
   modal({
     title: `About ${productName()}`,
     body: el('div', {}, [
+      hazel('portrait', 'Hazel the Squirrel, holding an acorn', 'about'),
       el('p', { text: app.isVideo
         ? `Hazelnut Squirreal ${app.server.version} — Hazelnut, for moving pictures. Windows and Mac.`
         : `Hazelnut ${app.server.version} — an advanced AI photo generator for Windows and Mac.` }),

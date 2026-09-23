@@ -17,7 +17,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = path.join(ROOT, 'site');
 const DIST = path.join(ROOT, 'dist');
 
-const { TOOLS: CORE_TOOLS, TOOL_ORDER, LOCAL_TOOLS, costOf } = await import(
+const { TOOLS: CORE_TOOLS, TOOL_ORDER, LOCAL_TOOLS, PARTNER_TOOLS, costOf } = await import(
   pathToFileURL(path.join(ROOT, 'packages/core/tools.js')).href
 );
 const { ECO } = await import(pathToFileURL(path.join(ROOT, 'packages/core/eco.js')).href);
@@ -153,13 +153,14 @@ ${OFFER ? `<aside class="ribbon">
 
 <header class="top">
   <div class="wrap top__in">
-    <a class="brand" href="#top"><img src="${dataUri('icon.png', 'image/png')}" alt="" /> Hazelnut</a>
+    <a class="brand" href="#top"><img src="${dataUri('mascot/web/hazel-cheer.webp', 'image/webp')}" alt="" class="brand__hazel" /> Hazelnut</a>
     <nav>
       <a href="#tools">Tools</a>
       <a href="#eco">Eco Mode</a>
       <a href="#web">In a browser</a>
       <a href="#squirreal">Squirreal</a>
       <a href="#apps">The three apps</a>
+      <a href="#hazel">Hazel</a>
       <a href="#pricing">Pricing</a>
       <a href="#downloads">Downloads</a>
     </nav>
@@ -235,7 +236,7 @@ ${OFFER ? `<aside class="ribbon">
     <div class="head">
       <p class="eyebrow">No download</p>
       <h2>Half of Hazelnut, in a browser tab.</h2>
-      <p>The same editor — the same layer stack, the same history, the same panels — fixed to the half of the toolbox that runs on your own machine. Eleven tools work; the ten that need a model are locked and say so.</p>
+      <p>The same editor — the same layer stack, the same history, the same panels — fixed to the part of the toolbox that runs on your own machine. ${LOCAL_TOOLS.length} tools work; the ${PARTNER_TOOLS.length} that call a partner model are locked and say so.</p>
     </div>
     <div class="tools">
       <div class="tool">
@@ -244,7 +245,7 @@ ${OFFER ? `<aside class="ribbon">
       </div>
       <div class="tool">
         <div class="tool__top"><h3>What does not</h3><span class="cost">Desktop</span></div>
-        <p>${TOOL_ORDER.filter((id) => CORE_TOOLS[id].ai).map((id) => esc(CORE_TOOLS[id].name)).join(', ')}. They need a model and a key, and both live in the desktop app.</p>
+        <p>${PARTNER_TOOLS.map((id) => esc(CORE_TOOLS[id].name)).join(', ')}. They send the picture to a partner model, which needs a key — and both live in the desktop app.</p>
       </div>
       <div class="tool">
         <div class="tool__top"><h3>What it sends</h3><span class="cost cost--free">Nothing</span></div>
@@ -450,6 +451,28 @@ npm test                # 81 tests</pre>
 </section>
 
 </main>
+
+<section id="hazel" class="alt">
+  <div class="wrap hazel-strip">
+    <img class="hazel-strip__portrait" src="${dataUri('mascot/web/hazel.webp', 'image/webp')}"
+         alt="Hazel the Squirrel, a red squirrel with a large tail, holding an acorn in both paws." />
+    <div>
+      <p class="eyebrow">The mascot</p>
+      <h2>Hazel the Squirrel</h2>
+      <p>She is the one holding the acorn. You will meet her when the app has nothing open, when a tool is behind the licence, and the first time you start it.</p>
+      <div class="hazel-strip__poses">
+        ${[
+          ['hazel-think', 'Hazel with a question mark over her head'],
+          ['hazel-idea', 'Hazel with a lightbulb above a raised finger'],
+          ['hazel-oops', 'Hazel holding a small sign reading Oops!'],
+          ['hazel-camera', 'Hazel holding a camera up to her eye'],
+          ['hazel-laptop', 'Hazel at a laptop'],
+          ['hazel-sleep', 'Hazel asleep with her tail curled over her'],
+        ].map(([file, alt]) => `<img src="${dataUri(`mascot/web/${file}.webp`, 'image/webp')}" alt="${esc(alt)}" />`).join('\n        ')}
+      </div>
+    </div>
+  </div>
+</section>
 
 <footer>
   <div class="wrap">

@@ -24,6 +24,14 @@ that send your picture to Gemini. Those are what the licence pays for.
 > now the generator is among them — so Free is gone rather than sitting
 > alongside it.
 
+### Hazel the Squirrel
+
+The mascot, and the one holding the acorn. She turns up over an empty canvas,
+in the welcome dialog, and beside the explanation when a tool is behind the
+licence. Eight poses are cut from one character sheet by `npm run mascot`; see
+`docs/MASCOT.md` for how, and for the rule that she is decoration — everything
+she appears beside reads the same with images turned off.
+
 ### Imagine — our own image models
 
 The twenty-third tool, and the first that makes a picture rather than changing
