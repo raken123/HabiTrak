@@ -640,7 +640,7 @@ async function showWelcome() {
   const start = await sheet({
     title: 'Hazelnut Mini',
     body: el('div', {}, [
-      el('p', { text: `A chat bar that removes things, and thirteen tools above it. Free, with no deadline and no card — it opens with ${app.state.trialCreditGrant || 700} credits and they are never topped up.` }),
+      el('p', { text: `A chat bar that removes things, and thirteen tools above it. The trial has no deadline and needs no card — claim ${app.state.trialCreditGrant || 700} credits once, and they are never topped up.` }),
       el('p', { text: 'Six of the tools run on this device and stay free for ever. Imagine runs here too — it is our own image model, so it needs no key and nothing leaves the phone — and it is charged by the picture.' }),
       el('p', { text: 'The remover, and the tools that send your photo to a partner model, come with Mini itself.' }),
     ]),
