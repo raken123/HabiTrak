@@ -6,6 +6,14 @@
 // and photographs what is left. Nothing is mocked up; the pixels are the app's.
 //
 //   node ads/shoot-app.mjs site/s-squirreal.jpg 37.5
+//   AD_SCENE=short5.html AD_SHOT_W=1800 AD_SHOT_H=1106 \
+//     node ads/shoot-app.mjs site/s-editor.jpg 24
+//   AD_SCENE=short.html AD_SHOT_W=760 AD_SHOT_H=1211 \
+//     node ads/shoot-app.mjs site/s-mini.jpg 20
+//
+// Two layouts, because the films have two: Hazelnut and Squirreal sit in a
+// slab (`.app__shell` around an iframe), and Mini sits in a phone. The frame
+// is found rather than named, so a film using either is shot the same way.
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -19,8 +27,8 @@ const CHROME = process.env.AD_CHROME || '/opt/pw-browsers/chromium-1194/chrome-l
 const PORT = Number(process.env.AD_PORT || 8756);
 const CDP_PORT = Number(process.env.AD_CDP_PORT || 9466);
 const SCENE = process.env.AD_SCENE || 'short3.html';
-const WIDTH = 1560;
-const HEIGHT = 940;
+const WIDTH = Number(process.env.AD_SHOT_W || 1560);
+const HEIGHT = Number(process.env.AD_SHOT_H || 940);
 
 const OUT = path.resolve(ROOT, process.argv[2] || 'site/s-squirreal.jpg');
 const AT = Number(process.argv[3] || 37.5);
@@ -92,29 +100,54 @@ await evaluate(`AD.seek(${AT})`);
 // the DOM — that would reload it and take the clip with it — only its
 // surroundings are resized around it.
 await evaluate(`(() => {
-  for (const sel of ['.line--top', '.line--bottom', '.stamp', '.end', '.flash', '.vignette', '.nle']) {
-    const node = document.querySelector(sel);
-    if (node) node.style.display = 'none';
+  for (const sel of ['.line--top', '.line--bottom', '.stamp', '.end', '.end2', '.flash', '.vignette', '.nle', '.card', '.prices', '.chip', '.standin']) {
+    for (const node of document.querySelectorAll(sel)) node.style.display = 'none';
   }
   document.body.style.cssText = 'width:${WIDTH}px;height:${HEIGHT}px;background:#14110d';
   const film = document.getElementById('film');
   film.style.cssText = 'position:relative;width:${WIDTH}px;height:${HEIGHT}px;overflow:clip;background:#14110d';
+
+  // Mini's films put the app in a phone rather than a slab. Centre it and
+  // leave the phone's own chrome alone — it is part of the picture.
+  const phone = document.getElementById('phone');
+  if (phone) {
+    phone.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:1';
+    return 'phone';
+  }
+
   const app = document.getElementById('app');
   app.style.cssText = 'position:absolute;left:0;top:40px;width:${WIDTH}px;opacity:1;transform:none';
   // A little wider than the film's window, so the options bar is not cut off
   // mid-button. The iframe is resized, not moved, so it is not reloaded.
-  const sq = document.getElementById('sq');
-  sq.width = 1440; sq.height = 760;
-  sq.style.width = '1440px'; sq.style.height = '760px';
+  const inner = ${WIDTH} - 120;
+  const frame = document.getElementById('sq') || document.getElementById('hz');
+  const tall = Math.round(inner * 760 / 1440);
+  frame.width = inner; frame.height = tall;
+  frame.style.width = inner + 'px'; frame.style.height = tall + 'px';
   document.querySelector('.app__shell').style.cssText =
-    'width:1480px;margin:0 auto;padding:16px;border-radius:20px;'
+    'width:' + (inner + 40) + 'px;margin:0 auto;padding:16px;border-radius:20px;'
     + 'background:linear-gradient(160deg,#3d352d,#14110d);'
     + 'box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 1px rgba(224,137,74,.22)';
   document.querySelector('.app__frame').style.cssText =
-    'width:1440px;height:760px;overflow:hidden;border-radius:12px';
-  sq.style.transform = 'none';
-  return true;
+    'width:' + inner + 'px;height:' + tall + 'px;overflow:hidden;border-radius:12px';
+  frame.style.transform = 'none';
+  return 'slab';
 })()`);
+// Resizing the frame grows the app's stage, and the picture that was centred
+// in the film's smaller window ends up outside it. The app fits the view on
+// `0`, so it is asked to — through a key event into the frame, because the
+// editor keeps its own state module-scoped and there is nothing on `window`
+// to call. Same origin, so the document is reachable.
+await evaluate(`(() => {
+  const frame = document.getElementById('sq') || document.getElementById('hz');
+  if (!frame) return 'no frame';
+  const doc = frame.contentDocument;
+  if (!doc) return 'no document';
+  doc.dispatchEvent(new KeyboardEvent('keydown', { key: '0', bubbles: true }));
+  return 'fitted';
+})()`);
+await wait(400);
+
 // No further seek: paint() would put the film's camera straight back on.
 
 const shot = await send('Page.captureScreenshot', {
