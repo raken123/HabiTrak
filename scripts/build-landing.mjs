@@ -330,7 +330,7 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
     </div>
     <video controls preload="none" poster="${dataUri('p-recap.jpg', 'image/jpeg')}" src="Hazelnut-week-recap.mp4"></video>` : ''}
     <p style="color:var(--muted);font-size:14px;max-width:640px">Every shot is the real application. No output of a <em>partner</em> model is depicted — where a tool calls Gemini, the film shows the genuine progress and moves on, and whatever that model would have produced is a placeholder standing in for it.</p>
-    <p style="color:var(--muted);font-size:14px;max-width:640px"><b>The Imagine short is the exception, and the only one.</b> Hazelnut 2.5 and Hazelnut 5 Pro run on the machine, so the machine doing the recording could run them: every picture in that film is genuine output, generated live during the shoot. Nothing in it stands in for anything.</p>
+    <p style="color:var(--muted);font-size:14px;max-width:640px"><b>Two films are the exception.</b> Hazelnut 2.5 and Hazelnut 5 Pro run on the machine, so the machine doing the recording could run them: every picture in the Imagine short, and the one Hazel draws in hers, is genuine output generated live during the shoot. Nothing in either stands in for anything.</p>
     <p style="color:var(--muted);font-size:14px;max-width:640px"><b>The older films are dated.</b> Everything they show the app doing, it still does — but they were recorded when the trial lasted seven days and lapsed into an edition called Hazelnut Free, and when the toolbox was twenty-two tools with eleven of them local. Free has since been removed, the trial no longer expires, and Imagine makes twenty-three. Where one of those films quotes seven days, eleven tools or Hazelnut Free, the prices and counts on this page are the current ones.</p>
     <div class="shorts">
       ${[
@@ -342,6 +342,7 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
         ['Hazelnut-short-eco.mp4', 'p-short-eco.jpg', 'Eco Mode: a smaller ask'],
         ['Hazelnut-short-magictext.mp4', 'p-short-magictext.jpg', 'Magic Text: the words in the picture'],
         ['Hazelnut-short-imagine.mp4', 'p-short-imagine.jpg', 'Imagine: our own two models'],
+        ['Hazelnut-short-hazel.mp4', 'p-short-hazel.jpg', 'Hazel: the whole thing, in half a minute'],
       ]
         .filter(([file]) => fs.existsSync(path.join(DIST, file)))
         .map(([file, poster, caption]) => `<figure><video controls preload="none" poster="${dataUri(poster, 'image/jpeg')}" src="${esc(file)}"></video><figcaption>${esc(caption)}</figcaption></figure>`)

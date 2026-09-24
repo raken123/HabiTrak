@@ -27,6 +27,9 @@ const ROOTS = {
   '/core/': path.join(ROOT, 'packages', 'core'),
   // Media the ads build for themselves — kept out of the repository.
   '/assets/': path.join(ROOT, '.build'),
+  // Hazel's poses, at the size they were cut rather than the size the app
+  // ships: a film 1080 wide wants every pixel the character sheet had.
+  '/mascot/': path.join(ROOT, 'site', 'mascot'),
   // The staged browser build, exactly as it would be hosted.
   '/web/': path.join(ROOT, 'dist', 'web'),
 };

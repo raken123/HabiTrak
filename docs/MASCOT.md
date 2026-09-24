@@ -59,3 +59,32 @@ Everywhere she appears she carries alt text describing the drawing — "Hazel th
 Squirrel, asleep with her tail curled over her" — and **nothing is ever said
 only by the picture**. Turn images off and every dialog, empty state and
 section still reads. She is there to be liked, not to carry meaning.
+
+## Her film
+
+`ads/hazel.html` is a thirty-four-second portrait short built on the same
+harness as the other films: `ads/serve.mjs` serves the poses at `/mascot/`,
+`ads/record.mjs` steps virtual time and screenshots every frame, and
+`ads/music-hazel.mjs` writes the bed. It is shot with
+
+```
+AD_SCENE=hazel.html AD_WIDTH=1080 AD_HEIGHT=1920 \
+AD_MUSIC=.build/bed-hazel.wav node ads/record.mjs dist/Hazelnut-short-hazel.mp4
+```
+
+after `node ads/music-hazel.mjs .build/bed-hazel.wav 36`.
+
+Two things about it are worth keeping true as the product moves:
+
+- **Nothing in it is typed twice.** The credit grant, the local-tool count, the
+  discount, both prices and the deadline are read from `pricing.js`, `tools.js`
+  and `offers.js` when the frame is drawn. If the fall deal ends, the end card
+  stops advertising it and sells the plan at its own price instead — a film
+  outlives a promotion, and this one is built to.
+- **The picture she draws is real.** It comes from `imagine-plan.js` and
+  `imagine-paint.js` at Hazelnut 5 Pro on the Hazelnut edition, at a fixed
+  seed. It is not a mock-up, and the landing page says so.
+
+Five of the eight cuts are busts — the drawing stops at the belly — so they are
+faded along their bottom edge (`.hazel--bust`) and given no contact shadow. A
+contact shadow under a bust reads as a squirrel sunk into the floor.
