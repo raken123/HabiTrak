@@ -19,6 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { GeminiError, DEFAULT_API_BASE } from './gemini.js';
+import { cancellationNotice } from './products.js';
 
 const env = (name) => (typeof process !== 'undefined' ? process.env?.[name] : undefined);
 
@@ -40,7 +41,10 @@ export class VideoClient {
     timeoutMs = 120_000,
     pollIntervalMs = POLL_INTERVAL_MS,
     pollTimeoutMs = POLL_TIMEOUT_MS,
+    /** Which product is asking. Squirreal's calls are refused — see below. */
+    product = null,
   } = {}) {
+    this.product = product;
     this.apiKey = apiKey;
     this.apiBase = apiBase.replace(/\/+$/, '');
     this.model = model;
@@ -57,7 +61,34 @@ export class VideoClient {
     return Boolean(this.apiKey);
   }
 
+  /**
+   * Squirreal is withdrawn, and this is where that becomes true rather than
+   * merely announced.
+   *
+   * Squirreal reached a video service we no longer hold an account with, so
+   * every call it makes from here on fails. It can fail two ways: as a
+   * timeout and a retry and a stack trace, or as a sentence saying the product
+   * was withdrawn and what still works. The second is the same outcome and a
+   * better one, so the refusal happens before the socket is opened — no
+   * retries, no waiting, no pretending the network is the problem.
+   *
+   * `product` is passed by the bridge that constructs the client. Anything
+   * that is not Squirreal is unaffected.
+   */
+  #refuseIfWithdrawn() {
+    if (this.product !== 'squirreal') return;
+    const notice = cancellationNotice('squirreal');
+    const err = new GeminiError(
+      `${notice.title}. ${notice.reason} Still working: ${notice.stillWorks}`,
+      { status: 410 },
+    );
+    err.code = 'PRODUCT_WITHDRAWN';
+    err.notice = notice;
+    throw err;
+  }
+
   async #request(url, body, { signal, method = 'POST' } = {}) {
+    this.#refuseIfWithdrawn();
     if (!this.apiKey) {
       throw new GeminiError('No API key configured. Add one in Settings → AI.', { status: 401 });
     }

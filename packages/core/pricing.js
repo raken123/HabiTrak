@@ -8,6 +8,12 @@
 // There are two editions per product and no third. Hazelnut Free has been
 // removed — see license.js for why the unlimited trial replaces it rather than
 // sitting alongside it.
+//
+// Hazelnut is a service now, with three products on it (products.js), so the
+// plans below cover Photo, Movi and Work. Squirreal's are kept and marked
+// `retired`: a plan nobody can buy still has to be describable, because people
+// hold it, and `planFor` still has to hand back something when their app asks
+// what they have. Deleting it would turn a withdrawn product into a crash.
 
 /**
  * Credits granted once, when the trial starts, and never topped up.
@@ -27,11 +33,24 @@ export const MINI_MONTHLY_CREDITS = 1500;
 // Squirreal's allowance is smaller than Hazelnut's on purpose: a generation is
 // a clip rather than a frame, so each one costs more and fewer of them fit in a
 // month. The plan is not less capable — it is priced against heavier work.
+// Retired with the product; kept so existing holders can still be quoted.
 export const SQUIRREAL_MONTHLY_CREDITS = 3000;
-
-// The trial grant follows the same logic: fewer credits than Hazelnut's, but
-// enough for a few short clips.
 export const SQUIRREAL_TRIAL_CREDIT_GRANT = 500;
+
+// Movi's allowance is larger than Squirreal's was, because Movi's models are
+// ours and priced by the second rather than by somebody else's per-clip rate.
+// Read against movi.js it buys sixty-two seconds of 3.0 Lite a month, or just
+// under nineteen of 3.0 Pro.
+export const MOVI_MONTHLY_CREDITS = 6000;
+
+// Enough for two eight-second Lite clips and a little over, which is the least
+// that shows what the thing does: one clip, then one extension of it.
+export const MOVI_TRIAL_CREDIT_GRANT = 250;
+
+// Work is charged in small amounts many times over — a triage is 20 — so its
+// allowance is counted in tasks rather than in renders.
+export const WORK_MONTHLY_CREDITS = 4000;
+export const WORK_TRIAL_CREDIT_GRANT = 300;
 
 /** Base price for the full Hazelnut desktop app, in USD. */
 const HAZELNUT_MONTHLY_USD = 19.99;
@@ -39,6 +58,15 @@ const HAZELNUT_YEARLY_USD = 199.0;
 
 const SQUIRREAL_MONTHLY_USD = 29.99;
 const SQUIRREAL_YEARLY_USD = 299.0;
+
+// Movi inherits Squirreal's price rather than raising it: the product changed
+// hands, and charging the people who lost Squirreal more for its replacement
+// would be a poor way to introduce it.
+const MOVI_MONTHLY_USD = 29.99;
+const MOVI_YEARLY_USD = 299.0;
+
+const WORK_MONTHLY_USD = 14.99;
+const WORK_YEARLY_USD = 149.0;
 
 /** Mini is exactly half of Hazelnut, by construction. */
 const half = (n) => Math.round(n * 50) / 100;
@@ -142,13 +170,95 @@ export const PLANS = {
     partnerModels: true,
     blurb: 'Hazelnut, for moving pictures. The same six tools, pointed at clips.',
   },
+
+  // Movi. `partnerModels` is false on both editions and that is the headline,
+  // not a footnote: every model Movi runs is ours, so the trial gets the same
+  // engines the paid plan does and what separates them is the allowance.
+  'movi-trial': {
+    id: 'movi-trial',
+    product: 'movi',
+    name: 'Hazelnut Movi Trial',
+    monthlyUsd: 0,
+    yearlyUsd: 0,
+    credits: MOVI_TRIAL_CREDIT_GRANT,
+    ai: true,
+    partnerModels: false,
+    blurb: 'All three Hazelnut 3.0 models, both modes, no deadline and no card '
+      + '— until the opening credits run out.',
+  },
+  'movi-pro': {
+    id: 'movi-pro',
+    product: 'movi',
+    name: 'Hazelnut Movi',
+    monthlyUsd: MOVI_MONTHLY_USD,
+    yearlyUsd: MOVI_YEARLY_USD,
+    credits: MOVI_MONTHLY_CREDITS,
+    ai: true,
+    partnerModels: false,
+    blurb: 'Moving pictures on Hazelnut 3.0. Simple decides for you; Advanced '
+      + 'builds it eight seconds at a time.',
+  },
+
+  // Work is the one product whose trial cannot include the thing it does,
+  // because the thing it does is read your mail: there is nothing to try until
+  // a connector is attached, and attaching one is the decision the trial is
+  // there to help you make. So the trial connects and reads, and the paid plan
+  // is what keeps it running past the opening grant.
+  'work-trial': {
+    id: 'work-trial',
+    product: 'work',
+    name: 'Hazelnut Work Trial',
+    monthlyUsd: 0,
+    yearlyUsd: 0,
+    credits: WORK_TRIAL_CREDIT_GRANT,
+    ai: true,
+    partnerModels: true,
+    blurb: 'Connect one mailbox and put it to work, no deadline and no card, '
+      + 'until the opening credits run out.',
+  },
+  'work-pro': {
+    id: 'work-pro',
+    product: 'work',
+    name: 'Hazelnut Work',
+    monthlyUsd: WORK_MONTHLY_USD,
+    yearlyUsd: WORK_YEARLY_USD,
+    credits: WORK_MONTHLY_CREDITS,
+    ai: true,
+    partnerModels: true,
+    blurb: 'Your coworker, on every mailbox and calendar you connect. It drafts '
+      + 'and files; it never sends without showing you first.',
+  },
+};
+
+/** Plans nobody may buy any more. Kept because people still hold them. */
+export const RETIRED_PLANS = new Set(['squirreal-trial', 'squirreal-pro']);
+
+export function isRetired(planId) {
+  return RETIRED_PLANS.has(planId);
+}
+
+/** The plans a new account can actually be sold, in the order they are shown. */
+export const SELLABLE_PLAN_IDS = Object.keys(PLANS)
+  .filter((id) => !RETIRED_PLANS.has(id) && PLANS[id].monthlyUsd > 0);
+
+/**
+ * Which plan a product/edition pair means.
+ *
+ * `photo` and `hazelnut` are the same family and both resolve to it: the
+ * editor was called Hazelnut for as long as Hazelnut meant the editor, and
+ * every stored licence, bridge and saved preference from before the service
+ * existed still says `hazelnut`. Accepting both is what stops the rename from
+ * logging people out of their own app.
+ */
+const FAMILIES = {
+  hazelnut: 'hazelnut', photo: 'hazelnut',
+  mini: 'mini', movi: 'movi', work: 'work', squirreal: 'squirreal',
 };
 
 export function planFor(product, edition) {
-  if (product === 'mini') return PLANS[edition === 'pro' ? 'mini-pro' : 'mini-trial'];
-  // The browser build is Hazelnut only, and only ever the local half.
+  // The browser build is the editor only, and only ever the local half.
   if (edition === 'web') return PLANS['hazelnut-web'];
-  const family = product === 'squirreal' ? 'squirreal' : 'hazelnut';
+  const family = FAMILIES[product] || 'hazelnut';
   return PLANS[edition === 'pro' ? `${family}-pro` : `${family}-trial`];
 }
 

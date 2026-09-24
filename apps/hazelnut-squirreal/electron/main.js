@@ -71,7 +71,9 @@ function boot() {
   const { key, source } = resolveApiKey({ appName: APP_NAME, cwd: app.getAppPath() });
   client = new GeminiClient({ apiKey: key });
   client.keySource = source;
-  video = new VideoClient({ apiKey: key });
+  // See video.js: Squirreal is withdrawn, so this client refuses its own
+  // calls rather than letting them time out against a closed account.
+  video = new VideoClient({ apiKey: key, product: 'squirreal' });
   engine = new VideoEngine({ video, client, credits, license });
 }
 

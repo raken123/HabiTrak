@@ -50,7 +50,9 @@ export function installWebBridge() {
   const credits = new Credits(store, { costOf: videoCostOf });
   const readKey = () => { try { return localStorage.getItem(API_KEY) || null; } catch { return null; } };
   const client = new GeminiClient({ apiKey: readKey(), apiBase: API_BASE });
-  const video = new VideoClient({ apiKey: readKey(), apiBase: API_BASE });
+  // `product` is what makes the withdrawal real: every call this client
+  // makes is refused before a socket opens. See video.js.
+  const video = new VideoClient({ apiKey: readKey(), apiBase: API_BASE, product: 'squirreal' });
   const engine = new VideoEngine({ video, client, credits, license });
 
   const state = () => ({
