@@ -23,7 +23,9 @@ case "$APP" in
   hazelnut)      NAME="Hazelnut";      BIN="hazelnut";      SRC="$ROOT/apps/hazelnut";      PAYLOAD="electron renderer build";;
   hazelnut-squirreal) NAME="Hazelnut Squirreal"; BIN="hazelnut-squirreal"; SRC="$ROOT/apps/hazelnut-squirreal"; PAYLOAD="electron build";;
   hazelnut-mini) NAME="Hazelnut Mini"; BIN="hazelnut-mini"; SRC="$ROOT/apps/hazelnut-mini"; PAYLOAD="electron www build";;
-  *) echo "unknown app: $APP (expected hazelnut, hazelnut-squirreal or hazelnut-mini)" >&2; exit 1;;
+  hazelnut-movi) NAME="Hazelnut Movi"; BIN="hazelnut-movi"; SRC="$ROOT/apps/hazelnut-movi"; PAYLOAD="electron www build";;
+  hazelnut-work) NAME="Hazelnut Work"; BIN="hazelnut-work"; SRC="$ROOT/apps/hazelnut-work"; PAYLOAD="electron www build";;
+  *) echo "unknown app: $APP (expected hazelnut, hazelnut-squirreal, hazelnut-mini, hazelnut-movi or hazelnut-work)" >&2; exit 1;;
 esac
 
 VERSION="$(node -p "require('$SRC/package.json').version")"

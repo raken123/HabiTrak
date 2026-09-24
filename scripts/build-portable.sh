@@ -23,6 +23,8 @@ case "$APP" in
   hazelnut)      NAME="Hazelnut";      SRC="$ROOT/apps/hazelnut";      PAYLOAD="electron renderer build"; ID="com.hazelnut.studio";;
   hazelnut-squirreal) NAME="Hazelnut Squirreal"; SRC="$ROOT/apps/hazelnut-squirreal"; PAYLOAD="electron build"; ID="com.hazelnut.squirreal";;
   hazelnut-mini) NAME="Hazelnut Mini"; SRC="$ROOT/apps/hazelnut-mini"; PAYLOAD="electron www build";      ID="com.hazelnut.mini";;
+  hazelnut-movi) NAME="Hazelnut Movi"; SRC="$ROOT/apps/hazelnut-movi"; PAYLOAD="electron www build";      ID="com.hazelnut.movi";;
+  hazelnut-work) NAME="Hazelnut Work"; SRC="$ROOT/apps/hazelnut-work"; PAYLOAD="electron www build";      ID="com.hazelnut.work";;
   *) echo "unknown app: $APP" >&2; exit 1;;
 esac
 

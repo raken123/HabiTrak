@@ -14,7 +14,7 @@ LAUNCHER="$ROOT/launcher"
 DIST="$ROOT/dist"
 WORK="${WORK:-$ROOT/.build}"
 
-APPS=("${1:-hazelnut hazelnut-squirreal hazelnut-mini}")
+APPS=("${1:-hazelnut hazelnut-mini hazelnut-movi hazelnut-work}")
 PLATFORMS=("${2:-windows macos linux}")
 read -ra APPS <<< "${APPS[0]}"
 read -ra PLATFORMS <<< "${PLATFORMS[0]}"
@@ -73,6 +73,8 @@ for app in "${APPS[@]}"; do
     hazelnut)      NAME="Hazelnut";      EXEC="Hazelnut";     IDENT="com.hazelnut.studio";;
     hazelnut-squirreal) NAME="Hazelnut Squirreal"; EXEC="HazelnutSquirreal"; IDENT="com.hazelnut.squirreal";;
     hazelnut-mini) NAME="Hazelnut Mini"; EXEC="HazelnutMini"; IDENT="com.hazelnut.mini";;
+    hazelnut-movi) NAME="Hazelnut Movi"; EXEC="HazelnutMovi"; IDENT="com.hazelnut.movi";;
+    hazelnut-work) NAME="Hazelnut Work"; EXEC="HazelnutWork"; IDENT="com.hazelnut.work";;
     *) echo "unknown app: $app" >&2; exit 1;;
   esac
   VERSION="$(node -p "require('$ROOT/apps/$app/package.json').version")"

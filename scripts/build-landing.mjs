@@ -29,6 +29,12 @@ const { activeOffer, offerPrice, endsOn, daysLeft } = await import(
 // The page is generated whenever the site is built, so "is there an offer on"
 // is answered at build time from the same dates the app reads. A page built
 // after the 14th has no ribbon on it and nobody has to remember to remove one.
+const { SERVICE, PRODUCTS, PRODUCT_ORDER, cancellationNotice } = await import(
+  pathToFileURL(path.join(ROOT, 'packages/core/products.js')).href);
+const STORAGE = await import(pathToFileURL(path.join(ROOT, 'packages/core/storage.js')).href);
+const MOVI = await import(pathToFileURL(path.join(ROOT, 'packages/core/movi.js')).href);
+const WORK = await import(pathToFileURL(path.join(ROOT, 'packages/core/work.js')).href);
+
 const OFFER = activeOffer();
 const OFFER_PRICE = OFFER ? offerPrice(CORE_PLANS['hazelnut-pro'], OFFER) : null;
 
@@ -55,24 +61,36 @@ const DOWNLOADS = [
   { os: 'win', icon: 'WIN', title: 'Hazelnut for Windows', file: 'Hazelnut.exe',
     meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
   { os: 'win', icon: 'WIN', title: 'Hazelnut Squirreal for Windows', file: 'HazelnutSquirreal.exe',
+    meta: 'Withdrawn — local tools only · Windows 10 or 11, 64-bit' },
+  { os: 'win', icon: 'WIN', title: 'Hazelnut Movi for Windows', file: 'HazelnutMovi.exe',
     meta: 'Windows 10 or 11, 64-bit · the video app · one file, nothing to install' },
+  { os: 'win', icon: 'WIN', title: 'Hazelnut Work for Windows', file: 'HazelnutWork.exe',
+    meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
   { os: 'win', icon: 'WIN', title: 'Hazelnut Mini for Windows', file: 'HazelnutMini.exe',
     meta: 'Windows 10 or 11, 64-bit · one file, nothing to install' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS', file: 'Hazelnut-macos.zip',
     meta: 'Apple silicon · unzip and drag Hazelnut.app to Applications' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut Squirreal for macOS', file: 'HazelnutSquirreal-macos.zip',
-    meta: 'Apple silicon · unzip and drag Hazelnut Squirreal.app to Applications' },
+    meta: 'Withdrawn — local tools only · Apple silicon · unzip and drag Hazelnut Squirreal.app to Applications' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut Movi for macOS', file: 'HazelnutMovi-macos.zip',
+    meta: 'Apple silicon · unzip and drag Hazelnut Movi.app to Applications' },
+  { os: 'mac', icon: 'MAC', title: 'Hazelnut Work for macOS', file: 'HazelnutWork-macos.zip',
+    meta: 'Apple silicon · unzip and drag Hazelnut Work.app to Applications' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS', file: 'HazelnutMini-macos.zip',
     meta: 'Apple silicon · unzip and drag to Applications' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut for macOS (Intel)', file: 'Hazelnut-macos-intel',
     meta: 'Intel Macs · run from Terminal, or drop into an app bundle' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut Squirreal for macOS (Intel)', file: 'HazelnutSquirreal-macos-intel',
-    meta: 'Intel Macs' },
+    meta: 'Withdrawn — local tools only · Intel Macs' },
   { os: 'mac', icon: 'MAC', title: 'Hazelnut Mini for macOS (Intel)', file: 'HazelnutMini-macos-intel',
     meta: 'Intel Macs' },
   { os: 'linux', icon: 'LNX', title: 'Hazelnut for Linux', file: 'Hazelnut-linux-x64',
     meta: 'x86-64 · chmod +x and run' },
   { os: 'linux', icon: 'LNX', title: 'Hazelnut Squirreal for Linux', file: 'HazelnutSquirreal-linux-x64',
+    meta: 'Withdrawn — local tools only · x86-64 · chmod +x and run' },
+  { os: 'linux', icon: 'LNX', title: 'Hazelnut Movi for Linux', file: 'HazelnutMovi-linux-x64',
+    meta: 'x86-64 · chmod +x and run' },
+  { os: 'linux', icon: 'LNX', title: 'Hazelnut Work for Linux', file: 'HazelnutWork-linux-x64',
     meta: 'x86-64 · chmod +x and run' },
   { os: 'linux', icon: 'LNX', title: 'Hazelnut Mini for Linux', file: 'HazelnutMini-linux-x64',
     meta: 'x86-64 · chmod +x and run' },
@@ -102,15 +120,28 @@ const TOOLS = TOOL_ORDER.map((id) => [
 ]);
 
 const PLANS = [
-  { name: 'Hazelnut Trial', price: 'Free', per: 'for ever', lead: false,
+  { name: 'Hazelnut Photo Trial', price: 'Free', per: 'for ever', lead: false,
     blurb: 'No deadline and no card. Every tool that runs on your own machine, including both of our image models.',
     points: ['The twelve local tools, for ever', 'Both image models — 2.5 and 5 Pro', '700 credits, once, never topped up', 'Windows, Mac — and the browser'] },
-  { name: 'Hazelnut', price: '$19.99', per: '/ month', lead: true, deal: OFFER_PRICE,
+  { name: 'Hazelnut Photo', price: '$19.99', per: '/ month', lead: true, deal: OFFER_PRICE,
     blurb: 'The full app. Twenty-three tools, the partner models included, and Hazelnut 2.5 unlimited.',
     points: ['Every tool unlocked', '5,000 credits a month', 'Hazelnut 2.5 unlimited; 5 Pro at 120', 'Windows and Mac'] },
-  { name: 'Hazelnut Squirreal', price: '$29.99', per: '/ month', lead: false,
-    blurb: 'The same editor, pointed at moving pictures. A generation is a clip, so it costs more — and the allowance is sized for that, not shrunk.',
-    points: ['3,000 credits a month', 'About 40 short clips, or 20 removals', 'Turning a clip into a GIF is free', 'Windows and Mac'] },
+  { name: 'Hazelnut Movi', price: `$${CORE_PLANS['movi-pro'].monthlyUsd}`, per: '/ month', lead: false,
+    blurb: 'Moving pictures on our own three models. Simple decides for you; Advanced builds it eight seconds at a time.',
+    points: [
+      `${CORE_PLANS['movi-pro'].credits.toLocaleString('en-US')} credits a month`,
+      `About ${Math.floor(CORE_PLANS['movi-pro'].credits / MOVI.costOfClip('hazelnut-3.0-lite'))} eight-second Lite clips, or ${Math.floor(CORE_PLANS['movi-pro'].credits / MOVI.costOfClip('hazelnut-3.0-pro'))} on 3.0 Pro`,
+      'No partner models — every engine is ours',
+      'Windows and Mac',
+    ] },
+  { name: 'Hazelnut Work', price: `$${CORE_PLANS['work-pro'].monthlyUsd}`, per: '/ month', lead: false,
+    blurb: 'Your coworker, on every mailbox and calendar you connect. It drafts and files; it never sends without showing you first.',
+    points: [
+      `${CORE_PLANS['work-pro'].credits.toLocaleString('en-US')} credits a month`,
+      `About ${Math.floor(CORE_PLANS['work-pro'].credits / WORK.TASKS.triage.cost)} inbox triages, or ${Math.floor(CORE_PLANS['work-pro'].credits / WORK.TASKS.draft.cost)} drafted replies`,
+      `${WORK.CONNECTOR_ORDER.length} connections — Gmail, Outlook, calendars, Drive, Slack`,
+      'Windows, Mac and the browser',
+    ] },
   { name: 'Hazelnut Mini', price: '$9.99', per: '/ month', lead: false,
     blurb: 'The remover behind one chat bar, with thirteen tools above it — Imagine among them. Exactly half the price.',
     points: ['1,500 credits a month', 'About 75 removals, or 500 Captions', 'Six free tools plus Imagine, on the phone', 'Windows, Mac and Android'] },
@@ -136,7 +167,7 @@ const html = `<!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Hazelnut — downloads</title>
-<meta name="description" content="Hazelnut is an advanced AI photo generator for Windows and Mac. Free for seven days, then it keeps working without the AI. Hazelnut Squirreal is the same editor for moving pictures, and Hazelnut Mini removes things from photos on Windows, Mac and Android for half the price." />
+<meta name="description" content="Hazelnut is three apps and your files on one account: Photo, the editor; Movi, moving pictures on our own models; and Work, a coworker for the mail you already have. Every app opens free with no deadline and no card." />
 <link rel="icon" href="${dataUri('icon.png', 'image/png')}" />
 <style>
 ${fs.readFileSync(path.join(SITE, 'page.css'), 'utf8')}
@@ -155,11 +186,11 @@ ${OFFER ? `<aside class="ribbon">
   <div class="wrap top__in">
     <a class="brand" href="#top"><img src="${dataUri('mascot/web/hazel-cheer.webp', 'image/webp')}" alt="" class="brand__hazel" /> Hazelnut</a>
     <nav>
+      <a href="#products">Apps</a>
+      <a href="#storage">Storage</a>
       <a href="#tools">Tools</a>
       <a href="#eco">Eco Mode</a>
       <a href="#web">In a browser</a>
-      <a href="#squirreal">Squirreal</a>
-      <a href="#apps">The three apps</a>
       <a href="#hazel">Hazel</a>
       <a href="#pricing">Pricing</a>
       <a href="#downloads">Downloads</a>
@@ -171,14 +202,16 @@ ${OFFER ? `<aside class="ribbon">
 
 <section class="hero">
   <div class="wrap hero__in">
-    <p class="eyebrow">Windows · Mac · Android</p>
-    <h1>An advanced AI<br />photo generator.</h1>
-    <p class="lede">Twenty-three tools in a workspace built like a photo editor should be. Twelve of them never leave your machine — including our own image generator — so they keep working for ever, free, and in a browser tab. And the core six, pointed at video, in <a href="#squirreal">Squirreal</a>.</p>
+    <p class="eyebrow">Windows · Mac · Android · Browser</p>
+    <h1>Three apps and your<br />files, on one account.</h1>
+    <p class="lede">${esc(PRODUCTS.photo.name)} is the editor it always was — ${TOOL_ORDER.length} tools, ${LOCAL_TOOLS.length} of them on your machine. ${esc(PRODUCTS.movi.name)} makes moving pictures on our own models. ${esc(PRODUCTS.work.name)} reads the mail you already have and writes the replies you would rather not. Hazelnut is the account all three sit in.</p>
     <div class="cta" id="cta">
-      <a class="btn btn--primary" href="#downloads" id="cta-primary">Download Hazelnut <small id="cta-os"></small></a>
-      <a class="btn" href="#film">Watch the 3-minute film</a>
+      <a class="btn btn--primary" href="#downloads" id="cta-primary">Download Hazelnut Photo <small id="cta-os"></small></a>
+      <a class="btn" href="#products">See the three apps</a>
     </div>
-    <p class="trial-note"><b>Free, with no deadline.</b> 700 credits, once, no card. The twelve tools that run on your machine — and both of our own image models — never stop working.</p>
+    <p class="trial-note">${STORAGE.founderOpen()
+      ? `<b>${esc(STORAGE.formatBytes(STORAGE.FOUNDER_BYTES))} of storage, free</b>, to the first ${STORAGE.FOUNDER_PLACES} people who join — ${STORAGE.daysLeft() === 1 ? 'last day' : `${STORAGE.daysLeft()} days left`}. After that every account gets ${esc(STORAGE.formatBytes(STORAGE.STANDARD_BYTES))}.`
+      : `<b>${esc(STORAGE.formatBytes(STORAGE.STANDARD_BYTES))} of storage</b> with every account. The founder places have gone.`}</p>
   </div>
   <div class="wrap">
     <div class="shot"><img src="${dataUri('s-editor.jpg', 'image/jpeg')}" alt="The Hazelnut editor with a photograph open, AIScope magnifying a detail at 240×." width="1800" /></div>
@@ -211,7 +244,7 @@ ${OFFER ? `<aside class="ribbon">
     <div class="tools">
       <div class="tool">
         <div class="tool__top"><h3>What it cuts</h3><span class="cost cost--free">Less work</span></div>
-        <p>Pictures go up at no more than ${ECO.maxEdge}px on the longest side. Realtouch skips the location lookup — one model call instead of two. GIF Animate generates half the keyframes. Squirreal renders up to ${ECO.videoSeconds} seconds at ${ECO.videoFps} fps.</p>
+        <p>Pictures go up at no more than ${ECO.maxEdge}px on the longest side. Realtouch skips the location lookup — one model call instead of two. GIF Animate generates half the keyframes. Video renders up to ${ECO.videoSeconds} seconds at ${ECO.videoFps} fps.</p>
       </div>
       <div class="tool">
         <div class="tool__top"><h3>What it costs you</h3><span class="cost">Worse results</span></div>
@@ -264,52 +297,97 @@ ${OFFER ? `<aside class="ribbon">
 <section id="apps">
   <div class="wrap apps">
     <div>
-      <p class="eyebrow">Three apps</p>
-      <h2>The whole editor, moving pictures, or just the one thing.</h2>
+      <p class="eyebrow">The editor, in three shapes</p>
+      <h2>The whole workspace, the phone, or a browser tab.</h2>
       <ul>
-        <li><b>Hazelnut</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-three tools. Windows and Mac.</li>
-        <li><b>Hazelnut Squirreal</b> is that same workspace with a playhead: the core six tools, pointed at clips instead of stills. Windows and Mac.</li>
+        <li><b>Hazelnut Photo</b> is the full workspace: a layer stack, an undo history, dockable panels and all twenty-three tools. Windows and Mac.</li>
         <li><b>Hazelnut Mini</b> is the remover behind a single chat bar, with a strip of thirteen tools above it — Enhance, Rotate, Sharpen, Denoise, Vignette and Black &amp; white run on the phone itself and cost nothing; <b>Imagine</b> runs there too and draws a picture from a sentence without uploading anything; Caption, Background, Sky, Colourise, Restore and Upscale call a partner model at Hazelnut's prices. Windows, Mac and <b>Android</b>.</li>
         <li><b>Hazelnut Free is gone.</b> It was what the trial became after seven days. The trial now has no end date instead, which keeps the same promise without the cliff: the twelve tools that run on your machine — Imagine among them — never stop, and only the opening credits run out.</li>
         <li><b>Hazelnut for the Web</b> is the same editor in a browser tab, limited to that same local set — which now includes the generator. No download, no account, no key.</li>
+        <li><b>Hazelnut Squirreal is withdrawn.</b> It was this workspace with a playhead, running on somebody else's video model. <a href="#products">Hazelnut Movi</a> replaces it and runs on ours.</li>
       </ul>
       <div class="note" style="margin-top:26px">
         <h4>You bring the key</h4>
-        <p>The partner tools call Google’s Gemini API with your own API key, entered in Settings. It is stored on your machine and is sent nowhere but Google. The twelve local tools need no key at all — including <b>Imagine</b>, which is our own generator and draws on your processor rather than in anybody’s datacentre.</p>
+        <p>In Photo and Mini, the partner tools call Google’s Gemini API with your own API key, entered in Settings. It is stored on your machine and is sent nowhere but Google. The twelve local tools need no key at all — including <b>Imagine</b>, which is our own generator and draws on your processor rather than in anybody’s datacentre. <b>Movi needs no key either</b>: all three of its models are ours.</p>
       </div>
     </div>
     <div class="mini-shot"><img src="${dataUri('s-mini.jpg', 'image/jpeg')}" alt="Hazelnut Mini: a chat bar with a photo attached and the message “remove the litter bin by the path”." width="760" /></div>
   </div>
 </section>
 
-<section id="squirreal">
+<section id="products">
   <div class="wrap">
     <div class="head">
-      <p class="eyebrow">New · Windows and Mac</p>
-      <h2>Hazelnut Squirreal: the same editor, for moving pictures.</h2>
-      <p>Sketch one frame, say how it moves in a line, and get the shot back as a clip you can scrub. It is not a second application to learn — it is Hazelnut with a playhead under the canvas, and it runs on Gemini Omni 1.1 Flash.</p>
+      <p class="eyebrow">One account</p>
+      <h2>${esc(SERVICE.tagline)}</h2>
+      <p>Hazelnut used to mean the editor. It means the account now, and the editor is one of three things on it.</p>
     </div>
-    <div class="shot"><img src="${dataUri('s-squirreal.jpg', 'image/jpeg')}" alt="Hazelnut Squirreal with a two-second clip open, the transport bar under the canvas and Magic Draw quoting its price." width="1560" /></div>
-    <div class="apps" style="margin-top:36px">
+    <div class="apps">
+      ${PRODUCT_ORDER.map((id) => {
+        const product = PRODUCTS[id];
+        const points = id === 'photo'
+          ? [
+              `<b>${TOOL_ORDER.length} tools</b>, ${LOCAL_TOOLS.length} of which never leave your machine.`,
+              'Two image models of our own — Hazelnut 2.5 and Hazelnut 5 Pro — so the trial gets a generator, not a demo of one.',
+              'Runs in a browser tab with no account at all.',
+            ]
+          : id === 'movi'
+          ? [
+              `Three models of ours: ${MOVI.MODEL_ORDER.map((m) => `<b>${esc(MOVI.VIDEO_MODELS[m].name)}</b>`).join(', ')}.`,
+              `<b>Simple</b> — say what you want and it decides the length, the quality and the price. It spends before it asks, and gives you ${MOVI.RESTORE_WINDOW_MS / 60000} minutes to put the credits back.`,
+              `<b>Advanced</b> — ${MOVI.MAX_CLIP_SECONDS}-second clips from ${MOVI.costOfClip('hazelnut-3.0-lite')} credits, extended in the Editor.`,
+            ]
+          : [
+              `Connect ${WORK.CONNECTOR_ORDER.slice(0, 2).map((c) => `<b>${esc(WORK.CONNECTORS[c].name)}</b>`).join(' and ')}, and more.`,
+              `${WORK.TASK_ORDER.length} things it will do — triage, summarise, draft, chase, find a time, file attachments, write the standup.`,
+              'It drafts and files. <b>It never sends</b> without showing you first.',
+            ];
+        return `<div>
+        <h3 style="font-family:var(--display);font-size:28px;margin-bottom:6px">${esc(product.name)}</h3>
+        <p style="color:var(--accent);font-size:13px;letter-spacing:.09em;text-transform:uppercase;margin-bottom:14px">${esc(product.kind)}</p>
+        <p style="color:var(--muted);margin-bottom:14px">${esc(product.blurb)}</p>
+        <ul>${points.map((point) => `<li>${point}</li>`).join('')}</ul>
+        <p style="color:var(--muted);font-size:13px;margin-top:14px">${esc(product.platforms.join(' · '))}</p>
+      </div>`;
+      }).join('\n      ')}
+    </div>
+
+    <aside class="note" style="margin-top:40px;border-left:3px solid #b2543a;padding-left:18px">
+      <h3 style="font-family:var(--display);font-size:24px;margin-bottom:10px">${esc(cancellationNotice('squirreal').title)}</h3>
+      <p style="color:var(--muted)">${esc(cancellationNotice('squirreal').reason)}</p>
+      <p style="color:var(--muted);margin-top:10px"><b style="color:var(--ink-on-dark,inherit)">Still yours:</b> ${esc(cancellationNotice('squirreal').stillWorks)}</p>
+      <p style="color:var(--muted);font-size:14px;margin-top:10px">The servers stopped answering on ${esc(cancellationNotice('squirreal').endedOn)}. If you hold Squirreal, the app tells you this when you open it, and every tool that needed a server now says so instead of waiting for one.</p>
+    </aside>
+  </div>
+</section>
+
+<section id="storage" class="alt">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Storage</p>
+      <h2>${STORAGE.founderOpen()
+        ? `${esc(STORAGE.formatBytes(STORAGE.FOUNDER_BYTES))}, free, to the first ${STORAGE.FOUNDER_PLACES}.`
+        : `${esc(STORAGE.formatBytes(STORAGE.STANDARD_BYTES))} with every account.`}</h2>
+      <p>${STORAGE.founderOpen()
+        ? `${STORAGE.placesLeft(0)} places left, and the offer closes on ${esc(new Date(STORAGE.FOUNDER_ENDS).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }))}. Joining is what the deadline is on — a founder account keeps its storage afterwards.`
+        : 'The founder places have gone.'}</p>
+    </div>
+    <div class="apps">
       <div>
-        <h3 style="font-family:var(--display);font-size:26px;margin-bottom:14px">What changes</h3>
+        <h3 style="font-family:var(--display);font-size:26px;margin-bottom:14px">What the tiers are</h3>
         <ul>
-          <li><b>A clip costs more than a frame</b>, so Magic Draw is priced 40–120 by length, and Realtouch is 150 for the whole clip rather than 20 for one picture.</li>
-          <li><b>GIF Animate stops being a generation.</b> The motion already exists, so turning a clip into a looping GIF is local work and free on every edition.</li>
-          <li><b>Realtouch removes it from every frame</b>, not just the one you painted on: it looks the place up once, then holds that answer steady as the camera moves.</li>
-          <li><b>Everything else is the editor you already know</b> — layers, history, Expand, AIScope, and the same confirm-before-you-spend rule.</li>
+          <li><b>Founder — ${esc(STORAGE.formatBytes(STORAGE.FOUNDER_BYTES))}.</b> The first ${STORAGE.FOUNDER_PLACES} accounts, and only those.</li>
+          <li><b>Standard — ${esc(STORAGE.formatBytes(STORAGE.STANDARD_BYTES))}.</b> Every account opened after that.</li>
+          <li>The deadline is on <b>joining</b>, not on keeping. An offer that reached back and took the storage away would make it a loan, and it is not sold as one.</li>
         </ul>
       </div>
       <div>
-        <div class="dl" style="gap:0">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr><th style="text-align:left">Tool</th><th style="text-align:right">In Squirreal</th></tr></thead>
-            <tbody>
-              ${VIDEO_TOOLS_PRICES.map(([name, cost]) => `<tr><td>${esc(name)}</td><td style="text-align:right;color:var(--muted)">${esc(cost)}</td></tr>`).join('\n              ')}
-            </tbody>
-          </table>
-        </div>
-        <p style="color:var(--muted);font-size:14px;margin-top:14px">Prices are quoted on the Submit button before anything is spent, and nothing is charged unless a clip comes back.</p>
+        <h3 style="font-family:var(--display);font-size:26px;margin-bottom:14px">What we are not going to pretend</h3>
+        <ul>
+          <li>${esc(STORAGE.formatBytes(STORAGE.FOUNDER_BYTES))} is 4.8 × 10<sup>19</sup> bytes. It does not fit in a JavaScript number, which is why the apps count it in BigInt rather than in a double that is merely near the truth.</li>
+          <li>The storage figure in the apps is not softened into the word <em>unlimited</em>. It is a number, and it is the one shown.</li>
+          <li><b>There is no server behind it yet.</b> The quota, the tiers and the meter are real code; the bytes have nowhere to go until there is somewhere to put them.</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -343,6 +421,7 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
         ['Hazelnut-short-magictext.mp4', 'p-short-magictext.jpg', 'Magic Text: the words in the picture'],
         ['Hazelnut-short-imagine.mp4', 'p-short-imagine.jpg', 'Imagine: our own two models'],
         ['Hazelnut-short-hazel.mp4', 'p-short-hazel.jpg', 'Hazel: the whole thing, in half a minute'],
+        ['Hazelnut-short-service.mp4', 'p-short-service.jpg', 'The service: three apps, and one withdrawal'],
       ]
         .filter(([file]) => fs.existsSync(path.join(DIST, file)))
         .map(([file, poster, caption]) => `<figure><video controls preload="none" poster="${dataUri(poster, 'image/jpeg')}" src="${esc(file)}"></video><figcaption>${esc(caption)}</figcaption></figure>`)
@@ -356,7 +435,7 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
     <div class="head">
       <p class="eyebrow">Pricing</p>
       <h2>Free for ever. Then it still does not lock.</h2>
-      <p>Mini is exactly half the price of Hazelnut — in the code as well as on this page, so the two can never drift apart.</p>
+      <p>Every app opens free with no deadline and no card, and keeps the tools that run on your own machine when the opening credits are gone. Mini is exactly half the price of Photo — in the code as well as on this page, so the two can never drift apart.</p>
     </div>
     <div class="plans">
       ${PLANS.map((p) => `<div class="plan${p.lead ? ' plan--lead' : ''}">
@@ -415,7 +494,8 @@ ${fs.existsSync(path.join(DIST, 'Hazelnut-week-recap.mp4')) ? `
             <h4>From source</h4>
             <pre>npm install
 npm start               # Hazelnut
-npm run start:squirreal # Hazelnut Squirreal
+npm run start:movi      # Hazelnut Movi
+npm run start:work      # Hazelnut Work
 npm run start:mini      # Hazelnut Mini
 npm test                # 81 tests</pre>
           </div>
@@ -477,7 +557,7 @@ npm test                # 81 tests</pre>
 
 <footer>
   <div class="wrap">
-    <span>Hazelnut 1.0.0 — an advanced AI photo generator. Squirreal 1.0.0 — the same, for video.</span>
+    <span>Hazelnut 1.0.0 — ${esc(SERVICE.tagline)} Photo, Movi and Work.</span>
     <span>Draw and Expand never leave your machine.</span>
   </div>
 </footer>

@@ -1,16 +1,26 @@
 # Hazelnut
 
-**An advanced AI photo generator for Windows and Mac.** Free for ever, with no
-deadline — and with two image models of our own that run on your machine.
-
-Four products, one codebase:
+**Three apps and your files, on one account.** Hazelnut used to mean the
+editor. It means the account now, and the editor is one of three things on it.
 
 | | What it is | Platforms | Price |
 |---|---|---|---|
-| **Hazelnut** | The full editor: twenty-three tools, layers, history, a Photoshop-style workspace | Windows, Mac | $19.99 / month |
-| **Hazelnut Squirreal** | The same editor, pointed at moving pictures. Sketch a frame, say how it moves, get a clip | Windows, Mac | $29.99 / month |
-| **Hazelnut Mini** | A chat bar that removes things, and thirteen tools above it — six free, plus Imagine on the phone itself | Windows, Mac, **Android** | $9.99 / month — half of Hazelnut |
-| **Hazelnut for the Web** | The same editor in a browser tab, fixed to the local set — Imagine included. No download, no account, no key | Any browser | Free |
+| **Hazelnut Photo** | The editor: twenty-three tools, layers, history, a Photoshop-style workspace, and two image models of our own | Windows, Mac | $19.99 / month |
+| **Hazelnut Movi** | Moving pictures, on Hazelnut 3.0 Lite, Lite Fast and Pro. Simple decides for you; Advanced builds it eight seconds at a time | Windows, Mac | $29.99 / month |
+| **Hazelnut Work** | A coworker for the mail you already have. It drafts and files; it never sends without showing you first | Windows, Mac, browser | $14.99 / month |
+| **Hazelnut Mini** | A chat bar that removes things, and thirteen tools above it — six free, plus Imagine on the phone itself | Windows, Mac, **Android** | $9.99 / month — half of Photo |
+| **Hazelnut for the Web** | The editor in a browser tab, fixed to the local set — Imagine included. No download, no account, no key | Any browser | Free |
+
+Every account gets storage: **48 EB free to the first 50 people who join**,
+and 200 GB for everyone after. The deadline is on joining, not on keeping.
+
+> **Hazelnut Squirreal has been withdrawn.** It was the editor with a playhead,
+> running on somebody else's video model, and that account is closed. Movi
+> replaces it and runs on ours. If you hold Squirreal, the app tells you so when
+> you open it — and everything that ran on your own machine still runs.
+
+See [`docs/SERVICE.md`](docs/SERVICE.md) for the products, the storage tiers and
+why the quota is counted in BigInt.
 
 Everyone starts on a **trial that never expires**. It has no deadline and no
 card, it opens with 700 credits that are never topped up, and it keeps the

@@ -79,6 +79,30 @@ if (app === 'hazelnut' || app === 'hazelnut-squirreal' || app === 'hazelnut-web'
   // Mini's page already picks its own bridge; it only needs the tightened CSP.
   fs.cpSync(path.join(ROOT, 'apps/hazelnut-mini/www'), OUT, { recursive: true });
   patchIndex(path.join(OUT, 'index.html'), '', '');
+} else if (app === 'hazelnut-movi' || app === 'hazelnut-work') {
+  // Movi and Work are static pages that expect a bridge on `window`. In
+  // Electron the preload puts it there; served like this there is no preload,
+  // so the web bridge is copied in beside the page and installs itself on
+  // load — the CSP has no 'unsafe-inline', so the page cannot call it from a
+  // one-line inline module.
+  fs.cpSync(path.join(ROOT, 'apps', app, 'www'), OUT, { recursive: true });
+
+  fs.mkdirSync(path.join(OUT, 'core'), { recursive: true });
+  for (const name of fs.readdirSync(path.join(ROOT, 'packages/core'))) {
+    if (name.endsWith('.js')) {
+      fs.copyFileSync(path.join(ROOT, 'packages/core', name), path.join(OUT, 'core', name));
+    }
+  }
+
+  const install = app === 'hazelnut-movi' ? 'installMoviBridge' : 'installWorkBridge';
+  const bridge = fs.readFileSync(path.join(ROOT, 'apps', app, 'web/bridge.js'), 'utf8')
+    .replaceAll('../../../packages/core/', './core/');
+  fs.writeFileSync(
+    path.join(OUT, 'bridge.js'),
+    `${bridge}\n// Installed on load: this build has no inline scripts.\n${install}();\n`,
+  );
+
+  patchIndex(path.join(OUT, 'index.html'), '', '<script type="module" src="bridge.js"></script>\n  ');
 } else {
   throw new Error(`unknown app: ${app}`);
 }

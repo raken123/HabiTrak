@@ -10,6 +10,8 @@
   "scripts": {
     "start": "npm run start --workspace=hazelnut",
     "start:squirreal": "npm run start --workspace=hazelnut-squirreal",
+    "start:movi": "npm run start --workspace=hazelnut-movi",
+    "start:work": "npm run start --workspace=hazelnut-work",
     "start:mini": "npm run start --workspace=hazelnut-mini",
     "test": "node scripts/check-imports.mjs && node --test packages/core/test/*.test.js",
     "dist:hazelnut": "npm run dist --workspace=hazelnut",
@@ -17,7 +19,9 @@
     "dist:mini": "npm run dist --workspace=hazelnut-mini",
     "check:imports": "node scripts/check-imports.mjs",
     "dist:aab": "./scripts/build-aab.sh",
-    "mascot": "node scripts/build-mascot.mjs"
+    "mascot": "node scripts/build-mascot.mjs",
+    "dist:movi": "npm run dist --workspace=hazelnut-movi",
+    "dist:work": "npm run dist --workspace=hazelnut-work"
   },
   "engines": {
     "node": ">=20"
