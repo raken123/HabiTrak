@@ -14,6 +14,8 @@ import { createTools } from './tools/index.js';
 import { Clip, attachClip } from './clip.js';
 import { ECO, ecoScale, ecoCost, ECO_SUMMARY, ECO_NOTES } from '../core/eco.js';
 import { DEFAULT_MODEL } from '../core/models.js';
+import { cancellationNotice } from '../core/products.js';
+import { storageLine, formatBytes } from '../core/storage.js';
 import { installTransport } from './transport.js';
 import {
   toast, toastError, modal, confirmDialog, openMenu, attachTooltip,
@@ -81,7 +83,12 @@ async function boot() {
   refreshChrome();
   selectTool('draw');
 
-  if (app.server.edition === 'web') {
+  if (app.isVideo) {
+    // Squirreal is withdrawn. Its holders find out here, on launch, rather
+    // than by pressing a button and watching it fail — and they are told what
+    // still works before they are told what does not.
+    await showWithdrawn();
+  } else if (app.server.edition === 'web') {
     await showWebWelcome();
   } else if (!app.server.trialStarted) {
     await showWelcome();
@@ -554,6 +561,21 @@ function refreshChrome() {
   // There is no countdown any more, because there is nothing counting down.
   pill.textContent = edition === 'trial' ? 'Trial · no deadline' : plan.name;
 
+  // The service's storage, on every edition: it belongs to the account rather
+  // than to the plan, so there is no edition that does not have some.
+  const storage = app.server.storage;
+  const storagePill = $('#storage-pill');
+  if (storage) {
+    storagePill.hidden = false;
+    storagePill.textContent = storageLine(storage.usedBytes, storage.tier);
+    storagePill.title = storage.tier === 'founder'
+      ? `Founder storage — ${formatBytes(storage.quotaBytes)}`
+      : `${formatBytes(storage.quotaBytes)} of storage`;
+  } else {
+    // An older bridge that predates the service. Better no pill than a wrong one.
+    storagePill.hidden = true;
+  }
+
   $('#credits-value').textContent = credits.toLocaleString('en-US');
   $('#credits-pill').classList.toggle('is-low', credits < 60);
   // Every edition can spend credits now — the browser build included, because
@@ -851,6 +873,30 @@ async function showWebWelcome() {
   if (go === true) window.hazelnut.openExternal(new URL('../Hazelnut-downloads.html', location.href).href);
 }
 
+/**
+ * What a Squirreal holder sees when they open it now.
+ *
+ * Every word comes from products.js, so this dialog, the film and the landing
+ * page cannot each describe the withdrawal differently. Hazel holds the Oops
+ * sign, which is the one place in the product where that pose is the honest
+ * illustration rather than a joke.
+ */
+async function showWithdrawn() {
+  const notice = cancellationNotice('squirreal');
+  await modal({
+    title: notice.title,
+    wide: true,
+    body: withHazel('oops', 'Hazel the Squirrel, holding a sign reading Oops', [
+      el('p', { text: notice.reason }),
+      el('p', { text: `Still yours: ${notice.stillWorks}` }),
+      el('p', { class: 'muted', text: `The servers stopped answering on ${notice.endedOn}. Every tool that needed one will now say so instead of waiting.` }),
+    ]),
+    footer: (close) => [
+      el('button', { class: 'btn btn--primary', onClick: () => close(true), text: 'Continue' }),
+    ],
+  });
+}
+
 async function showWelcome() {
   const start = await modal({
     title: `Welcome to ${productName()}`,
@@ -921,6 +967,11 @@ const HAZEL = {
   cheer: 'img/hazel-cheer.webp',
   sleep: 'img/hazel-sleep.webp',
   think: 'img/hazel-think.webp',
+  // Only for the withdrawal dialog, which only Squirreal shows. Every entry
+  // here is inlined into the single-file build whether it is drawn or not, so
+  // the map stays as short as the code allows — but a pose the code asks for
+  // and this map lacks is a broken image, which costs more than the bytes.
+  oops: 'img/hazel-oops.webp',
 };
 
 function hazel(pose, alt, variant = 'modal') {

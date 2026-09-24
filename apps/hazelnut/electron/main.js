@@ -19,6 +19,7 @@ import { Engine } from '@hazelnut/core/engine.js';
 import { TOOLS, TOOL_ORDER, availability, costOf, isPartnerTool } from '@hazelnut/core/tools.js';
 import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '@hazelnut/core/models.js';
 import { PLANS, TRIAL_CREDIT_GRANT } from '@hazelnut/core/pricing.js';
+import { tierForNewAccount, quotaBytes } from '@hazelnut/core/storage.js';
 import { parseDataUrl, stamp } from '@hazelnut/core/imaging.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -270,8 +271,26 @@ function state() {
     models: modelsFor(license.edition()),
     plans: PLANS,
     trialCreditGrant: TRIAL_CREDIT_GRANT,
+    // The account's storage. `quotaBytes` is a string on purpose: a BigInt
+    // does not survive the IPC boundary and 48 exabytes does not survive
+    // being a Number. storage.js says why.
+    storage: {
+      tier: storageTier(),
+      usedBytes: Number(store.get('usedBytes', 0)) || 0,
+      quotaBytes: quotaBytes(storageTier()).toString(),
+    },
     settings: store.get('settings', {}),
   };
+}
+
+
+/** The tier this account joined on, decided once and kept. */
+function storageTier() {
+  const held = store.get('storageTier', null);
+  if (held) return held;
+  // Only a server knows how many founder places have gone; this client
+  // can speak for itself alone.
+  return store.set('storageTier', tierForNewAccount({ taken: 0 }).id);
 }
 
 handle('app:state', () => state());

@@ -16,6 +16,7 @@ import { Engine } from '../../../packages/core/engine.js';
 import { TOOLS, TOOL_ORDER, availability, costOf, isPartnerTool } from '../../../packages/core/tools.js';
 import { DEFAULT_MODEL, modelsFor, modelMaxEdge, modelThinks } from '../../../packages/core/models.js';
 import { PLANS, TRIAL_CREDIT_GRANT } from '../../../packages/core/pricing.js';
+import { tierForNewAccount, quotaBytes } from '../../../packages/core/storage.js';
 
 const STATE_KEY = 'hazelnut-state';
 const API_KEY = 'hazelnut-api-key';
@@ -87,8 +88,26 @@ export function installWebBridge({ limited = false } = {}) {
     models: modelsFor(license.edition()),
     plans: PLANS,
     trialCreditGrant: TRIAL_CREDIT_GRANT,
+    // The account's storage. `quotaBytes` is a string on purpose: a BigInt
+    // does not survive the IPC boundary and 48 exabytes does not survive
+    // being a Number. storage.js says why.
+    storage: {
+      tier: storageTier(),
+      usedBytes: Number(store.get('usedBytes', 0)) || 0,
+      quotaBytes: quotaBytes(storageTier()).toString(),
+    },
     settings: store.get('settings', {}),
   });
+
+
+  /** The tier this account joined on, decided once and kept. */
+  function storageTier() {
+    const held = store.get('storageTier', null);
+    if (held) return held;
+    // Only a server knows how many founder places have gone; this client
+    // can speak for itself alone.
+    return store.set('storageTier', tierForNewAccount({ taken: 0 }).id);
+  }
 
   /** Give an engine call the `.cancel()` the IPC version carries. */
   const job = (run, onProgress) => {

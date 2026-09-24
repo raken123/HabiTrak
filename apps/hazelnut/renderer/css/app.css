@@ -120,6 +120,10 @@ body.is-mac .menubar { padding-left: 82px; }
 .pill--edition[data-edition="pro"]   { border-color: var(--good); color: var(--good); }
 .pill--credits.is-low { border-color: var(--danger); color: var(--danger); }
 
+/* The account's storage. Quieter than the credits, because it is not the
+   number that moves while you work. */
+.pill--storage { font-variant-numeric: tabular-nums; }
+
 .note--eco { border-left: 2px solid rgba(143, 201, 143, .6); }
 
 /* A checkbox and its label on one line — the shape a setting wants. */
