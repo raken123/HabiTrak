@@ -1,0 +1,59 @@
+{
+  "name": "hazelnut-movi",
+  "productName": "Hazelnut Movi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Moving pictures, on Hazelnut 3.0. Simple decides for you; Advanced builds it eight seconds at a time.",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "sync:core": "node scripts/sync-core.mjs",
+    "dist": "electron-builder --win --mac",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.hazelnut.movi",
+    "productName": "Hazelnut Movi",
+    "copyright": "Copyright © Hazelnut",
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": ["electron/**/*", "www/**/*", "!**/*.map"],
+    "extraMetadata": { "main": "electron/main.js" },
+    "asar": true,
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64", "arm64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "HazelnutMovi-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Hazelnut Movi"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.video",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "artifactName": "HazelnutMovi-${version}-${arch}.${ext}"
+    },
+    "dmg": { "title": "Hazelnut Movi ${version}" }
+  },
+  "dependencies": { "@hazelnut/core": "*" }
+}

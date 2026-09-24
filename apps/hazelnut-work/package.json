@@ -1,0 +1,59 @@
+{
+  "name": "hazelnut-work",
+  "productName": "Hazelnut Work",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Your coworker. Connect the mail and calendars you already have.",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "sync:core": "node scripts/sync-core.mjs",
+    "dist": "electron-builder --win --mac",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.hazelnut.work",
+    "productName": "Hazelnut Work",
+    "copyright": "Copyright © Hazelnut",
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": ["electron/**/*", "www/**/*", "!**/*.map"],
+    "extraMetadata": { "main": "electron/main.js" },
+    "asar": true,
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64", "arm64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "HazelnutWork-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Hazelnut Work"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "artifactName": "HazelnutWork-${version}-${arch}.${ext}"
+    },
+    "dmg": { "title": "Hazelnut Work ${version}" }
+  },
+  "dependencies": { "@hazelnut/core": "*" }
+}

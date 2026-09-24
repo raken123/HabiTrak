@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hazelnut Work</title>
+  <link rel="stylesheet" href="css/work.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="bar">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+          <rect x="5" y="18" width="54" height="36" rx="7" fill="none" stroke="currentColor" stroke-width="5"/>
+          <path d="M5 24l27 17 27-17" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M23 18v-6h18v6" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
+        </svg>
+        <span>Hazelnut <b>Work</b></span>
+      </div>
+      <div class="bar__right">
+        <button class="pill" id="storage-pill" type="button"></button>
+        <button class="pill pill--credits" id="credits-pill" type="button"></button>
+      </div>
+    </header>
+
+    <!-- The one thing this app must never let anyone mistake. -->
+    <p class="disclosure" id="disclosure"></p>
+
+    <main class="cols">
+      <section class="col">
+        <h2>Connections</h2>
+        <ul class="conns" id="conns"></ul>
+      </section>
+
+      <section class="col">
+        <h2>What it can do</h2>
+        <ul class="tasks" id="tasks"></ul>
+      </section>
+    </main>
+
+    <section class="out">
+      <h2>Drafts <small id="out-note"></small></h2>
+      <ol class="drafts" id="drafts"></ol>
+      <p class="out__empty" id="out-empty">Nothing yet. Everything it writes lands here first.</p>
+    </section>
+
+    <footer class="status"><span id="status-text"></span></footer>
+  </div>
+
+  <div class="sheets" id="sheets"></div>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

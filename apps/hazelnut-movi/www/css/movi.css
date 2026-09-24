@@ -1,0 +1,177 @@
+/* Hazelnut Movi.
+   The editor's palette — warm near-black and hazelnut amber — on a layout that
+   is nothing like the editor's, because Movi is a prompt and a strip of clips
+   rather than a canvas and a toolbar. */
+
+:root {
+  --ink: #141210;
+  --panel: #1c1917;
+  --edge: #2b2724;
+  --bone: #f3ece3;
+  --muted: #9a8c7e;
+  --amber: #e0894a;
+  --amber-dim: #7d4c26;
+  --ui: system-ui, "Segoe UI", Roboto, "Liberation Sans", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+body {
+  background: var(--ink);
+  color: var(--bone);
+  font: 15px/1.45 var(--ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+/* ── bar ─────────────────────────────────────────────────────────────────── */
+
+.bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 0 16px; height: 52px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--edge);
+  flex: none;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.brand b { color: var(--amber); font-weight: 600; }
+.mark { width: 26px; height: 26px; color: var(--amber); }
+.bar__right { display: flex; gap: 8px; }
+
+.pill {
+  font: inherit; font-size: 13px;
+  color: var(--muted);
+  background: #22201d;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  padding: 5px 13px;
+  cursor: pointer;
+}
+.pill:hover { color: var(--bone); border-color: #3a352f; }
+.pill--credits { color: var(--amber); }
+
+/* ── modes ───────────────────────────────────────────────────────────────── */
+
+.modes { display: flex; gap: 0; background: var(--panel); border-bottom: 1px solid var(--edge); flex: none; }
+.mode {
+  font: inherit; font-size: 14px;
+  background: none; border: 0; border-bottom: 2px solid transparent;
+  color: var(--muted); padding: 11px 22px; cursor: pointer;
+}
+.mode[aria-selected="true"] { color: var(--bone); border-bottom-color: var(--amber); }
+.mode small { display: block; font-size: 11px; color: #6f6459; margin-top: 2px; }
+
+/* ── panes ───────────────────────────────────────────────────────────────── */
+
+.work { flex: 1; overflow: auto; padding: 26px 20px 40px; }
+.pane { max-width: 760px; margin: 0 auto; }
+
+.say { display: grid; gap: 12px; }
+.say--tight { gap: 10px; }
+.say__label { font-size: 17px; }
+textarea, select {
+  font: inherit;
+  color: var(--bone);
+  background: #191614;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 13px 15px;
+  resize: vertical;
+  width: 100%;
+}
+textarea:focus, select:focus { outline: 2px solid var(--amber-dim); outline-offset: 1px; }
+select { padding: 11px 13px; }
+
+.row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+
+.btn {
+  font: inherit;
+  color: var(--bone);
+  background: #262220;
+  border: 1px solid var(--edge);
+  border-radius: 11px;
+  padding: 10px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: #302a26; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn--primary { background: var(--amber); border-color: var(--amber); color: #201203; font-weight: 600; }
+.btn--primary:hover:not(:disabled) { background: #eb9457; }
+.btn--big { justify-self: start; padding: 13px 28px; font-size: 16px; }
+
+/* The one sentence Simple mode is obliged to show before it spends anything. */
+.warn {
+  font-size: 13px; color: #e0b07a;
+  background: rgba(224,137,74,.09);
+  border: 1px solid rgba(224,137,74,.28);
+  border-radius: 10px;
+  padding: 9px 13px;
+}
+
+.quote {
+  font-size: 14px; color: var(--muted);
+  border-left: 3px solid var(--amber-dim);
+  padding-left: 12px;
+}
+.quote b { color: var(--bone); font-weight: 600; }
+
+/* ── result ──────────────────────────────────────────────────────────────── */
+
+.result { margin-top: 26px; display: grid; gap: 12px; }
+.result__frame { border-radius: 14px; overflow: clip; background: #000; border: 1px solid var(--edge); }
+.result__frame canvas { display: block; width: 100%; height: auto; }
+.result__meta { font-size: 13px; color: var(--muted); }
+.result__actions { display: flex; gap: 12px; align-items: center; }
+.result__left { font-size: 12px; color: #6f6459; }
+
+/* ── the clip strip ──────────────────────────────────────────────────────── */
+
+.strip { margin-top: 30px; }
+.strip__head { font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.strip__head span { color: var(--amber); text-transform: none; letter-spacing: 0; margin-left: 8px; }
+.strip__empty { margin-top: 12px; font-size: 13px; color: #6f6459; }
+.clips { list-style: none; margin-top: 12px; display: grid; gap: 10px; }
+.clip {
+  display: grid; grid-template-columns: 96px 1fr auto; gap: 14px; align-items: center;
+  background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 10px;
+}
+.clip__thumb { width: 96px; height: 54px; border-radius: 7px; background: #000; display: block; }
+.clip__text { font-size: 14px; min-width: 0; }
+.clip__text b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip__text span { font-size: 12px; color: var(--muted); }
+
+/* ── status, sheets, toasts ──────────────────────────────────────────────── */
+
+.status {
+  flex: none; height: 30px; display: flex; align-items: center;
+  padding: 0 16px; font-size: 12px; color: #6f6459;
+  background: var(--panel); border-top: 1px solid var(--edge);
+}
+
+.sheets:empty { display: none; }
+.sheets {
+  position: fixed; inset: 0; z-index: 40;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,.6);
+  padding: 24px;
+}
+.sheet {
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 18px;
+  padding: 24px;
+  max-width: 520px; width: 100%;
+  display: grid; gap: 14px;
+}
+.sheet h2 { font-size: 20px; font-weight: 600; }
+.sheet p { font-size: 14px; color: var(--muted); }
+.sheet__actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+.toasts { position: fixed; left: 50%; bottom: 46px; transform: translateX(-50%); z-index: 50; display: grid; gap: 8px; }
+.toast {
+  background: #2a2522; border: 1px solid var(--edge); border-radius: 11px;
+  padding: 10px 18px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.5);
+}
